@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Camera, CheckCircle, Clock, DollarSign, FileText, Image, Search, Upload, Send, ArrowRight, CheckSquare, Wrench, Eye, Loader2 } from "lucide-react";
+import { Camera, CheckCircle, Clock, DollarSign, FileText, Image, Search, Upload, Send, ArrowRight, CheckSquare, Wrench, Eye, Loader2, Phone } from "lucide-react";
 import { ServiceDetails, ServiceStatus, ServiceType, ServiceTypeStatus } from "@/types";
 // import { imageUploadHelper } from "@/utils/localStorage"; // We will not use this for the preview
 import { ServiceTypeDetail } from "./ServiceTypeDetail";
@@ -617,9 +617,13 @@ export function ServiceModule() {
               <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-4 gap-3">
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-foreground text-base sm:text-lg truncate">{capitalizeWords(enquiry.customerName)}</h3>
-                  <div className="flex items-center">
-                    📞 {enquiry.phone.startsWith('+91') ? enquiry.phone : `+91 ${enquiry.phone}`}
-                  </div>                </div>
+                  <div className="flex items-center space-x-1 text-gray-400">
+                    <Phone className="h-4 w-4" />
+                    <span className="text-sm">
+                      {enquiry.phone.startsWith('+91') ? enquiry.phone : `+91 ${enquiry.phone}`}
+                    </span>
+                  </div>
+                </div>
                 <div className="flex flex-col items-start sm:items-end gap-2">
                   <Badge className={`${getStatusColor(getOverallStatus(enquiry.serviceTypes || []) as ServiceStatus)} text-xs px-2 py-1 rounded-full font-medium`}>
                     {capitalizeStatus(getOverallStatus(enquiry.serviceTypes || []))}
@@ -633,10 +637,14 @@ export function ServiceModule() {
               {/* Product & Estimated Cost */}
               <div className="space-y-3">
                 <div className="flex items-center space-x-2">
-                  <span className="text-sm text-foreground">
-                    {capitalizeWords(enquiry.product)} ({enquiry.quantity} Items)
-                  </span>
+                  <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                    Quantity: {enquiry.quantity}
+                  </div>
+                  <span className="text-gray-500 text-sm">{enquiry.product}</span>
                 </div>
+
+
+
 
                 <div className="flex items-center space-x-2">
                   <span className="text-sm font-semibold text-foreground">
@@ -655,7 +663,7 @@ export function ServiceModule() {
                       >
                         <div className="flex items-center space-x-2">
                           <span className="text-sm text-foreground">{capitalizeWords(service.type)}</span>
-                          <Badge className={`${getStatusColor(service.status)} text-xs`}>
+                          <Badge className={`${getStatusColor(service.status as ServiceStatus)} text-xs px-2 py-1 rounded-full font-medium`}>
                             {capitalizeWords(service.status)}
                           </Badge>
                         </div>
@@ -782,7 +790,7 @@ export function ServiceModule() {
                       onClick={() => serviceComplete(enquiry.enquiryId)}
                     >
                       <ArrowRight className="h-3 w-3 mr-1" />
-                      All Services Complete - Send To Billing
+                      Send To Billing
                     </Button>
                   )}
               </div>

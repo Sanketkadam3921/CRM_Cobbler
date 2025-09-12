@@ -142,6 +142,19 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
     };
   }, [selectedImage]);
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "pending":
+        return "!bg-yellow-500 !text-white !border-yellow-500";
+      case "in-progress":
+        return "!bg-blue-500 !text-white !border-blue-500";
+      case "done":
+        return "!bg-green-500 !text-white !border-green-500";
+      default:
+        return "!bg-gray-500 !text-white !border-gray-500";
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -201,9 +214,9 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
           </div>
         </div>
         {serviceTypeData && (
-          <Badge className={`${getStatusColor(serviceTypeData.status)} text-sm px-3 py-1`}>
+          <div className={`${getStatusColor(serviceTypeData.status)} text-sm px-3 py-1 rounded-md font-medium`}>
             {serviceTypeData.status}
-          </Badge>
+          </div>
         )}
       </div>
 
@@ -403,17 +416,4 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
       </Card>
     </div>
   );
-}
-
-function getStatusColor(status: string) {
-  switch (status) {
-    case "pending":
-      return "bg-yellow-500 text-white";
-    case "in-progress":
-      return "bg-blue-500 text-white";
-    case "done":
-      return "bg-green-500 text-white";
-    default:
-      return "bg-gray-500 text-white";
-  }
 }

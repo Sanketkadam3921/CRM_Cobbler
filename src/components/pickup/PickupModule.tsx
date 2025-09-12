@@ -26,6 +26,7 @@ import {
   Send,
   CheckCircle,
   Loader2,
+  Phone,
 } from "lucide-react";
 import { Enquiry, PickupStatus, ServiceType } from "@/types";
 import { usePickupEnquiries, usePickupStats } from "@/services/pickupApiService";
@@ -338,9 +339,13 @@ export function PickupModule() {
                     <h3 className="font-semibold text-foreground text-base sm:text-lg">
                       {enquiry.customerName}
                     </h3>
-                    <p className="text-sm text-muted-foreground">
-                      📞 {enquiry.phone.startsWith('+91') ? enquiry.phone : `+91 ${enquiry.phone}`}
-                    </p>
+                    <div className="flex items-center space-x-1 text-gray-400">
+                      <Phone className="h-4 w-4" />
+                      <span className="text-sm">
+                        {enquiry.phone.startsWith('+91') ? enquiry.phone : `+91 ${enquiry.phone}`}
+                      </span>
+                    </div>
+
                   </div>
                   <Badge
                     className={`${getStatusColor(

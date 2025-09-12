@@ -8,18 +8,21 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { 
-  Calculator, 
-  FileText, 
-  Search, 
-  Send, 
-  Download, 
-  DollarSign, 
-  Percent, 
+import {
+  Calculator,
+  FileText,
+  Search,
+  Send,
+  Download,
+  DollarSign,
+  Percent,
   Receipt,
   ArrowRight,
   Plus,
-  Minus
+  Minus,
+  Phone,
+  IndianRupee,
+  ReceiptIndianRupee
 } from "lucide-react";
 import { Enquiry, BillingDetails, BillingItem, BillingEnquiry, BillingCreateRequest } from "@/types";
 // COMMENTED OUT: localStorage imports - replaced with API service
@@ -30,6 +33,7 @@ import { InvoiceDisplay } from "./InvoiceDisplay";
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import React from "react"; // Added missing import for React
+import { PendingPickupsTable } from "../pickup/PendingPickupsTable";
 
 // Helper function to safely format currency values
 const safeToFixed = (value: any, decimals: number = 2): string => {
@@ -40,19 +44,19 @@ const safeToFixed = (value: any, decimals: number = 2): string => {
 
 export function BillingModule() {
   console.log('🚀 BillingModule rendering');
-  
+
   // COMMENTED OUT: localStorage state management - replaced with API hooks
   // const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
-  
+
   // ADDED: API hooks with 2-second polling for real-time updates (same as service module)
   const { enquiries, loading: enquiriesLoading, error: enquiriesError, refetch, createBilling, moveToDelivery } = useBillingEnquiries(200000);
   const { stats, loading: statsLoading, error: statsError } = useBillingStats();
-  
+
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedEnquiry, setSelectedEnquiry] = useState<BillingEnquiry | null>(null);
   const [showBillingDialog, setShowBillingDialog] = useState<number | null>(null);
   const [showInvoiceDialog, setShowInvoiceDialog] = useState<boolean>(false);
-  
+
   // Billing form state
   const [billingForm, setBillingForm] = useState<Partial<BillingDetails>>({
     finalAmount: 0,
@@ -83,7 +87,7 @@ export function BillingModule() {
     let error = "";
     let numValue = 0;
     let fieldKey = "";
-    
+
     // Determine validation function and field key
     if (fieldType === 'price') {
       fieldKey = `item-${index}-originalAmount`;
@@ -122,20 +126,20 @@ export function BillingModule() {
         }
       }
     }
-    
+
     // Update validation errors
     setValidationErrors(prev => ({
       ...prev,
       [fieldKey]: error
     }));
-    
+
     // Update form state only if valid
     if (!error && index !== undefined) {
-      const fieldName = fieldType === 'price' ? 'originalAmount' : 
-                       fieldType === 'gstRate' ? 'gstRate' : 'discountValue';
+      const fieldName = fieldType === 'price' ? 'originalAmount' :
+        fieldType === 'gstRate' ? 'gstRate' : 'discountValue';
       updateServiceItem(index, fieldName as keyof BillingItem, numValue);
     }
-    
+
     return { isValid: !error, numValue, error };
   };
 
@@ -157,7 +161,7 @@ export function BillingModule() {
   //   
   //   return () => clearInterval(interval);
   // }, []);
-  
+
   // ADDED: API hooks handle data loading and stats automatically
   // No need for manual useEffect or stats calculation
 
@@ -176,7 +180,7 @@ export function BillingModule() {
     const priceError = validationErrors[`item-${index}-originalAmount`];
     const gstError = validationErrors[`item-${index}-gstRate`];
     const discountError = validationErrors[`item-${index}-discountValue`];
-    
+
     return !!(priceError || gstError || discountError);
   };
 
@@ -188,34 +192,34 @@ export function BillingModule() {
       console.log('🧮 Skipping calculation - validation errors present:', validationErrors);
       return false;
     }
-    
+
     // Check if all required fields have valid numeric values
     const hasValidItems = billingForm.items?.every(item => {
       const hasValidPrice = typeof item.originalAmount === 'number' && item.originalAmount >= 0;
       const hasValidGst = typeof item.gstRate === 'number' && item.gstRate >= 0 && item.gstRate <= 100;
       return hasValidPrice && hasValidGst;
     });
-    
+
     if (!hasValidItems) {
       console.log('🧮 Skipping calculation - invalid item data');
       return false;
     }
-    
+
     return true;
   };
 
   // Calculate billing amounts
   const calculateBilling = () => {
-    console.log('🧮 Starting billing calculation...');
+    console.log('🧮 Starting billing calculation');
     console.log('🧮 Current billing form:', billingForm);
-    
+
     const { items, gstIncluded } = billingForm;
-    
+
     if (!items || items.length === 0) {
       console.log('🧮 No items to calculate');
       return;
     }
-    
+
     // Only calculate if all data is valid
     if (!isFormDataValid()) {
       console.log('🧮 Skipping calculation - form data is invalid');
@@ -226,7 +230,7 @@ export function BillingModule() {
     const updatedItems = items.map(item => {
       console.log('🧮 Calculating for service:', item.serviceType);
       console.log('🧮 GST included:', gstIncluded);
-      
+
       let serviceFinalAmount = item.originalAmount;
       let serviceDiscountAmount = 0;
       let serviceGstAmount = 0;
@@ -254,7 +258,7 @@ export function BillingModule() {
 
       console.log('🧮 Service calculation result:', updatedItem);
       console.log('🧮 Formula: Base(₹{item.originalAmount}) × (1-{item.discountValue}%) × (1+{item.gstRate}%) = ₹{serviceFinalAmount + serviceGstAmount}');
-      
+
       return updatedItem;
     });
 
@@ -292,7 +296,7 @@ export function BillingModule() {
     console.log('🔄 useEffect triggered - recalculating billing');
     calculateBilling();
   }, [
-    billingForm.items, 
+    billingForm.items,
     billingForm.gstIncluded
   ]);
 
@@ -306,7 +310,7 @@ export function BillingModule() {
       }));
       return;
     }
-    
+
     setBillingForm(prev => ({
       ...prev,
       [field]: value
@@ -318,7 +322,7 @@ export function BillingModule() {
   // Update individual service item
   const updateServiceItem = (index: number, field: keyof BillingItem, value: any, isRawInput: boolean = false) => {
     console.log('🔧 Updating service item:', index, field, value, 'isRawInput:', isRawInput);
-    
+
     if (isRawInput) {
       // Store raw input value for display
       const fieldKey = `item-${index}-${field}`;
@@ -328,11 +332,11 @@ export function BillingModule() {
       }));
       return;
     }
-    
+
     // Update the form with parsed value
     setBillingForm(prev => ({
       ...prev,
-      items: prev.items?.map((item, i) => 
+      items: prev.items?.map((item, i) =>
         i === index ? { ...item, [field]: value } : item
       ) || []
     }));
@@ -340,7 +344,7 @@ export function BillingModule() {
     // Validate the field using unified validation
     let error = "";
     const fieldKey = `item-${index}-${field}`;
-    
+
     if (field === 'originalAmount') {
       const result = validateAndUpdateField('price', value.toString(), index);
       error = result.error;
@@ -372,7 +376,7 @@ export function BillingModule() {
   // Save billing details - UPDATED: Now uses API instead of localStorage
   const saveBillingDetails = async (enquiryId: number) => {
     console.log('🔄 Starting save billing details for enquiry:', enquiryId);
-    
+
     if (!selectedEnquiry) {
       console.log('❌ No selected enquiry');
       alert("Please select an enquiry");
@@ -416,7 +420,7 @@ export function BillingModule() {
     try {
       console.log('🔄 Preparing billing data for API...');
       const businessInfo = businessInfoStorage.get();
-      
+
       const billingData: BillingCreateRequest = {
         finalAmount: billingForm.finalAmount || 0,
         gstIncluded: billingForm.gstIncluded || true,
@@ -433,10 +437,10 @@ export function BillingModule() {
       };
 
       console.log('🔄 Sending billing data to API:', billingData);
-      
+
       // Use optimistic update from API service
       await createBilling(enquiryId, billingData);
-      
+
       console.log('✅ Billing details saved successfully via API');
 
       // Reset form
@@ -463,7 +467,7 @@ export function BillingModule() {
   const convertBillingEnquiryToEnquiry = (billingEnquiry: BillingEnquiry): Enquiry => {
     // FIXED: Get business info from localStorage instead of DB
     const businessInfo = businessInfoStorage.get();
-    
+
     return {
       id: billingEnquiry.id,
       customerName: billingEnquiry.customerName,
@@ -590,11 +594,11 @@ export function BillingModule() {
   // Move to delivery - UPDATED: Now uses API instead of localStorage
   const handleMoveToDelivery = async (enquiryId: number) => {
     console.log('🔄 Moving enquiry to delivery stage:', enquiryId);
-    
+
     try {
       // Use optimistic update from API service
       await moveToDelivery(enquiryId);
-      
+
       console.log('✅ Enquiry moved to delivery stage successfully via API');
 
       const enquiry = enquiries.find(e => e.id === enquiryId);
@@ -610,11 +614,11 @@ export function BillingModule() {
   // Initialize billing form when enquiry is selected - UPDATED: Now works with BillingEnquiry type
   const initializeBillingForm = (enquiry: BillingEnquiry) => {
     console.log('🔧 Initializing billing form for enquiry:', enquiry);
-    
+
     // Clear validation errors and raw input values
     setValidationErrors({});
     setRawInputValues({});
-    
+
     setSelectedEnquiry(enquiry);
     setBillingForm({
       finalAmount: 0, // This will be calculated from individual services
@@ -640,25 +644,25 @@ export function BillingModule() {
   // View invoice
   const viewInvoice = (enquiryId: number) => {
     console.log('🔍 viewInvoice called with enquiryId:', enquiryId);
-    
+
     const enquiry = enquiries.find(e => e.id === enquiryId);
     console.log('🔍 Found enquiry:', enquiry);
-    
+
     if (!enquiry) {
       console.error('❌ No enquiry found with ID:', enquiryId);
       alert("Enquiry not found!");
       return;
     }
-    
+
     if (!enquiry.serviceDetails?.billingDetails) {
       console.error('❌ No billing details found for enquiry:', enquiryId);
       alert("No billing details found. Please create billing first.");
       return;
     }
-    
+
     console.log('✅ Setting selectedEnquiry and showInvoiceDialog');
     console.log('✅ Billing details:', enquiry.serviceDetails.billingDetails);
-    
+
     setSelectedEnquiry(enquiry);
     setShowInvoiceDialog(true);
   };
@@ -689,7 +693,7 @@ export function BillingModule() {
                 Pending Billing
               </div>
             </div>
-            <Receipt className="h-6 w-6 sm:h-8 sm:w-8 text-blue-500" />
+            <ReceiptIndianRupee className="h-6 w-6 sm:h-8 sm:w-8 text-blue-500" />
           </div>
         </Card>
         <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
@@ -715,7 +719,7 @@ export function BillingModule() {
                 Total Billed
               </div>
             </div>
-            <DollarSign className="h-6 w-6 sm:h-8 sm:w-8 text-purple-500" />
+            <IndianRupee className="h-6 w-6 sm:h-8 sm:w-8 text-purple-500" />
           </div>
         </Card>
         <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
@@ -738,7 +742,7 @@ export function BillingModule() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
-            placeholder="Search billing items by customer, product..."
+            placeholder="Search billing items"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -762,9 +766,13 @@ export function BillingModule() {
                   <h3 className="font-semibold text-foreground text-base sm:text-lg">
                     {enquiry.customerName}
                   </h3>
-                  <p className="text-sm text-muted-foreground">
-                    {enquiry.phone}
-                  </p>
+                  <div className="flex items-center space-x-1 text-gray-600">
+                    <Phone className="h-4 w-4" />
+                    <span className="text-sm">
+                      {enquiry.phone.startsWith('+91') ? enquiry.phone : `+91 ${enquiry.phone}`}
+                    </span>
+                  </div>
+
                 </div>
                 <div className="flex flex-col items-end gap-2">
                   <Badge className={`${enquiry.serviceDetails?.billingDetails ? 'bg-green-500 text-white' : 'bg-yellow-500 text-white'} text-xs px-2 py-1 rounded-full font-medium`}>
@@ -780,38 +788,49 @@ export function BillingModule() {
 
               <div className="space-y-3">
                 <div className="flex items-center space-x-2">
-                  <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                  <span className="text-sm text-foreground">
-                    {enquiry.product} ({enquiry.quantity} items)
-                  </span>
+                  <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                    Quantity: {enquiry.quantity}
+                  </div>
+                  <span className="text-gray-500 text-sm">{enquiry.product}</span>
                 </div>
 
+
                 <div className="flex items-center space-x-2">
-                  <DollarSign className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                   <span className="text-sm font-semibold text-foreground">
                     Estimated: ₹{safeToFixed(enquiry.serviceDetails?.estimatedCost)}
                   </span>
                 </div>
-
                 {enquiry.serviceDetails?.billingDetails && (
                   <div className="space-y-2 p-3 bg-green-50 rounded border border-green-200">
                     <h4 className="text-sm font-medium text-green-800">Billing Details:</h4>
-                                    <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div>
-                    <span className="text-green-600">Subtotal:</span> ₹{safeToFixed(enquiry.serviceDetails.billingDetails.subtotal)}
-                  </div>
-                  <div>
-                    <span className="text-green-600">GST:</span> ₹{safeToFixed(enquiry.serviceDetails.billingDetails.gstAmount)}
-                  </div>
-                  <div>
-                    <span className="text-green-600">Discount:</span> ₹{safeToFixed(enquiry.serviceDetails.billingDetails.items?.reduce((sum, item) => sum + (parseFloat(item.discountAmount) || 0), 0))}
-                  </div>
-                  <div>
-                    <span className="text-green-600 font-semibold">Total:</span> ₹{safeToFixed(enquiry.serviceDetails.billingDetails.totalAmount)}
-                  </div>
-                </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <span className="text-green-600">Subtotal:</span> ₹
+                        {Number(safeToFixed(enquiry.serviceDetails.billingDetails.subtotal)).toLocaleString("en-IN")}
+                      </div>
+                      <div>
+                        <span className="text-green-600">GST:</span> ₹
+                        {Number(safeToFixed(enquiry.serviceDetails.billingDetails.gstAmount)).toLocaleString("en-IN")}
+                      </div>
+                      <div>
+                        <span className="text-green-600">Discount:</span> ₹
+                        {Number(
+                          safeToFixed(
+                            enquiry.serviceDetails.billingDetails.items?.reduce(
+                              (sum, item) => sum + (parseFloat(item.discountAmount) || 0),
+                              0
+                            )
+                          )
+                        ).toLocaleString("en-IN")}
+                      </div>
+                      <div>
+                        <span className="text-green-600 font-semibold">Total:</span> ₹
+                        {Number(safeToFixed(enquiry.serviceDetails.billingDetails.totalAmount)).toLocaleString("en-IN")}
+                      </div>
+                    </div>
                   </div>
                 )}
+
 
                 {/* Service Types Summary */}
                 <div className="space-y-2">
@@ -901,7 +920,7 @@ export function BillingModule() {
           <div className="flex items-center justify-center py-8">
             <div className="text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading billing enquiries...</p>
+              <p className="text-gray-600">Loading billing enquiries</p>
             </div>
           </div>
         ) : enquiriesError ? (
@@ -964,7 +983,7 @@ export function BillingModule() {
                             {item.serviceType}
                           </div>
                         </div>
-                        
+
                         {/* Original Amount */}
                         <div>
                           <Label htmlFor={`originalAmount-${index}`}>Price (₹) *</Label>
@@ -986,7 +1005,7 @@ export function BillingModule() {
                             <p className="text-xs text-red-500 mt-1">{validationErrors[`item-${index}-originalAmount`]}</p>
                           )}
                         </div>
-                        
+
                         {/* Individual GST Rate */}
                         <div>
                           <Label htmlFor={`gstRate-${index}`}>GST Rate (%) *</Label>
@@ -1008,7 +1027,7 @@ export function BillingModule() {
                             <p className="text-xs text-red-500 mt-1">{validationErrors[`item-${index}-gstRate`]}</p>
                           )}
                         </div>
-                        
+
                         {/* Service Discount Percentage */}
                         <div>
                           <Label htmlFor={`discountValue-${index}`}>Discount (%)</Label>
@@ -1044,7 +1063,7 @@ export function BillingModule() {
                           </div>
                         </div>
                       </div>
-                      
+
                       {/* Service Description */}
                       {/* <div className="mt-3">
                         <Label htmlFor={`description-${index}`}>Description (Optional)</Label>
@@ -1108,7 +1127,7 @@ export function BillingModule() {
                 <Label htmlFor="notes">Notes (Optional)</Label>
                 <Textarea
                   id="notes"
-                  placeholder="Add any additional notes for the invoice..."
+                  placeholder="Add any additional notes for the invoice"
                   value={billingForm.notes || ''}
                   onChange={(e) => updateBillingForm('notes', e.target.value)}
                   onBlur={(e) => updateBillingForm('notes', e.target.value)}

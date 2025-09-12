@@ -1020,12 +1020,14 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                           {getEnquiryIcon(enquiry.inquiryType)}
                           <span className="text-sm">{enquiry.inquiryType}</span>
                         </div>
-                        <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
-                          Quantity: {enquiry.quantity}
+                        <div className="flex items-center space-x-2">
+                          <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                            Quantity: {enquiry.quantity}
+                          </div>
+                          <span className="text-gray-500 text-sm">{enquiry.product}</span>
                         </div>
-                        <div className="flex items-center space-x-1 text-gray-500">
-                          <span className="text-sm">{enquiry.product}</span>
-                        </div>
+
+
                       </div>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-sm text-gray-600 mb-3">
