@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 
 // API Configuration
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (
-  typeof window !== 'undefined' && window.location.origin !== 'http://localhost:5173' 
+  typeof window !== 'undefined' && window.location.origin !== 'http://localhost:5173'
     ? `${window.location.origin}/api`
     : 'http://localhost:3001/api'
 );
@@ -27,7 +27,7 @@ class ApiClient {
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
-    
+
     const config: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
@@ -39,7 +39,7 @@ class ApiClient {
 
     try {
       const response = await fetch(url, config);
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
@@ -85,11 +85,11 @@ export class PickupApiService {
         collectedPickups: number;
         receivedPickups: number;
       }>>('/pickup/stats');
-      
+
       if (!response.success) {
         throw new Error(response.error || 'Failed to fetch pickup statistics');
       }
-      
+
       return response.data!;
     } catch (error) {
       console.error('Failed to get pickup statistics:', error);
@@ -102,11 +102,11 @@ export class PickupApiService {
     try {
       const params = searchTerm ? { search: searchTerm } : undefined;
       const response = await apiClient.get<ApiResponse<Enquiry[]>>('/pickup/enquiries', params);
-      
+
       if (!response.success) {
         throw new Error(response.error || 'Failed to fetch pickup enquiries');
       }
-      
+
       return response.data!;
     } catch (error) {
       console.error('Failed to get pickup enquiries:', error);
@@ -118,11 +118,11 @@ export class PickupApiService {
   static async getPickupEnquiry(id: number): Promise<Enquiry> {
     try {
       const response = await apiClient.get<ApiResponse<Enquiry>>(`/pickup/enquiries/${id}`);
-      
+
       if (!response.success) {
         throw new Error(response.error || 'Failed to fetch pickup enquiry');
       }
-      
+
       return response.data!;
     } catch (error) {
       console.error(`Failed to get pickup enquiry ${id}:`, error);
@@ -136,11 +136,11 @@ export class PickupApiService {
       const response = await apiClient.patch<ApiResponse<Enquiry>>(`/pickup/enquiries/${id}/assign`, {
         assignedTo
       });
-      
+
       if (!response.success) {
         throw new Error(response.error || 'Failed to assign pickup');
       }
-      
+
       return response.data!;
     } catch (error) {
       console.error(`Failed to assign pickup ${id}:`, error);
@@ -155,11 +155,11 @@ export class PickupApiService {
         collectionPhoto,
         notes
       });
-      
+
       if (!response.success) {
         throw new Error(response.error || 'Failed to mark pickup as collected');
       }
-      
+
       return response.data!;
     } catch (error) {
       console.error(`Failed to mark pickup ${id} as collected:`, error);
@@ -175,11 +175,11 @@ export class PickupApiService {
         notes,
         estimatedCost
       });
-      
+
       if (!response.success) {
         throw new Error(response.error || 'Failed to mark item as received');
       }
-      
+
       return response.data!;
     } catch (error) {
       console.error(`Failed to mark item ${id} as received:`, error);
@@ -194,11 +194,11 @@ export class PickupApiService {
         status,
         additionalData
       });
-      
+
       if (!response.success) {
         throw new Error(response.error || 'Failed to update pickup status');
       }
-      
+
       return response.data!;
     } catch (error) {
       console.error(`Failed to update pickup ${id} status:`, error);
@@ -206,9 +206,8 @@ export class PickupApiService {
     }
   }
 }
-
-// Hook for managing pickup enquiries with polling
-export function usePickupEnquiries(pollInterval: number = 200000) {
+// Hook for managing pickup enquiries with polling (FIXED POLLING INTERVAL)
+export function usePickupEnquiries(pollInterval: number = 2000) {
   const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -233,38 +232,39 @@ export function usePickupEnquiries(pollInterval: number = 200000) {
     fetchPickupEnquiries();
   }, [fetchPickupEnquiries]);
 
-  // Set up polling
+  // Set up polling with better cleanup
   useEffect(() => {
-    const interval = setInterval(fetchPickupEnquiries, pollInterval);
-    return () => clearInterval(interval);
+    // Don't set up polling if interval is too high (prevents runaway polling)
+    if (pollInterval > 10000) {
+      console.warn(`Polling interval ${pollInterval}ms seems too high, skipping automatic polling`);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      console.log('Polling pickup enquiries...');
+      fetchPickupEnquiries();
+    }, pollInterval);
+
+    return () => {
+      console.log('Cleanup: Clearing pickup enquiries polling interval');
+      clearInterval(interval);
+    };
   }, [fetchPickupEnquiries, pollInterval]);
 
-  // Optimistic updates for better UX
+  // ... rest of optimistic update methods remain the same
   const assignPickupOptimistic = useCallback(async (id: number, assignedTo: string) => {
     try {
-      // Update optimistically
-      setEnquiries(prev => 
+      setEnquiries(prev =>
         prev.map(e => e.id === id ? {
           ...e,
-          pickupDetails: {
-            ...e.pickupDetails!,
-            status: 'assigned',
-            assignedTo
-          }
+          pickupDetails: { ...e.pickupDetails!, status: 'assigned', assignedTo }
         } : e)
       );
-      
-      // Make actual API call
+
       const updatedEnquiry = await PickupApiService.assignPickup(id, assignedTo);
-      
-      // Replace with real updated enquiry
-      setEnquiries(prev => 
-        prev.map(e => e.id === id ? updatedEnquiry : e)
-      );
-      
+      setEnquiries(prev => prev.map(e => e.id === id ? updatedEnquiry : e));
       return updatedEnquiry;
     } catch (error) {
-      // Revert optimistic update on error
       fetchPickupEnquiries();
       throw error;
     }
@@ -272,8 +272,7 @@ export function usePickupEnquiries(pollInterval: number = 200000) {
 
   const markCollectedOptimistic = useCallback(async (id: number, collectionPhoto: string, notes?: string) => {
     try {
-      // Update optimistically
-      setEnquiries(prev => 
+      setEnquiries(prev =>
         prev.map(e => e.id === id ? {
           ...e,
           pickupDetails: {
@@ -284,18 +283,11 @@ export function usePickupEnquiries(pollInterval: number = 200000) {
           }
         } : e)
       );
-      
-      // Make actual API call
+
       const updatedEnquiry = await PickupApiService.markCollected(id, collectionPhoto, notes);
-      
-      // Replace with real updated enquiry
-      setEnquiries(prev => 
-        prev.map(e => e.id === id ? updatedEnquiry : e)
-      );
-      
+      setEnquiries(prev => prev.map(e => e.id === id ? updatedEnquiry : e));
       return updatedEnquiry;
     } catch (error) {
-      // Revert optimistic update on error
       fetchPickupEnquiries();
       throw error;
     }
@@ -303,15 +295,10 @@ export function usePickupEnquiries(pollInterval: number = 200000) {
 
   const markReceivedOptimistic = useCallback(async (id: number, receivedPhoto: string, notes?: string, estimatedCost?: number) => {
     try {
-      // Remove from pickup enquiries optimistically (will move to service stage)
       setEnquiries(prev => prev.filter(e => e.id !== id));
-      
-      // Make actual API call
       const updatedEnquiry = await PickupApiService.markReceived(id, receivedPhoto, notes, estimatedCost);
-      
       return updatedEnquiry;
     } catch (error) {
-      // Restore on error
       fetchPickupEnquiries();
       throw error;
     }
@@ -330,7 +317,7 @@ export function usePickupEnquiries(pollInterval: number = 200000) {
 }
 
 // Hook for pickup statistics
-export function usePickupStats() {
+export function usePickupStats(pollInterval: number = 2000) {
   const [stats, setStats] = useState<{
     scheduledPickups: number;
     assignedPickups: number;
@@ -355,11 +342,25 @@ export function usePickupStats() {
 
   useEffect(() => {
     fetchStats();
-    
-    // Refresh stats every 2 seconds to match pickup enquiries polling
-    const interval = setInterval(fetchStats, 200000);
-    return () => clearInterval(interval);
   }, [fetchStats]);
+
+  useEffect(() => {
+    // Don't set up polling if interval is too high
+    if (pollInterval > 10000) {
+      console.warn(`Stats polling interval ${pollInterval}ms seems too high, skipping automatic polling`);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      console.log('Polling pickup stats...');
+      fetchStats();
+    }, pollInterval);
+
+    return () => {
+      console.log('Cleanup: Clearing pickup stats polling interval');
+      clearInterval(interval);
+    };
+  }, [fetchStats, pollInterval]);
 
   return {
     stats,
@@ -368,5 +369,4 @@ export function usePickupStats() {
     refetch: fetchStats,
   };
 }
-
 export default PickupApiService;    

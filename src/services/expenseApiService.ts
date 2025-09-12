@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from 'react';
 // const API_BASE_URL = 'http://localhost:3001/api';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (
-  typeof window !== 'undefined' && window.location.origin !== 'http://localhost:5173' 
+  typeof window !== 'undefined' && window.location.origin !== 'http://localhost:5173'
     ? `${window.location.origin}/api`
     : 'http://localhost:3001/api'
 );
@@ -102,7 +102,7 @@ class ApiClient {
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
-    
+
     const config: RequestInit = {
       headers: {
         'X-Token': this.token,
@@ -121,14 +121,14 @@ class ApiClient {
 
     try {
       const response = await fetch(url, config);
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
       }
 
       const result: ApiResponse<T> = await response.json();
-      
+
       if (!result.success) {
         throw new Error(result.error || 'API request failed');
       }
@@ -148,7 +148,7 @@ class ApiClient {
         params.append(key, String(value));
       }
     });
-    
+
     const endpoint = `/expense${params.toString() ? `?${params.toString()}` : ''}`;
     return this.request<ExpenseListResponse>(endpoint);
   }
@@ -204,7 +204,7 @@ class ApiClient {
         params.append(key, String(value));
       }
     });
-    
+
     const endpoint = `/expense/stats${params.toString() ? `?${params.toString()}` : ''}`;
     return this.request<ExpenseStats>(endpoint);
   }
@@ -354,7 +354,7 @@ export function useExpenseData(initialFilters: ExpenseFilters = {}) {
       setError(null);
       const currentFilters = { ...filters, ...newFilters };
       const response = await expenseApiService.getExpenses(currentFilters);
-      
+
       setExpenses(response.data);
       setPagination({
         total: response.total,

@@ -31,7 +31,9 @@ import {
   Package,
   Footprints,
   Trash2,
-  CircleCheck
+  CircleCheck,
+  MapPin,
+  Calendar
 } from "lucide-react"; import { useToast } from "@/hooks/use-toast";
 import { Enquiry } from "@/types";
 import { useEnquiriesWithPolling, useCrmStats } from "@/services/enquiryApiService";
@@ -695,7 +697,7 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
 
             {/* Address Field - Full Width */}
             <div>
-              <Label htmlFor="location" className="text-sm font-medium text-gray-700">Address *</Label>
+              <Label htmlFor="location" className="text-sm font-medium text-gray-700">Address </Label>
               <Textarea
                 id="location"
                 value={formData.location}
@@ -711,7 +713,7 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                     setFormErrors({ ...formErrors, location: error });
                   }
                 }}
-                placeholder="Enter complete address..."
+                placeholder="Enter complete address"
                 className={`mt-1 min-h-[80px] ${formErrors.location ? 'border-red-500 focus:border-red-500' : ''}`}
                 rows={3}
               />
@@ -719,7 +721,7 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
             </div>
 
             <div>
-              <Label htmlFor="message" className="text-sm font-medium text-gray-700">Message *</Label>
+              <Label htmlFor="message" className="text-sm font-medium text-gray-700">Message </Label>
               <Textarea
                 id="message"
                 value={formData.message}
@@ -735,7 +737,7 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                     setFormErrors({ ...formErrors, message: error });
                   }
                 }}
-                placeholder="Customer's enquiry details..."
+                placeholder="Customer's enquiry details"
                 className={`mt-1 min-h-[100px] ${formErrors.message ? 'border-red-500 focus:border-red-500' : ''}`}
                 rows={4}
               />
@@ -771,16 +773,17 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                 Save Enquiry
               </Button>
               <Button
-                variant="outline"
+                size="sm"
                 onClick={() => {
                   setShowForm(false);
                   setFormErrors({});
                   setShowSuccess(false);
                 }}
-                className="w-24 h-10 bg-red-500 text-white hover:bg-red-600"
+                className="w-24 h-10 bg-red-500 text-white hover:bg-red-600 font-medium"
               >
                 Cancel
               </Button>
+
             </div>
 
             {/* Success Message */}
@@ -862,10 +865,9 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                     <div>
                       <Label className="text-sm font-medium text-gray-700">Name</Label>
                       <Input
-                        value={editData.customerName || enquiry.customerName}
+                        value={editData.customerName ?? enquiry.customerName}
                         onChange={(e) => {
                           const value = e.target.value;
-                          // Allow only alphabets and spaces
                           if (/^[A-Za-z\s]*$/.test(value)) {
                             setEditData({ ...editData, customerName: value });
                           }
@@ -873,13 +875,14 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                         className="mt-1"
                         placeholder="Enter customer name"
                       />
+
                     </div>
 
                     {/* Phone */}
                     <div>
                       <Label className="text-sm font-medium text-gray-700">Phone</Label>
                       <Input
-                        value={editData.phone || enquiry.phone}
+                        value={editData.phone ?? enquiry.phone}
                         onChange={(e) => {
                           const value = e.target.value;
                           // Allow only digits
@@ -897,7 +900,7 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                     <div>
                       <Label className="text-sm font-medium text-gray-700">Product</Label>
                       <Select
-                        value={editData.product || enquiry.product}
+                        value={editData.product ?? enquiry.product}
                         onValueChange={(value) =>
                           setEditData({
                             ...editData,
@@ -929,7 +932,7 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                       <Input
                         type="number"
                         min="1"
-                        value={editData.quantity || enquiry.quantity}
+                        value={editData.quantity ?? enquiry.quantity}
                         onChange={(e) =>
                           setEditData({ ...editData, quantity: parseInt(e.target.value) || 1 })
                         }
@@ -941,7 +944,7 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                     <div>
                       <Label className="text-sm font-medium text-gray-700">Status</Label>
                       <Select
-                        value={editData.status || enquiry.status}
+                        value={editData.status ?? enquiry.status}
                         onValueChange={(value) =>
                           setEditData({ ...editData, status: value as Enquiry["status"] })
                         }
@@ -986,7 +989,7 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                   <div>
                     <Label className="text-sm font-medium text-gray-700">Address</Label>
                     <Textarea
-                      value={editData.address || enquiry.address}
+                      value={editData.address ?? enquiry.address}
                       onChange={(e) => setEditData({ ...editData, address: e.target.value })}
                       className="mt-1"
                       rows={2}
@@ -996,7 +999,7 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                   <div>
                     <Label className="text-sm font-medium text-gray-700">Message</Label>
                     <Textarea
-                      value={editData.message || enquiry.message}
+                      value={editData.message ?? enquiry.message}
                       onChange={(e) => setEditData({ ...editData, message: e.target.value })}
                       className="mt-1"
                       rows={3}
@@ -1026,11 +1029,24 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                       </div>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-sm text-gray-600 mb-3">
-                      <div className="flex items-center">
-                        📞 {enquiry.phone.startsWith('+91') ? enquiry.phone : `+91 ${enquiry.phone}`}
+                      <div className="flex items-center space-x-1 text-gray-600">
+                        <Phone className="h-4 w-4" />
+                        <span className="text-sm">
+                          {enquiry.phone.startsWith('+91') ? enquiry.phone : `+91 ${enquiry.phone}`}
+                        </span>
                       </div>
-                      <div className="flex items-center">📍 {enquiry.address}</div>
-                      <div className="flex items-center">📅 {new Date(enquiry.date).toLocaleDateString()}</div>
+
+                      <div className="flex items-center">
+                        <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                        <span className="ml-1">{enquiry.address}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <Calendar className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                        <span className="ml-1">
+                          {new Date(enquiry.date).toLocaleDateString("en-GB")}
+                        </span>
+                      </div>
+
                     </div>
                     <p className="text-gray-700 text-sm sm:text-base mb-3">{enquiry.message}</p>
                     {/* Contact Status Display */}
@@ -1121,61 +1137,69 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                   <Input
                     id="quotedAmount"
                     type="text"
-                    placeholder="0.00"
+                    placeholder="1.00"
                     value={quotedAmount}
                     onChange={(e) => {
-                      const value = e.target.value;
-                      // Allow only valid currency format: numbers with optional decimal and up to 2 decimal places
+                      let value = e.target.value;
+
+                      // Allow only numbers with up to 2 decimals
                       if (value === '' || /^\d*\.?\d{0,2}$/.test(value)) {
+                        // Prevent leading zeros like 0, 01, 00, etc.
+                        if (/^0\d+/.test(value)) return;
+
                         setQuotedAmount(value);
                       }
                     }}
                     className="w-full"
                   />
                   <p className="text-xs text-gray-500">
-                    Enter amount in format: 0.00 (minimum 0.00)
+                    Enter amount in format: 1.00 (must be 1 or greater)
                   </p>
+
                 </div>
+
               </div>
             )}
           </div>
 
           <DialogFooter>
             <Button
-              variant="outline"
+              size="sm"
               onClick={() => {
                 setShowConvertDialog(false);
                 setConvertingEnquiry(null);
                 setQuotedAmount("");
               }}
+              className="w-24 h-10 bg-red-500 text-white hover:bg-red-600 font-medium"
             >
               Cancel
             </Button>
+
             <Button
               onClick={async () => {
                 if (convertingEnquiry && quotedAmount.trim()) {
                   const amount = parseFloat(quotedAmount);
-                  if (isNaN(amount) || amount < 0) {
+
+                  // Block invalid or less than 1
+                  if (isNaN(amount) || amount < 1) {
                     toast({
                       title: "Invalid Amount",
-                      description: "Please enter a valid quoted amount (0.00 or greater).",
+                      description: "Please enter a valid quoted amount of 1 or greater.",
                       variant: "destructive",
                     });
                     return;
                   }
 
                   const today = new Date();
-                  const formattedDateForDB = today.toISOString(); // This is the correct format to save
+                  const formattedDateForDB = today.toISOString();
 
                   const updatedEnquiry = {
                     ...convertingEnquiry,
                     status: "converted" as const,
                     contacted: true,
-                    contactedAt: formattedDateForDB, // <-- Store the ISO string
-                    quotedAmount: amount
+                    contactedAt: formattedDateForDB,
+                    quotedAmount: amount,
                   };
-
-
 
                   const result = await updateEnquiry(convertingEnquiry.id, updatedEnquiry);
                   if (result) {
@@ -1192,7 +1216,7 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                 } else {
                   toast({
                     title: "Missing Information",
-                    description: "Please enter a quoted amount (0.00 or greater) to convert this enquiry.",
+                    description: "Please enter a quoted amount of 1 or greater.",
                     variant: "destructive",
                   });
                 }
@@ -1201,6 +1225,7 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
             >
               Convert Enquiry
             </Button>
+
           </DialogFooter>
         </DialogContent>
       </Dialog>

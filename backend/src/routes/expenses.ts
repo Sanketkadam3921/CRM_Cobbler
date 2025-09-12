@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { ExpenseController } from '../controllers/ExpenseController';
 import { authenticateToken } from '../middleware/auth';
-import { upload } from '../middleware/upload';  
+import { upload } from '../middleware/upload';
 
 const router = Router();
 router.use(authenticateToken);

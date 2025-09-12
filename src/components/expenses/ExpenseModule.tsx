@@ -13,10 +13,10 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { 
-  useExpenseData, 
-  expenseApiService, 
-  Expense as ApiExpense, 
+import {
+  useExpenseData,
+  expenseApiService,
+  Expense as ApiExpense,
   Employee as ApiEmployee,
   ExpenseCreateRequest,
   EmployeeCreateRequest,
@@ -66,7 +66,7 @@ type Employee = ApiEmployee;
 
 const expenseCategories = [
   "Materials",
-  "Tools", 
+  "Tools",
   "Rent",
   "Utilities",
   "Transportation",
@@ -91,19 +91,19 @@ const fileToBase64 = (file: File): Promise<string> => {
 
 export default function ExpenseManagementSystem() {
   // API integration
-  const { 
-    expenses, 
-    employees, 
-    stats, 
+  const {
+    expenses,
+    employees,
+    stats,
     pagination,
-    loading, 
-    error, 
+    loading,
+    error,
     filters,
-    fetchExpenses, 
-    fetchEmployees, 
+    fetchExpenses,
+    fetchEmployees,
     fetchStats,
     refreshData,
-    setFilters 
+    setFilters
   } = useExpenseData();
 
   // UI state
@@ -173,11 +173,11 @@ export default function ExpenseManagementSystem() {
         month: selectedMonth !== "all" ? selectedMonth : undefined,
         category: selectedCategory !== "all" ? selectedCategory : undefined,
       };
-      
+
       // Only update if filters actually changed
       const currentFilterString = JSON.stringify(filters);
       const newFilterString = JSON.stringify(newFilters);
-      
+
       if (currentFilterString !== newFilterString) {
         setFilters(newFilters);
         fetchExpenses(newFilters);
@@ -296,7 +296,7 @@ export default function ExpenseManagementSystem() {
       await expenseApiService.createExpense(salaryExpenseData);
 
       toast.success("Employee added and salary expense recorded");
-      
+
       // Refresh data
       refreshData();
       resetSalaryForm();
@@ -463,7 +463,7 @@ export default function ExpenseManagementSystem() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl lg:text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
-                Expense Management System              
+              Expense Management System
             </h1>
             <p className="text-slate-600 mt-1 sm:mt-2 text-sm sm:text-base">
               Comprehensive expense tracking and management
@@ -548,7 +548,7 @@ export default function ExpenseManagementSystem() {
                   {categoryTotals.length}
                 </div>
                 <div className="text-xs sm:text-sm text-slate-600 font-medium">
-                   Categories
+                  Categories
                 </div>
               </div>
               <div className="p-2 sm:p-3 bg-gradient-to-br from-orange-500 to-red-500 rounded-full">
@@ -1062,7 +1062,7 @@ export default function ExpenseManagementSystem() {
               </AlertDialogHeader>
               <div className="mt-4 max-h-[70vh] overflow-auto flex justify-center items-center bg-slate-100 rounded-md p-4">
                 {showImageModal?.billImage &&
-                showImageModal.billImage.startsWith("data:image") ? (
+                  showImageModal.billImage.startsWith("data:image") ? (
                   <img
                     src={showImageModal.billImage}
                     alt="Bill Preview"

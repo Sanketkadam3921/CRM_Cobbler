@@ -28,7 +28,6 @@ import {
   Loader2,
 } from "lucide-react";
 import { Enquiry, PickupStatus, ServiceType } from "@/types";
-// import { imageUploadHelper } from "@/utils/localStorage"; // We will not use this for the preview
 import { usePickupEnquiries, usePickupStats } from "@/services/pickupApiService";
 import { useToast } from "@/hooks/use-toast";
 
@@ -38,7 +37,7 @@ export function PickupModule() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [receivedNotes, setReceivedNotes] = useState("");
 
-  // Use pickup API hooks with 2-second polling
+  // Use pickup API hooks with 2-second polling (FIXED - was 200000ms)
   const {
     enquiries,
     loading: enquiriesLoading,
@@ -46,21 +45,13 @@ export function PickupModule() {
     assignPickup,
     markCollected,
     markReceived
-  } = usePickupEnquiries(200000);
+  } = usePickupEnquiries(2000); // 2 seconds instead of 200000
 
   const {
     stats,
     loading: statsLoading,
     error: statsError
-  } = usePickupStats();
-
-  // Use stats from API instead of calculating locally
-  const calculatedStats = stats || {
-    scheduledPickups: 0,
-    assignedPickups: 0,
-    collectedPickups: 0,
-    receivedPickups: 0
-  };
+  } = usePickupStats(2000); // 2 seconds instead of 200000
 
   const filteredEnquiries = enquiries.filter(
     (enquiry) =>
@@ -142,8 +133,6 @@ export function PickupModule() {
       });
     }
   };
-
-
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -229,7 +218,11 @@ export function PickupModule() {
           <div className="flex items-center justify-between">
             <div>
               <div className="text-lg sm:text-2xl font-bold text-foreground">
-                {statsLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : calculatedStats.scheduledPickups}
+                {statsLoading ? (
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                ) : (
+                  stats?.scheduledPickups || 0
+                )}
               </div>
               <div className="text-xs sm:text-sm text-muted-foreground">
                 Scheduled Pickups
@@ -238,11 +231,16 @@ export function PickupModule() {
             <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-warning" />
           </div>
         </Card>
+
         <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-lg sm:text-2xl font-bold text-foreground">
-                {statsLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : calculatedStats.assignedPickups}
+                {statsLoading ? (
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                ) : (
+                  stats?.assignedPickups || 0
+                )}
               </div>
               <div className="text-xs sm:text-sm text-muted-foreground">
                 Assigned
@@ -251,11 +249,16 @@ export function PickupModule() {
             <User className="h-6 w-6 sm:h-8 sm:w-8 text-blue-500" />
           </div>
         </Card>
+
         <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-lg sm:text-2xl font-bold text-foreground">
-                {statsLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : calculatedStats.collectedPickups}
+                {statsLoading ? (
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                ) : (
+                  stats?.collectedPickups || 0
+                )}
               </div>
               <div className="text-xs sm:text-sm text-muted-foreground">
                 Collected
@@ -264,11 +267,16 @@ export function PickupModule() {
             <Package className="h-6 w-6 sm:h-8 sm:w-8 text-purple-500" />
           </div>
         </Card>
+
         <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-lg sm:text-2xl font-bold text-foreground">
-                {statsLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : calculatedStats.receivedPickups}
+                {statsLoading ? (
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                ) : (
+                  stats?.receivedPickups || 0
+                )}
               </div>
               <div className="text-xs sm:text-sm text-muted-foreground">
                 Received
@@ -293,11 +301,11 @@ export function PickupModule() {
         </div>
       </Card>
 
-
       {/* Pickup Items */}
       <div className="space-y-4">
         <h2 className="text-xl sm:text-2xl font-bold text-foreground">
-          Scheduled Pickups        </h2>
+          Scheduled Pickups
+        </h2>
 
         {enquiriesLoading ? (
           <div className="flex items-center justify-center py-8">
@@ -331,7 +339,8 @@ export function PickupModule() {
                       {enquiry.customerName}
                     </h3>
                     <p className="text-sm text-muted-foreground">
-                      📞 {enquiry.phone.startsWith('+91') ? enquiry.phone : `+91 ${enquiry.phone}`}                    </p>
+                      📞 {enquiry.phone.startsWith('+91') ? enquiry.phone : `+91 ${enquiry.phone}`}
+                    </p>
                   </div>
                   <Badge
                     className={`${getStatusColor(
@@ -362,7 +371,6 @@ export function PickupModule() {
                     </span>
                   </div>
 
-
                   {enquiry.pickupDetails?.scheduledTime && (
                     <div className="flex items-center space-x-2">
                       <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
@@ -379,8 +387,6 @@ export function PickupModule() {
                       </div>
                     </div>
                   )}
-
-
 
                   <div className="flex items-center space-x-2">
                     <span className="text-sm font-semibold text-foreground">
@@ -452,7 +458,6 @@ export function PickupModule() {
                                   alt="Collection proof"
                                   className="w-full h-auto object-cover rounded-md border"
                                 />
-
                               </div>
                             )}
                           </div>
@@ -518,7 +523,6 @@ export function PickupModule() {
                               </div>
                             )}
                           </div>
-
                           <div className="space-y-2">
                             <Label htmlFor="notes">
                               Notes / Remarks (Optional)
@@ -531,7 +535,6 @@ export function PickupModule() {
                               rows={3}
                             />
                           </div>
-
                           <Button
                             onClick={() => handleItemReceived(enquiry.id)}
                             className="w-full bg-green-600 hover:bg-green-700"
