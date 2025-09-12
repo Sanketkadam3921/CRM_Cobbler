@@ -10,18 +10,18 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Camera, CheckCircle, Clock, DollarSign, FileText, Image, Search, Upload, Send, ArrowRight, CheckSquare, Wrench, Eye, Loader2 } from "lucide-react";
 import { ServiceDetails, ServiceStatus, ServiceType, ServiceTypeStatus } from "@/types";
-import { imageUploadHelper } from "@/utils/localStorage";
+// import { imageUploadHelper } from "@/utils/localStorage"; // We will not use this for the preview
 import { ServiceTypeDetail } from "./ServiceTypeDetail";
 import { useServiceEnquiries, useServiceStats, serviceApiService } from "@/services/serviceApiService";
 import { useToast } from "@/hooks/use-toast";
 
 export function ServiceModule() {
   const { toast } = useToast();
-  
+
   // API hooks with 2-second polling for real-time updates
   const { enquiries, loading: enquiriesLoading, error: enquiriesError, refetch } = useServiceEnquiries(200000);
   const { stats, loading: statsLoading, error: statsError } = useServiceStats();
-  
+
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [workNotes, setWorkNotes] = useState("");
@@ -29,7 +29,7 @@ export function ServiceModule() {
   const [selectedServiceTypes, setSelectedServiceTypes] = useState<ServiceType[]>([]);
   const [showServiceAssignment, setShowServiceAssignment] = useState<number | null>(null);
   const [selectedServiceDetail, setSelectedServiceDetail] = useState<{ enquiryId: number; serviceType: ServiceType } | null>(null);
-  
+
   // Overall photo management
   const [overallBeforePhoto, setOverallBeforePhoto] = useState<string | null>(null);
   const [overallAfterPhoto, setOverallAfterPhoto] = useState<string | null>(null);
@@ -39,6 +39,22 @@ export function ServiceModule() {
   const [finalPhotoNotes, setFinalPhotoNotes] = useState("");
   const [isProcessingPhoto, setIsProcessingPhoto] = useState(false);
 
+  // Helper function to convert file to base64 data URL
+  const fileToDataURL = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target?.result) {
+          resolve(e.target.result as string);
+        } else {
+          reject(new Error('Failed to read file'));
+        }
+      };
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsDataURL(file);
+    });
+  };
+
   // API hooks handle data loading and stats automatically
   // No need for manual useEffect or stats calculation
   console.log('🔍 ServiceModule - beforeenquiries:', enquiries);
@@ -46,10 +62,27 @@ export function ServiceModule() {
     (enquiry) =>
       enquiry.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       enquiry.product.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      enquiry.serviceTypes?.some(service => 
+      enquiry.serviceTypes?.some(service =>
         service.type.toLowerCase().includes(searchTerm.toLowerCase())
       )
   );
+
+  // Utility function to capitalize words for display
+  const capitalizeWords = (text: string) => {
+    if (!text) return "";
+    return text
+      .split(/[\s-_]+/)
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(" ");
+  };
+
+  const capitalizeStatus = (status: string) => {
+    if (!status) return "";
+    return status
+      .split("-")
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+  };
 
   // Debug logging
   console.log('🔍 ServiceModule - enquiries:', enquiries);
@@ -77,11 +110,15 @@ export function ServiceModule() {
     const file = event.target.files?.[0];
     if (file) {
       try {
-        const thumbnailData = await imageUploadHelper.handleImageUpload(file);
-        setSelectedImage(thumbnailData);
+        const dataURL = await fileToDataURL(file);
+        setSelectedImage(dataURL);
       } catch (error) {
-        console.error('Failed to process image:', error);
-        alert('Failed to process image. Please try again.');
+        console.error('Failed to convert image to data URL:', error);
+        toast({
+          title: "Error",
+          description: "Failed to process image. Please try again.",
+          variant: "destructive",
+        });
       }
     }
   };
@@ -90,11 +127,15 @@ export function ServiceModule() {
     const file = event.target.files?.[0];
     if (file) {
       try {
-        const thumbnailData = await imageUploadHelper.handleImageUpload(file);
-        setOverallBeforePhoto(thumbnailData);
+        const dataURL = await fileToDataURL(file);
+        setOverallBeforePhoto(dataURL);
       } catch (error) {
-        console.error('Failed to process image:', error);
-        alert('Failed to process image. Please try again.');
+        console.error('Failed to convert overall photo to data URL:', error);
+        toast({
+          title: "Error",
+          description: "Failed to process image. Please try again.",
+          variant: "destructive",
+        });
       }
     }
   };
@@ -103,11 +144,15 @@ export function ServiceModule() {
     const file = event.target.files?.[0];
     if (file) {
       try {
-        const thumbnailData = await imageUploadHelper.handleImageUpload(file);
-        setOverallAfterPhoto(thumbnailData);
+        const dataURL = await fileToDataURL(file);
+        setOverallAfterPhoto(dataURL);
       } catch (error) {
-        console.error('Failed to process image:', error);
-        alert('Failed to process image. Please try again.');
+        console.error('Failed to convert final photo to data URL:', error);
+        toast({
+          title: "Error",
+          description: "Failed to process image. Please try again.",
+          variant: "destructive",
+        });
       }
     }
   };
@@ -115,11 +160,11 @@ export function ServiceModule() {
   const startService = async (enquiryId: number, serviceType: ServiceType, department: string) => {
     try {
       console.log('🔄 Starting service:', { enquiryId, serviceType, department });
-      
+
       // Find the service type ID from the current enquiry
       const enquiry = enquiries.find(e => e.enquiryId === enquiryId);
       const serviceTypeData = enquiry?.serviceTypes?.find(s => s.type === serviceType);
-      
+
       if (!serviceTypeData?.id) {
         console.error('❌ Service type not found:', { enquiryId, serviceType });
         toast({
@@ -129,10 +174,10 @@ export function ServiceModule() {
         });
         return;
       }
-      
+
       await serviceApiService.startService(serviceTypeData.id, selectedImage || '', workNotes);
       console.log('✅ Service started successfully');
-      
+
       // Reset form
       setSelectedImage(null);
       setWorkNotes("");
@@ -140,7 +185,7 @@ export function ServiceModule() {
       // Show success notification
       toast({
         title: "Service Started!",
-        description: `${serviceType} has been started for enquiry #${enquiryId}`,
+        description: `${capitalizeWords(serviceType)} has been started for enquiry #${enquiryId}`,
         className: "bg-blue-50 border-blue-200 text-blue-800",
       });
 
@@ -148,7 +193,7 @@ export function ServiceModule() {
       if (enquiry) {
         toast({
           title: "WhatsApp Notification",
-          description: `WhatsApp sent to ${enquiry.customerName}: "Your ${enquiry.product} has been sent to ${department} for ${serviceType} work."`,
+          description: `WhatsApp sent to ${enquiry.customerName}: "Your ${enquiry.product} has been sent to ${department} for ${capitalizeWords(serviceType)} work."`,
           className: "bg-blue-50 border-blue-200 text-blue-800",
         });
       }
@@ -165,11 +210,11 @@ export function ServiceModule() {
   const markServiceDone = async (enquiryId: number, serviceType: ServiceType) => {
     try {
       console.log('🔄 Marking service as done:', { enquiryId, serviceType });
-      
+
       // Find the service type ID from the current enquiry
       const enquiry = enquiries.find(e => e.enquiryId === enquiryId);
       const serviceTypeData = enquiry?.serviceTypes?.find(s => s.type === serviceType);
-      
+
       if (!serviceTypeData?.id) {
         console.error('❌ Service type not found:', { enquiryId, serviceType });
         toast({
@@ -179,17 +224,17 @@ export function ServiceModule() {
         });
         return;
       }
-      
+
       await serviceApiService.completeService(serviceTypeData.id, selectedImage || '', workNotes);
       console.log('✅ Service marked as done successfully');
-      
+
       // Reset form
       setSelectedImage(null);
 
       // Show success notification
       toast({
         title: "Service Completed!",
-        description: `${serviceType} has been completed for enquiry #${enquiryId}`,
+        description: `${capitalizeWords(serviceType)} has been completed for enquiry #${enquiryId}`,
         className: "bg-green-50 border-green-200 text-green-800",
       });
 
@@ -197,7 +242,7 @@ export function ServiceModule() {
       if (enquiry) {
         toast({
           title: "WhatsApp Notification",
-          description: `WhatsApp sent to ${enquiry.customerName}: "Your ${serviceType} work on ${enquiry.product} has been completed."`,
+          description: `WhatsApp sent to ${enquiry.customerName}: "Your ${capitalizeWords(serviceType)} work on ${enquiry.product} has been completed."`,
           className: "bg-blue-50 border-blue-200 text-blue-800",
         });
       }
@@ -214,10 +259,10 @@ export function ServiceModule() {
   const serviceComplete = async (enquiryId: number) => {
     try {
       console.log('🚀 Completing workflow for enquiry:', enquiryId);
-      
+
       // Get latest data from API to ensure consistency
       const enquiryDetails = await serviceApiService.getEnquiryServiceDetails(enquiryId);
-      
+
       if (!enquiryDetails) {
         console.log('❌ No service details found for enquiry:', enquiryId);
         toast({
@@ -227,7 +272,7 @@ export function ServiceModule() {
         });
         return;
       }
-      
+
       // Validate all services are done
       const allServicesDone = enquiryDetails.serviceTypes.every(service => service.status === "done");
       if (!allServicesDone) {
@@ -246,16 +291,16 @@ export function ServiceModule() {
         setShowFinalPhotoDialog(enquiryId);
         return;
       }
-      
+
       console.log('✅ All conditions met, transitioning to billing for enquiry:', enquiryId);
-      
+
       // Complete workflow via API
       await serviceApiService.completeWorkflow(
-        enquiryId, 
-        actualCost || enquiryDetails.estimatedCost || 0, 
+        enquiryId,
+        actualCost || enquiryDetails.estimatedCost || 0,
         workNotes
       );
-      
+
       console.log('✅ Workflow completed successfully, moved to billing stage');
 
       // Reset form
@@ -272,7 +317,7 @@ export function ServiceModule() {
         description: "All services completed and moved to billing stage",
         className: "bg-green-50 border-green-200 text-green-800",
       });
-      
+
       // Send WhatsApp notification (simulated)
       const enquiry = enquiries.find((e) => e.enquiryId === enquiryId);
       if (enquiry) {
@@ -315,10 +360,10 @@ export function ServiceModule() {
       }
 
       console.log('🔄 Assigning services:', { enquiryId, serviceTypes: selectedServiceTypes });
-      
+
       await serviceApiService.assignServices(enquiryId, selectedServiceTypes);
       console.log('✅ Services assigned successfully');
-      
+
       // Reset form
       setSelectedServiceTypes([]);
       setShowServiceAssignment(null);
@@ -363,17 +408,17 @@ export function ServiceModule() {
 
       console.log('📸 Saving overall before photo for enquiry:', enquiryId);
       console.log('Photo data length:', overallBeforePhoto.length);
-      
+
       // Note: Overall before photo comes from pickup, so this might not be needed
       // But keeping for consistency with current UX
-      
+
       // Reset form immediately for better UX
       setOverallBeforePhoto(null);
       setOverallPhotoNotes("");
       setShowOverallPhotoDialog(null);
-      
+
       console.log('✅ Overall before photo saved successfully');
-      
+
       toast({
         title: "Photo Saved!",
         description: "Overall before photo has been saved",
@@ -416,7 +461,7 @@ export function ServiceModule() {
         description: "Final photo has been saved. You can now complete the service.",
         className: "bg-green-50 border-green-200 text-green-800",
       });
-      
+
     } catch (error) {
       console.error('❌ Failed to save final photo:', error);
       toast({
@@ -449,7 +494,7 @@ export function ServiceModule() {
   };
 
   const handleServiceTypeToggle = (serviceType: ServiceType) => {
-    setSelectedServiceTypes(prev => 
+    setSelectedServiceTypes(prev =>
       prev.includes(serviceType)
         ? prev.filter(type => type !== serviceType)
         : [...prev, serviceType]
@@ -457,19 +502,16 @@ export function ServiceModule() {
   };
 
   const getProgressText = (serviceTypes: ServiceTypeStatus[]) => {
-    if (!serviceTypes || serviceTypes.length === 0) {
-      return "No services assigned";
-    }
-    const doneCount = serviceTypes.filter(service => service.status === "done").length;
-    const totalCount = serviceTypes.length;
-    return `${doneCount}/${totalCount} services completed`;
+    if (!serviceTypes || serviceTypes.length === 0) return "No Services Assigned";
+    const doneCount = serviceTypes.filter(s => s.status === "done").length;
+    return `${doneCount}/${serviceTypes.length} Services Completed`;
   };
 
   const getOverallStatus = (serviceTypes: ServiceTypeStatus[]) => {
     if (!serviceTypes || serviceTypes.length === 0) {
-      return "Unassigned";
+      return "Pending";
     } else if (serviceTypes.every(service => service.status === "done")) {
-      return "All Done";
+      return "Done";
     } else if (serviceTypes.some(service => service.status === "in-progress")) {
       return "In Progress";
     } else {
@@ -489,17 +531,14 @@ export function ServiceModule() {
     );
   }
 
+
   return (
     <div className="space-y-4 sm:space-y-6 animate-fade-in p-2 sm:p-0">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
-            Service Workflow
-          </h1>
-          <p className="text-sm sm:text-base text-muted-foreground">
-            Manage multi-service work from received items
-          </p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Service Workflow</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">Manage Multi-Service Work From Received Items</p>
         </div>
       </div>
 
@@ -511,9 +550,7 @@ export function ServiceModule() {
               <div className="text-lg sm:text-2xl font-bold text-foreground">
                 {statsLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : stats.pendingCount}
               </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">
-                Pending Services
-              </div>
+              <div className="text-xs sm:text-sm text-muted-foreground">Pending Services</div>
             </div>
             <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-warning" />
           </div>
@@ -524,9 +561,7 @@ export function ServiceModule() {
               <div className="text-lg sm:text-2xl font-bold text-foreground">
                 {statsLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : stats.inProgressCount}
               </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">
-                In Progress
-              </div>
+              <div className="text-xs sm:text-sm text-muted-foreground">In Progress</div>
             </div>
             <Wrench className="h-6 w-6 sm:h-8 sm:w-8 text-blue-500" />
           </div>
@@ -537,9 +572,7 @@ export function ServiceModule() {
               <div className="text-lg sm:text-2xl font-bold text-foreground">
                 {statsLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : stats.doneCount}
               </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">
-                Completed Services
-              </div>
+              <div className="text-xs sm:text-sm text-muted-foreground">Completed Services</div>
             </div>
             <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-success" />
           </div>
@@ -550,21 +583,20 @@ export function ServiceModule() {
               <div className="text-lg sm:text-2xl font-bold text-foreground">
                 {statsLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : stats.totalServices}
               </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">
-                Total Services
-              </div>
+              <div className="text-xs sm:text-sm text-muted-foreground">Total Services</div>
             </div>
             <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-purple-500" />
           </div>
         </Card>
       </div>
 
+
       {/* Search */}
       <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
-            placeholder="Search services by customer, product, service type..."
+            placeholder="Search Services"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -573,28 +605,24 @@ export function ServiceModule() {
       </Card>
 
       {/* Service Items */}
-      <div className="space-y-4">
+      <div className="space-y-6">
+
         <h2 className="text-xl sm:text-2xl font-bold text-foreground">
           Service Queue
         </h2>
+
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
           {filteredEnquiries.map((enquiry) => (
-            <Card
-              key={enquiry.enquiryId}
-              className="p-4 sm:p-6 bg-gradient-card border-0 shadow-soft hover:shadow-medium transition-all duration-300"
-            >
+            <Card key={enquiry.enquiryId} className="p-4 sm:p-6 bg-gradient-card border-0 shadow-soft hover:shadow-medium transition-all duration-300">
               <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-4 gap-3">
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-foreground text-base sm:text-lg">
-                    {enquiry.customerName}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    {enquiry.phone}
-                  </p>
-                </div>
-                <div className="flex flex-col items-end gap-2">
+                  <h3 className="font-semibold text-foreground text-base sm:text-lg truncate">{capitalizeWords(enquiry.customerName)}</h3>
+                  <div className="flex items-center">
+                    📞 {enquiry.phone.startsWith('+91') ? enquiry.phone : `+91 ${enquiry.phone}`}
+                  </div>                </div>
+                <div className="flex flex-col items-start sm:items-end gap-2">
                   <Badge className={`${getStatusColor(getOverallStatus(enquiry.serviceTypes || []) as ServiceStatus)} text-xs px-2 py-1 rounded-full font-medium`}>
-                    {getOverallStatus(enquiry.serviceTypes || [])}
+                    {capitalizeStatus(getOverallStatus(enquiry.serviceTypes || []))}
                   </Badge>
                   <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-xs px-2 py-1 rounded-full font-medium">
                     {getProgressText(enquiry.serviceTypes || [])}
@@ -602,50 +630,53 @@ export function ServiceModule() {
                 </div>
               </div>
 
+              {/* Product & Estimated Cost */}
               <div className="space-y-3">
                 <div className="flex items-center space-x-2">
-                  <Image className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                   <span className="text-sm text-foreground">
-                    {enquiry.product} ({enquiry.quantity} items)
+                    {capitalizeWords(enquiry.product)} ({enquiry.quantity} Items)
                   </span>
                 </div>
 
-                                  <div className="flex items-center space-x-2">
-                    <DollarSign className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                    <span className="text-sm font-semibold text-foreground">
-                      Estimated: ₹{enquiry.estimatedCost || 0}
-                    </span>
-                  </div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm font-semibold text-foreground">
+                    Estimated: ₹{enquiry.estimatedCost || 0}
+                  </span>
+                </div>
 
                 {/* Service Types */}
                 <div className="space-y-2">
                   <h4 className="text-sm font-medium text-foreground">Services:</h4>
                   {enquiry.serviceTypes && enquiry.serviceTypes.length > 0 ? (
                     enquiry.serviceTypes.map((service, index) => (
-                      <div key={index} className="flex items-center justify-between p-2 bg-muted/50 rounded">
+                      <div
+                        key={index}
+                        className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-2 bg-muted/50 rounded"
+                      >
                         <div className="flex items-center space-x-2">
-                          <span className="text-sm text-foreground">{service.type}</span>
+                          <span className="text-sm text-foreground">{capitalizeWords(service.type)}</span>
                           <Badge className={`${getStatusColor(service.status)} text-xs`}>
-                            {service.status}
+                            {capitalizeWords(service.status)}
                           </Badge>
                         </div>
-                        <div className="flex space-x-1">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-xs"
-                            onClick={() => setSelectedServiceDetail({ enquiryId: enquiry.enquiryId, serviceType: service.type })}
-                          >
-                            <Eye className="h-3 w-3 mr-1" />
-                            View
-                          </Button>
-                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-xs mt-2 sm:mt-0"
+                          onClick={() =>
+                            setSelectedServiceDetail({
+                              enquiryId: enquiry.enquiryId,
+                              serviceType: service.type,
+                            })
+                          }
+                        >
+                          <Eye className="h-3 w-3 mr-1" />
+                          View
+                        </Button>
                       </div>
                     ))
                   ) : (
-                    <div className="text-sm text-muted-foreground">
-                      No services assigned yet
-                    </div>
+                    <div className="text-sm text-muted-foreground">No Services Assigned Yet</div>
                   )}
                 </div>
 
@@ -655,39 +686,41 @@ export function ServiceModule() {
                   <div className="grid grid-cols-2 gap-2">
                     {/* Before Photo */}
                     <div className="text-center">
-                      <p className="text-xs text-muted-foreground mb-1">Before</p>
+                      <p className="text-sm font-semibold text-muted-foreground mb-1">Before</p>
                       {enquiry.overallPhotos?.beforePhoto ? (
-                        <img 
-                          src={enquiry.overallPhotos.beforePhoto} 
-                          alt="Before service" 
-                          className="h-20 w-full object-cover rounded border"
+                        <img
+                          src={enquiry.overallPhotos.beforePhoto}
+                          alt="Before service"
+                          className="w-full h-32 sm:h-40 object-cover rounded border"
                         />
                       ) : (
-                        <div className="h-20 bg-muted rounded flex items-center justify-center border">
-                          <span className="text-xs text-muted-foreground">No before photo</span>
+                        <div className="h-32 sm:h-40 bg-muted rounded flex items-center justify-center border">
+                          <span className="text-sm font-semibold text-muted-foreground">No Before Photo</span>
                         </div>
                       )}
                     </div>
+
                     {/* After Photo */}
                     <div className="text-center">
-                      <p className="text-xs text-muted-foreground mb-1">After</p>
+                      <p className="text-sm font-semibold text-muted-foreground mb-1">After</p>
                       {enquiry.overallPhotos?.afterPhoto ? (
-                        <img 
-                          src={enquiry.overallPhotos.afterPhoto} 
-                          alt="After service" 
-                          className="h-20 w-full object-cover rounded border"
+                        <img
+                          src={enquiry.overallPhotos.afterPhoto}
+                          alt="After service"
+                          className="w-full h-32 sm:h-40 object-cover rounded border"
                         />
                       ) : (
-                        <div className="h-20 bg-muted rounded flex items-center justify-center border"
-                        >
-                          <span className="text-xs text-muted-foreground">No after photo</span>
+                        <div className="h-32 sm:h-40 bg-muted rounded flex items-center justify-center border">
+                          <span className="text-sm font-semibold text-muted-foreground">No After Photo</span>
                         </div>
                       )}
                     </div>
                   </div>
                 </div>
+
               </div>
 
+              {/* Action Buttons */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
                 <Button
                   size="sm"
@@ -710,45 +743,48 @@ export function ServiceModule() {
                   </Button>
                 )}
 
-                {enquiry.serviceTypes && enquiry.serviceTypes.length > 0 && 
-                 !enquiry.overallPhotos?.beforePhoto && (
-                  <Button
-                    size="sm"
-                    className="bg-orange-600 hover:bg-orange-700 text-xs sm:text-sm"
-                    onClick={() => setShowOverallPhotoDialog(enquiry.enquiryId)}
-                  >
-                    <Camera className="h-3 w-3 mr-1" />
-                    Take Overall Before Photo
-                  </Button>
-                )}
+                {enquiry.serviceTypes &&
+                  enquiry.serviceTypes.length > 0 &&
+                  !enquiry.overallPhotos?.beforePhoto && (
+                    <Button
+                      size="sm"
+                      className="bg-orange-600 hover:bg-orange-700 text-xs sm:text-sm"
+                      onClick={() => setShowOverallPhotoDialog(enquiry.enquiryId)}
+                    >
+                      <Camera className="h-3 w-3 mr-1" />
+                      Take Overall Before Photo
+                    </Button>
+                  )}
 
-                {enquiry.serviceTypes && enquiry.serviceTypes.length > 0 && 
-                 enquiry.serviceTypes.every(service => service.status === "done") && 
-                 enquiry.overallPhotos?.beforePhoto && 
-                 !enquiry.overallPhotos?.afterPhoto && (
-                  <Button
-                    size="sm"
-                    className="bg-purple-600 hover:bg-purple-700 text-xs sm:text-sm"
-                    onClick={() => handleFinalPhotoDialogOpen(enquiry.enquiryId)}
-                  >
-                    <Camera className="h-3 w-3 mr-1" />
-                    Take Final Photo
-                  </Button>
-                )}
+                {enquiry.serviceTypes &&
+                  enquiry.serviceTypes.length > 0 &&
+                  enquiry.serviceTypes.every((service) => service.status === "done") &&
+                  enquiry.overallPhotos?.beforePhoto &&
+                  !enquiry.overallPhotos?.afterPhoto && (
+                    <Button
+                      size="sm"
+                      className="bg-purple-600 hover:bg-purple-700 text-xs sm:text-sm"
+                      onClick={() => handleFinalPhotoDialogOpen(enquiry.enquiryId)}
+                    >
+                      <Camera className="h-3 w-3 mr-1" />
+                      Take Final Photo
+                    </Button>
+                  )}
 
-                {enquiry.serviceTypes && enquiry.serviceTypes.length > 0 && 
-                 enquiry.serviceTypes.every(service => service.status === "done") && 
-                 enquiry.overallPhotos?.beforePhoto && 
-                 enquiry.overallPhotos?.afterPhoto && (
-                  <Button
-                    size="sm"
-                    className="bg-green-600 hover:bg-green-700 text-xs sm:text-sm"
-                    onClick={() => serviceComplete(enquiry.enquiryId)}
-                  >
-                    <ArrowRight className="h-3 w-3 mr-1" />
-                    All Services Complete - Send to Billing
-                  </Button>
-                )}
+                {enquiry.serviceTypes &&
+                  enquiry.serviceTypes.length > 0 &&
+                  enquiry.serviceTypes.every((service) => service.status === "done") &&
+                  enquiry.overallPhotos?.beforePhoto &&
+                  enquiry.overallPhotos?.afterPhoto && (
+                    <Button
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700 text-xs sm:text-sm"
+                      onClick={() => serviceComplete(enquiry.enquiryId)}
+                    >
+                      <ArrowRight className="h-3 w-3 mr-1" />
+                      All Services Complete - Send To Billing
+                    </Button>
+                  )}
               </div>
 
               {/* Service Assignment Dialog */}
@@ -760,7 +796,7 @@ export function ServiceModule() {
                     </DialogHeader>
                     <div className="space-y-4">
                       <div className="space-y-2">
-                        <Label>Select Service Types (Multi-select)</Label>
+                        <Label>Select Service Types (Multi-Select)</Label>
                         <div className="space-y-2">
                           {["Sole Replacement", "Zipper Repair", "Cleaning & Polish", "Stitching", "Leather Treatment", "Hardware Repair"].map((serviceType) => (
                             <div key={serviceType} className="flex items-center space-x-2">
@@ -770,7 +806,7 @@ export function ServiceModule() {
                                 onCheckedChange={() => handleServiceTypeToggle(serviceType as ServiceType)}
                               />
                               <Label htmlFor={`service-${serviceType}`} className="text-sm">
-                                {serviceType}
+                                {capitalizeWords(serviceType)}
                               </Label>
                             </div>
                           ))}
@@ -828,6 +864,7 @@ export function ServiceModule() {
                               src={overallBeforePhoto}
                               alt="Overall before photo"
                               className="w-full h-32 object-cover rounded-md border"
+                              style={{ imageRendering: 'auto' }}
                             />
                           </div>
                         )}
@@ -836,7 +873,7 @@ export function ServiceModule() {
                         <Label htmlFor="overall-notes">Notes (Optional)</Label>
                         <Textarea
                           id="overall-notes"
-                          placeholder="Add notes about the overall condition..."
+                          placeholder="Add Notes About The Overall Condition..."
                           value={overallPhotoNotes}
                           onChange={(e) => setOverallPhotoNotes(e.target.value)}
                           rows={3}
@@ -895,6 +932,7 @@ export function ServiceModule() {
                               src={overallAfterPhoto}
                               alt="Final after photo"
                               className="w-full h-32 object-cover rounded-md border"
+                              style={{ imageRendering: 'auto' }}
                             />
                           </div>
                         )}
@@ -903,7 +941,7 @@ export function ServiceModule() {
                         <Label htmlFor="final-notes">Final Notes (Optional)</Label>
                         <Textarea
                           id="final-notes"
-                          placeholder="Add final notes about the completed work..."
+                          placeholder="Add Final Notes About The Completed Work..."
                           value={finalPhotoNotes}
                           onChange={(e) => setFinalPhotoNotes(e.target.value)}
                           rows={3}
@@ -936,12 +974,12 @@ export function ServiceModule() {
         {enquiriesLoading ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-            <span className="ml-2 text-gray-600">Loading service enquiries...</span>
+            <span className="ml-2 text-gray-600">Loading Service Enquiries...</span>
           </div>
         ) : enquiriesError ? (
           <div className="flex items-center justify-center py-8">
             <div className="text-center">
-              <p className="text-red-600 mb-2">Error loading service enquiries</p>
+              <p className="text-red-600 mb-2">Error Loading Service Enquiries</p>
               <p className="text-sm text-gray-500">{enquiriesError}</p>
             </div>
           </div>
@@ -952,7 +990,7 @@ export function ServiceModule() {
               No Service Items
             </h3>
             <p className="text-muted-foreground">
-              Service items will appear here once items are received from pickup.
+              Service Items Will Appear Here Once Items Are Received From Pickup.
             </p>
           </Card>
         ) : null}

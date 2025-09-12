@@ -28,7 +28,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { Enquiry, PickupStatus, ServiceType } from "@/types";
-import { imageUploadHelper } from "@/utils/localStorage";
+// import { imageUploadHelper } from "@/utils/localStorage"; // We will not use this for the preview
 import { usePickupEnquiries, usePickupStats } from "@/services/pickupApiService";
 import { useToast } from "@/hooks/use-toast";
 
@@ -39,19 +39,19 @@ export function PickupModule() {
   const [receivedNotes, setReceivedNotes] = useState("");
 
   // Use pickup API hooks with 2-second polling
-  const { 
-    enquiries, 
-    loading: enquiriesLoading, 
-    error: enquiriesError, 
-    assignPickup, 
+  const {
+    enquiries,
+    loading: enquiriesLoading,
+    error: enquiriesError,
+    assignPickup,
     markCollected,
     markReceived
   } = usePickupEnquiries(200000);
-  
-  const { 
-    stats, 
-    loading: statsLoading, 
-    error: statsError 
+
+  const {
+    stats,
+    loading: statsLoading,
+    error: statsError
   } = usePickupStats();
 
   // Use stats from API instead of calculating locally
@@ -107,20 +107,21 @@ export function PickupModule() {
         title: "Photo Required",
         description: "Please upload a collection proof photo",
         variant: "destructive",
+        className: "bg-red-600 text-white shadow-lg",
       });
       return;
     }
 
     try {
       await markCollected(enquiryId, selectedImage);
-      
+
       // Reset form
       setSelectedImage(null);
 
       toast({
         title: "Pickup Collected!",
         description: "Pickup has been marked as collected successfully",
-        className: "bg-green-50 border-green-200 text-green-800",
+        className: "bg-blue-600 text-white shadow-lg",
       });
 
       // Send WhatsApp notification (simulated)
@@ -129,7 +130,7 @@ export function PickupModule() {
         toast({
           title: "WhatsApp Notification",
           description: `WhatsApp sent to ${enquiry.customerName}: "Your ${enquiry.product} has been collected successfully."`,
-          className: "bg-blue-50 border-blue-200 text-blue-800",
+          className: "bg-blue-600 text-white shadow-lg",
         });
       }
     } catch (error) {
@@ -137,24 +138,19 @@ export function PickupModule() {
         title: "Error",
         description: "Failed to mark pickup as collected",
         variant: "destructive",
+        className: "bg-red-600 text-white shadow-lg",
       });
     }
   };
 
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      try {
-        const thumbnailData = await imageUploadHelper.handleImageUpload(file);
-        setSelectedImage(thumbnailData);
-      } catch (error) {
-        console.error('Failed to process image:', error);
-        toast({
-          title: "Error",
-          description: "Failed to process image. Please try again.",
-          variant: "destructive",
-        });
-      }
+      // Create a temporary URL for the file object
+      const imageUrl = URL.createObjectURL(file);
+      setSelectedImage(imageUrl);
     }
   };
 
@@ -171,7 +167,7 @@ export function PickupModule() {
     try {
       const enquiry = enquiries.find((e) => e.id === enquiryId);
       const estimatedCost = enquiry?.quotedAmount || 0;
-      
+
       await markReceived(enquiryId, selectedImage, receivedNotes, estimatedCost);
 
       // Reset form
@@ -283,25 +279,26 @@ export function PickupModule() {
         </Card>
       </div>
 
-      {/* Search */}
-      <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
+      <Card className="p-3 sm:p-4 bg-white border-0 shadow-lg rounded-full">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Search
+            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 sm:h-5 sm:w-5"
+          />
           <Input
-            placeholder="Search pickups by customer, address, product..."
+            placeholder="Search pickups"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-10 pr-3 w-full text-sm sm:text-base"
           />
         </div>
       </Card>
 
+
       {/* Pickup Items */}
       <div className="space-y-4">
         <h2 className="text-xl sm:text-2xl font-bold text-foreground">
-          Pickup Workflow
-        </h2>
-        
+          Scheduled Pickups        </h2>
+
         {enquiriesLoading ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
@@ -334,13 +331,12 @@ export function PickupModule() {
                       {enquiry.customerName}
                     </h3>
                     <p className="text-sm text-muted-foreground">
-                      {enquiry.phone}
-                    </p>
+                      📞 {enquiry.phone.startsWith('+91') ? enquiry.phone : `+91 ${enquiry.phone}`}                    </p>
                   </div>
                   <Badge
                     className={`${getStatusColor(
                       enquiry.pickupDetails?.status || "scheduled"
-                    )} text-xs self-start`}
+                    )} text-xs self-start capitalize`}
                   >
                     {enquiry.pickupDetails?.status || "scheduled"}
                   </Badge>
@@ -355,11 +351,17 @@ export function PickupModule() {
                   </div>
 
                   <div className="flex items-center space-x-2">
-                    <Package className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    {/* Quantity badge */}
+                    <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                      Quantity: {enquiry.quantity}
+                    </div>
+
+                    {/* Product name */}
                     <span className="text-sm text-foreground">
-                      {enquiry.product} ({enquiry.quantity} items)
+                      {enquiry.product}
                     </span>
                   </div>
+
 
                   {enquiry.pickupDetails?.scheduledTime && (
                     <div className="flex items-center space-x-2">
@@ -372,12 +374,13 @@ export function PickupModule() {
 
                   {enquiry.pickupDetails?.assignedTo && (
                     <div className="flex items-center space-x-2">
-                      <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                      <span className="text-sm text-foreground">
+                      <div className="bg-green-100 text-green-800 border border-green-200 px-2 py-1 rounded-full text-xs font-medium">
                         Assigned: {enquiry.pickupDetails.assignedTo}
-                      </span>
+                      </div>
                     </div>
                   )}
+
+
 
                   <div className="flex items-center space-x-2">
                     <span className="text-sm font-semibold text-foreground">
@@ -447,8 +450,9 @@ export function PickupModule() {
                                 <img
                                   src={selectedImage}
                                   alt="Collection proof"
-                                  className="w-full h-32 object-cover rounded-md border"
+                                  className="w-full h-auto object-cover rounded-md border"
                                 />
+
                               </div>
                             )}
                           </div>

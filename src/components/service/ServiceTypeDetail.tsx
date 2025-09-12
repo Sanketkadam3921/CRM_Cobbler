@@ -21,7 +21,11 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
   const [serviceDetails, setServiceDetails] = useState<ServiceDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // State for the photo preview (high-quality URL) and the original file
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
   const [notes, setNotes] = useState("");
 
   useEffect(() => {
@@ -37,47 +41,51 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
         setLoading(false);
       }
     };
-    
+
     loadServiceDetails();
   }, [enquiryId]);
 
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      try {
-        const thumbnailData = await imageUploadHelper.handleImageUpload(file);
-        setSelectedImage(thumbnailData);
-      } catch (error) {
-        console.error('Failed to process image:', error);
-        alert('Failed to process image. Please try again.');
-      }
+      // Create a temporary URL for the high-quality preview
+      const previewUrl = URL.createObjectURL(file);
+      setSelectedImage(previewUrl);
+
+      // Store the original file object for API upload later
+      setSelectedFile(file);
     }
   };
 
   const startService = async () => {
-    if (!serviceDetails || !selectedImage) return;
+    if (!serviceDetails || !selectedFile) {
+      alert("Please select a photo to start the service.");
+      return;
+    }
 
     try {
-      // Find the service type ID
       const serviceTypeData = serviceDetails.serviceTypes?.find(s => s.type === serviceType);
       if (!serviceTypeData?.id) {
         alert('Service type not found');
         return;
       }
 
-      // Call API to start service
-      await serviceApiService.startService(enquiryId, serviceTypeData.id, selectedImage, notes);
+      const compressedImageData = await imageUploadHelper.handleImageUpload(selectedFile);
+      await serviceApiService.startService(enquiryId, serviceTypeData.id, compressedImageData, notes);
+
       console.log('✅ Service started successfully');
-      
-      // Reset form
+
+      // Clear the form but preserve the submitted image for display
+      if (selectedImage) {
+        URL.revokeObjectURL(selectedImage);
+      }
       setSelectedImage(null);
+      setSelectedFile(null);
       setNotes("");
-      
-      // Refresh data to show updated status
+
       const updatedDetails = await serviceApiService.getEnquiryServiceDetails(enquiryId);
       setServiceDetails(updatedDetails);
-      
-      // Notify parent component to refresh the main service list
+
       if (onServiceUpdated) {
         onServiceUpdated();
       }
@@ -88,29 +96,34 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
   };
 
   const completeService = async () => {
-    if (!serviceDetails || !selectedImage) return;
+    if (!serviceDetails || !selectedFile) {
+      alert("Please select a photo to complete the service.");
+      return;
+    }
 
     try {
-      // Find the service type ID
       const serviceTypeData = serviceDetails.serviceTypes?.find(s => s.type === serviceType);
       if (!serviceTypeData?.id) {
         alert('Service type not found');
         return;
       }
 
-      // Call API to complete service
-      await serviceApiService.completeService(enquiryId, serviceTypeData.id, selectedImage, notes);
+      const compressedImageData = await imageUploadHelper.handleImageUpload(selectedFile);
+      await serviceApiService.completeService(enquiryId, serviceTypeData.id, compressedImageData, notes);
+
       console.log('✅ Service completed successfully');
-      
-      // Reset form
+
+      // Clear the form but preserve the submitted image for display
+      if (selectedImage) {
+        URL.revokeObjectURL(selectedImage);
+      }
       setSelectedImage(null);
+      setSelectedFile(null);
       setNotes("");
-      
-      // Refresh data to show updated status
+
       const updatedDetails = await serviceApiService.getEnquiryServiceDetails(enquiryId);
       setServiceDetails(updatedDetails);
-      
-      // Notify parent component to refresh the main service list
+
       if (onServiceUpdated) {
         onServiceUpdated();
       }
@@ -119,6 +132,15 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
       alert('Failed to complete service. Please try again.');
     }
   };
+
+  // Cleanup function to revoke object URLs when component unmounts
+  useEffect(() => {
+    return () => {
+      if (selectedImage) {
+        URL.revokeObjectURL(selectedImage);
+      }
+    };
+  }, [selectedImage]);
 
   if (loading) {
     return (
@@ -159,12 +181,10 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
     );
   }
 
-  // Find the specific service type
   const serviceTypeData = serviceDetails.serviceTypes?.find(s => s.type === serviceType);
 
   return (
     <div className="space-y-4 animate-fade-in p-2 sm:p-0">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <Button variant="outline" size="sm" onClick={onBack}>
@@ -187,7 +207,6 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
         )}
       </div>
 
-      {/* Compact Info */}
       <Card className="p-4 bg-gradient-card border-0 shadow-soft">
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
@@ -205,18 +224,23 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
         </div>
       </Card>
 
-      {/* Photos Section - Compact */}
       <div className="grid grid-cols-2 gap-4">
-        {/* Before Photo */}
         <Card className="p-4 bg-gradient-card border-0 shadow-soft">
           <h3 className="text-sm font-semibold text-foreground mb-2">Before Photo</h3>
           {serviceTypeData?.photos?.beforePhoto ? (
             <div className="space-y-2">
-              <img
-                src={serviceTypeData.photos.beforePhoto}
-                alt="Before service"
-                className="w-full h-32 object-cover rounded-md border"
-              />
+              <div className="relative overflow-hidden rounded-md border" style={{ paddingTop: '75%' }}>
+                <img
+                  src={serviceTypeData.photos.beforePhoto}
+                  alt="Before service"
+                  className="absolute inset-0 h-full w-full object-contain"
+                  loading="lazy"
+                  onError={(e) => {
+                    console.error('Failed to load before photo:', e);
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              </div>
               {serviceTypeData.photos.beforeNotes && (
                 <p className="text-xs text-muted-foreground">{serviceTypeData.photos.beforeNotes}</p>
               )}
@@ -229,16 +253,22 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
           )}
         </Card>
 
-        {/* After Photo */}
         <Card className="p-4 bg-gradient-card border-0 shadow-soft">
           <h3 className="text-sm font-semibold text-foreground mb-2">After Photo</h3>
           {serviceTypeData?.photos?.afterPhoto ? (
             <div className="space-y-2">
-              <img
-                src={serviceTypeData.photos.afterPhoto}
-                alt="After service"
-                className="w-full h-32 object-cover rounded-md border"
-              />
+              <div className="relative overflow-hidden rounded-md border" style={{ paddingTop: '75%' }}>
+                <img
+                  src={serviceTypeData.photos.afterPhoto}
+                  alt="After service"
+                  className="absolute inset-0 h-full w-full object-contain"
+                  loading="lazy"
+                  onError={(e) => {
+                    console.error('Failed to load after photo:', e);
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              </div>
               {serviceTypeData.photos.afterNotes && (
                 <p className="text-xs text-muted-foreground">{serviceTypeData.photos.afterNotes}</p>
               )}
@@ -252,10 +282,9 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
         </Card>
       </div>
 
-      {/* Action Section - Compact */}
       <Card className="p-4 bg-gradient-card border-0 shadow-soft">
         <h3 className="text-sm font-semibold text-foreground mb-3">Actions</h3>
-        
+
         {serviceTypeData?.status === "pending" && (
           <div className="space-y-3">
             <div className="space-y-2">
@@ -281,12 +310,12 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
                   <img
                     src={selectedImage}
                     alt="Before photo preview"
-                    className="w-full h-24 object-cover rounded-md border"
+                    className="w-full h-24 object-contain rounded-md border"
                   />
                 </div>
               )}
             </div>
-            
+
             <div className="space-y-1">
               <Label className="text-xs">Notes (Optional)</Label>
               <Textarea
@@ -297,11 +326,11 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
                 className="text-xs"
               />
             </div>
-            
+
             <Button
               onClick={startService}
               className="w-full bg-blue-600 hover:bg-blue-700 text-sm"
-              disabled={!selectedImage}
+              disabled={!selectedFile}
             >
               <Clock className="h-3 w-3 mr-1" />
               Start Service
@@ -334,12 +363,12 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
                   <img
                     src={selectedImage}
                     alt="After photo preview"
-                    className="w-full h-24 object-cover rounded-md border"
+                    className="w-full h-24 object-contain rounded-md border"
                   />
                 </div>
               )}
             </div>
-            
+
             <div className="space-y-1">
               <Label className="text-xs">Work Notes (Optional)</Label>
               <Textarea
@@ -350,11 +379,11 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
                 className="text-xs"
               />
             </div>
-            
+
             <Button
               onClick={completeService}
               className="w-full bg-green-600 hover:bg-green-700 text-sm"
-              disabled={!selectedImage}
+              disabled={!selectedFile}
             >
               <CheckCircle className="h-3 w-3 mr-1" />
               Complete Service

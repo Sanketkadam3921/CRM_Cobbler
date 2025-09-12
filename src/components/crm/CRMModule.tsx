@@ -125,7 +125,7 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
     message: "",
     enquiryType: "",
     product: "",
-    quantity: "1"
+    quantity: ""
   });
   const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
   const [showSuccess, setShowSuccess] = useState(false);
@@ -173,19 +173,23 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
         }
         break;
 
-      case 'number':
+      case "number":
         if (!value.trim()) {
           return "Phone number is required";
         } else {
-          // Remove all spaces and hyphens for validation
-          const cleanNumber = value.replace(/[\s-]/g, '');
-          // Indian phone number: optional +91 followed by exactly 10 digits
-          const phoneRegex = /^(\+91)?[0-9]{10}$/;
+          // Remove all spaces and invalid characters (only digits and + allowed at start)
+          const cleanNumber = value.replace(/[^\d+]/g, "");
+
+          // Regex: either 10 digits OR +91 followed by 10 digits
+          const phoneRegex = /^([6-9]\d{9}|\+91[6-9]\d{9})$/;
+
           if (!phoneRegex.test(cleanNumber)) {
-            return "Please enter valid phone number (10 digits, +91 optional)";
+            return "Please enter a valid Indian phone number (10 digits, or +91 followed by 10 digits)";
           }
         }
         break;
+
+
 
 
 
@@ -300,7 +304,7 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
     setTimeout(() => {
       setShowSuccess(false);
       setShowForm(false);
-    }, 200000);
+    }, 1000);
   };
 
   const handleEdit = (enquiry: Enquiry) => {
@@ -524,47 +528,84 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
           <div className="space-y-4 text-gray-700">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="name" className="text-sm font-medium text-gray-700">Customer Name *</Label>
+                <Label htmlFor="name" className="text-sm font-medium text-gray-700">
+                  Customer Name *
+                </Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => {
-                    setFormData({ ...formData, name: e.target.value });
+                    let val = e.target.value;
+
+                    // Allow only alphabets and spaces
+                    if (!/^[A-Za-z ]*$/.test(val)) {
+                      return; // Block invalid input
+                    }
+
+                    // Optional: normalize multiple spaces into one
+                    val = val.replace(/\s+/g, " ");
+
+                    setFormData({ ...formData, name: val });
+
                     if (formErrors.name) {
                       setFormErrors({ ...formErrors, name: "" });
                     }
                   }}
                   onBlur={(e) => {
-                    const error = validateField('name', e.target.value);
+                    const error = validateField("name", e.target.value.trim());
                     if (error) {
                       setFormErrors({ ...formErrors, name: error });
                     }
                   }}
-                  className={`mt-1 ${formErrors.name ? 'border-red-500 focus:border-red-500' : ''}`}
+                  className={`mt-1 ${formErrors.name ? "border-red-500 focus:border-red-500" : ""
+                    }`}
+                  placeholder="Enter customer name"
                 />
-                {formErrors.name && <p className="text-red-500 text-xs mt-1">{formErrors.name}</p>}
+                {formErrors.name && (
+                  <p className="text-red-500 text-xs mt-1">{formErrors.name}</p>
+                )}
               </div>
+
               <div>
-                <Label htmlFor="number" className="text-sm font-medium text-gray-700">Phone Number *</Label>
+                <Label htmlFor="number" className="text-sm font-medium text-gray-700">
+                  Phone Number *
+                </Label>
                 <Input
                   id="number"
                   value={formData.number}
                   onChange={(e) => {
-                    setFormData({ ...formData, number: e.target.value });
+                    let val = e.target.value;
+
+                    // Allow only digits, but keep + if it starts with +91
+                    if (val.startsWith("+91")) {
+                      val = "+91" + val.slice(3).replace(/\D/g, ""); // keep +91, remove non-digits
+                      if (val.length > 13) val = val.slice(0, 13); // max +91 + 10 digits
+                    } else {
+                      val = val.replace(/\D/g, ""); // remove non-digits
+                      if (val.length > 10) val = val.slice(0, 10); // max 10 digits
+                    }
+
+                    setFormData({ ...formData, number: val });
+
                     if (formErrors.number) {
                       setFormErrors({ ...formErrors, number: "" });
                     }
                   }}
                   onBlur={(e) => {
-                    const error = validateField('number', e.target.value);
+                    const error = validateField("number", e.target.value);
                     if (error) {
                       setFormErrors({ ...formErrors, number: error });
                     }
                   }}
-                  className={`mt-1 ${formErrors.number ? 'border-red-500 focus:border-red-500' : ''}`}
+                  className={`mt-1 ${formErrors.number ? "border-red-500 focus:border-red-500" : ""
+                    }`}
+                  placeholder="Enter phone number"
                 />
-                {formErrors.number && <p className="text-red-500 text-xs mt-1">{formErrors.number}</p>}
+                {formErrors.number && (
+                  <p className="text-red-500 text-xs mt-1">{formErrors.number}</p>
+                )}
               </div>
+
               <div>
                 <Label htmlFor="enquiryType" className="text-sm font-medium text-gray-700">Enquiry Source *</Label>
                 <Select
@@ -817,25 +858,58 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Name */}
                     <div>
                       <Label className="text-sm font-medium text-gray-700">Name</Label>
                       <Input
                         value={editData.customerName || enquiry.customerName}
-                        onChange={(e) => setEditData({ ...editData, customerName: e.target.value })}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          // Allow only alphabets and spaces
+                          if (/^[A-Za-z\s]*$/.test(value)) {
+                            setEditData({ ...editData, customerName: value });
+                          }
+                        }}
                         className="mt-1"
+                        placeholder="Enter customer name"
                       />
                     </div>
+
+                    {/* Phone */}
                     <div>
                       <Label className="text-sm font-medium text-gray-700">Phone</Label>
                       <Input
                         value={editData.phone || enquiry.phone}
-                        onChange={(e) => setEditData({ ...editData, phone: e.target.value })}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          // Allow only digits
+                          if (/^\d*$/.test(value)) {
+                            setEditData({ ...editData, phone: value });
+                          }
+                        }}
                         className="mt-1"
+                        placeholder="Enter phone number"
+                        maxLength={15} // optional safeguard
                       />
                     </div>
+
+                    {/* Product */}
                     <div>
                       <Label className="text-sm font-medium text-gray-700">Product</Label>
-                      <Select value={editData.product || enquiry.product} onValueChange={(value) => setEditData({ ...editData, product: value as "Bag" | "Shoe" | "Wallet" | "Belt" | "All type furniture" })}>
+                      <Select
+                        value={editData.product || enquiry.product}
+                        onValueChange={(value) =>
+                          setEditData({
+                            ...editData,
+                            product: value as
+                              | "Bag"
+                              | "Shoe"
+                              | "Wallet"
+                              | "Belt"
+                              | "All type furniture",
+                          })
+                        }
+                      >
                         <SelectTrigger className="mt-1">
                           <SelectValue />
                         </SelectTrigger>
@@ -848,19 +922,30 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                         </SelectContent>
                       </Select>
                     </div>
+
+                    {/* Quantity */}
                     <div>
                       <Label className="text-sm font-medium text-gray-700">Quantity</Label>
                       <Input
                         type="number"
                         min="1"
                         value={editData.quantity || enquiry.quantity}
-                        onChange={(e) => setEditData({ ...editData, quantity: parseInt(e.target.value) || 1 })}
+                        onChange={(e) =>
+                          setEditData({ ...editData, quantity: parseInt(e.target.value) || 1 })
+                        }
                         className="mt-1"
                       />
                     </div>
+
+                    {/* Status */}
                     <div>
                       <Label className="text-sm font-medium text-gray-700">Status</Label>
-                      <Select value={editData.status || enquiry.status} onValueChange={(value) => setEditData({ ...editData, status: value as Enquiry['status'] })}>
+                      <Select
+                        value={editData.status || enquiry.status}
+                        onValueChange={(value) =>
+                          setEditData({ ...editData, status: value as Enquiry["status"] })
+                        }
+                      >
                         <SelectTrigger className="mt-1">
                           <SelectValue />
                         </SelectTrigger>
@@ -872,11 +957,19 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                         </SelectContent>
                       </Select>
                     </div>
+
+                    {/* Contacted */}
                     <div>
                       <Label className="text-sm font-medium text-gray-700">Contacted</Label>
                       <Select
-                        value={editData.contacted !== undefined ? editData.contacted.toString() : enquiry.contacted.toString()}
-                        onValueChange={(value) => setEditData({ ...editData, contacted: value === 'true' })}
+                        value={
+                          editData.contacted !== undefined
+                            ? editData.contacted.toString()
+                            : enquiry.contacted.toString()
+                        }
+                        onValueChange={(value) =>
+                          setEditData({ ...editData, contacted: value === "true" })
+                        }
                       >
                         <SelectTrigger className="mt-1">
                           <SelectValue />
@@ -888,6 +981,7 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                       </Select>
                     </div>
                   </div>
+
 
                   <div>
                     <Label className="text-sm font-medium text-gray-700">Address</Label>
