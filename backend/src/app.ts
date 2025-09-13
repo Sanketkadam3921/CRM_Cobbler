@@ -20,6 +20,8 @@ import completedRouter from './routes/completed';
 import expensesRouter from './routes/expenses';
 import inventoryRouter from './routes/inventory';
 import dashboardRouter from './routes/dashboard';
+import reportRoutes from './routes/report';
+
 
 // Load environment variables
 dotenv.config();
@@ -88,18 +90,18 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Request timing middleware
 app.use((req, res, next) => {
   const startTime = Date.now();
-  
+
   // Log request start
   logApi.request(req.method, req.url, req.ip || 'unknown', req.get('User-Agent') || 'unknown');
-  
+
   // Override res.end to log response time
   const originalEnd = res.end;
-  res.end = function(chunk?: any, encoding?: any) {
+  res.end = function (chunk?: any, encoding?: any) {
     const duration = Date.now() - startTime;
     logApi.response(req.method, req.url, res.statusCode, duration);
     return originalEnd.call(this, chunk, encoding);
   };
-  
+
   next();
 });
 
@@ -132,6 +134,8 @@ app.use('/api/completed', completedRouter);
 app.use('/api/expense', expensesRouter);
 app.use('/api/inventory', inventoryRouter);
 app.use('/api/dashboard', dashboardRouter);
+app.use('/api/reports', reportRoutes);
+
 
 
 // ALWAYS serve uploaded files
@@ -141,7 +145,7 @@ app.use('/bills', express.static(path.join(process.cwd(), 'public/bills')));
 if (process.env.NODE_ENV === 'production') {
   // Serve static files from the public directory (frontend build)
   app.use(express.static(path.join(__dirname, '../public')));
-  
+
   // Handle React routing, return all requests to React app
   app.get('*', (req, res) => {
     // Skip API routes - but health endpoints should be handled above
@@ -152,7 +156,7 @@ if (process.env.NODE_ENV === 'production') {
         message: `Cannot ${req.method} ${req.originalUrl}`
       });
     }
-    
+
     // Serve the React app for all other routes
     return res.sendFile(path.join(__dirname, '../public/index.html'));
   });
@@ -171,7 +175,7 @@ if (process.env.NODE_ENV === 'production') {
 // Global error handler
 app.use((error: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   logApi.error(req.method, req.url, error);
-  
+
   res.status(error.status || 500).json({
     success: false,
     error: 'Internal server error',
@@ -185,11 +189,11 @@ const startServer = async (): Promise<void> => {
     // Initialize database connection
     await initializeDatabase();
     logDatabase.connection('Database connection established successfully');
-    
+
     // Create database tables
     await createTables();
     logDatabase.success('Database tables created/verified successfully');
-    
+
     // Start the server
     const server = app.listen(PORT, () => {
       console.log(`🚀 Cobbler Backend API server is running on port ${PORT}`);
@@ -199,7 +203,7 @@ const startServer = async (): Promise<void> => {
       console.log(`📝 Logs directory: ${process.env.LOG_FILE_PATH || './logs'}`);
       console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
     });
-    
+
   } catch (error) {
     console.error('❌ Failed to start server:', error);
     process.exit(1);

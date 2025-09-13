@@ -18,14 +18,14 @@ interface ServiceOrder {
 }
 
 const sampleServices: ServiceOrder[] = [
-    { id: 1, customerName: "Rajesh Kumar", items: "Leather Shoes", serviceType: "Sole Replacement", status: "in-progress", estimatedCost: 350, notes: "Customer wants brown sole to match leather" },
-    { id: 2, customerName: "Priya Sharma", items: "Hand Bag", serviceType: "Zipper Repair", status: "photos-taken", estimatedCost: 150, notes: "Metal zipper replacement needed" },
-    { id: 3, customerName: "Amit Patel", items: "Sports Shoes", serviceType: "Cleaning & Polish", status: "completed", estimatedCost: 200, actualCost: 200, completedAt: "2024-01-15 3:30 PM", notes: "Deep cleaning completed" },
-    { id: 4, customerName: "Anjali Mehta", items: "Leather Jacket", serviceType: "Tear Repair", status: "awaiting-approval", estimatedCost: 500, notes: "Patch required on left sleeve" },
-    { id: 5, customerName: "Vikram Singh", items: "Formal Shoes", serviceType: "Recoloring", status: "in-progress", estimatedCost: 800, notes: "Change from tan to black" },
-    { id: 6, customerName: "Sunita Patil", items: "Designer Handbag", serviceType: "Strap Replacement", status: "completed", estimatedCost: 650, actualCost: 650, completedAt: "2024-01-14 5:00 PM", notes: "Original strap broken" },
-    { id: 7, customerName: "Rohan Desai", items: "Suede Boots", serviceType: "Waterproofing", status: "billed", estimatedCost: 400, actualCost: 400, completedAt: "2024-01-13 1:00 PM", notes: "Completed and delivered" },
-    { id: 8, customerName: "Kavita Rao", items: "Leather Belts", serviceType: "Buckle Replacement", status: "billed", estimatedCost: 250, actualCost: 250, completedAt: "2024-01-12 4:00 PM", notes: "Customer providing new buckle" },
+  { id: 1, customerName: "Rajesh Kumar", items: "Leather Shoes", serviceType: "Sole Replacement", status: "in-progress", estimatedCost: 350, notes: "Customer wants brown sole to match leather" },
+  { id: 2, customerName: "Priya Sharma", items: "Hand Bag", serviceType: "Zipper Repair", status: "photos-taken", estimatedCost: 150, notes: "Metal zipper replacement needed" },
+  { id: 3, customerName: "Amit Patel", items: "Sports Shoes", serviceType: "Cleaning & Polish", status: "completed", estimatedCost: 200, actualCost: 200, completedAt: "2024-01-15 3:30 PM", notes: "Deep cleaning completed" },
+  { id: 4, customerName: "Anjali Mehta", items: "Leather Jacket", serviceType: "Tear Repair", status: "awaiting-approval", estimatedCost: 500, notes: "Patch required on left sleeve" },
+  { id: 5, customerName: "Vikram Singh", items: "Formal Shoes", serviceType: "Recoloring", status: "in-progress", estimatedCost: 800, notes: "Change from tan to black" },
+  { id: 6, customerName: "Sunita Patil", items: "Designer Handbag", serviceType: "Strap Replacement", status: "completed", estimatedCost: 650, actualCost: 650, completedAt: "2024-01-14 5:00 PM", notes: "Original strap broken" },
+  { id: 7, customerName: "Rohan Desai", items: "Suede Boots", serviceType: "Waterproofing", status: "billed", estimatedCost: 400, actualCost: 400, completedAt: "2024-01-13 1:00 PM", notes: "Completed and delivered" },
+  { id: 8, customerName: "Kavita Rao", items: "Leather Belts", serviceType: "Buckle Replacement", status: "billed", estimatedCost: 250, actualCost: 250, completedAt: "2024-01-12 4:00 PM", notes: "Customer providing new buckle" },
 ];
 
 interface ServiceCompletionTableProps {
@@ -42,8 +42,8 @@ export function ServiceCompletionTable({ onBack }: ServiceCompletionTableProps) 
       default: return "bg-muted text-muted-foreground";
     }
   };
-  
-  const completedItems = sampleServices.filter(s => 
+
+  const completedItems = sampleServices.filter(s =>
     s.status === 'completed' || s.status === 'billed'
   );
 
@@ -121,27 +121,27 @@ export function ServiceCompletionTable({ onBack }: ServiceCompletionTableProps) 
       <div className="lg:hidden space-y-4">
         {filteredItems.map((item) => (
           <Card key={item.id} className="p-4 bg-gradient-card border-0 shadow-soft">
-             <div className="flex items-center justify-between">
-                <div>
-                    <h3 className="font-semibold text-foreground text-lg">{item.customerName}</h3>
-                    <p className="text-sm text-muted-foreground">{item.items} - {item.serviceType}</p>
-                </div>
-                <Badge className={`${getStatusColor(item.status)} text-xs`}>
-                  {item.status}
-                </Badge>
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-foreground text-lg">{item.customerName}</h3>
+                <p className="text-sm text-muted-foreground">{item.items} - {item.serviceType}</p>
               </div>
-              <div className="border-t border-border my-3"></div>
-              <div className="space-y-2 text-sm">
-                <p><strong>Final Cost:</strong> ₹{item.actualCost || item.estimatedCost}</p>
-                <p><strong>Completed:</strong> {item.completedAt || "N/A"}</p>
-              </div>
-              <div className="flex space-x-2 pt-3 mt-3 border-t border-border">
-                <Button size="sm" variant="outline" className="flex-1"><Eye className="h-4 w-4 mr-2" />Details</Button>
-                <Button size="sm" className="flex-1 bg-gradient-primary hover:opacity-90"><FileText className="h-4 w-4 mr-2" />View Bill</Button>
-              </div>
+              <Badge className={`${getStatusColor(item.status)} text-xs`}>
+                {item.status}
+              </Badge>
+            </div>
+            <div className="border-t border-border my-3"></div>
+            <div className="space-y-2 text-sm">
+              <p><strong>Final Cost:</strong> ₹{item.actualCost || item.estimatedCost}</p>
+              <p><strong>Completed:</strong> {item.completedAt || "N/A"}</p>
+            </div>
+            <div className="flex space-x-2 pt-3 mt-3 border-t border-border">
+              <Button size="sm" variant="outline" className="flex-1"><Eye className="h-4 w-4 mr-2" />Details</Button>
+              <Button size="sm" className="flex-1 bg-gradient-primary hover:opacity-90"><FileText className="h-4 w-4 mr-2" />View Bill</Button>
+            </div>
           </Card>
         ))}
-       </div>
+      </div>
     </div>
   );
 }

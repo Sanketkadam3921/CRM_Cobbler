@@ -32,7 +32,7 @@
 // export interface ServiceTypeStatus {
 //   type: ServiceType;
 //   status: ServiceStatus;
-  
+
 //   // Photos for this specific service
 //   photos: {
 //     beforePhoto?: string;
@@ -40,14 +40,14 @@
 //     beforeNotes?: string;
 //     afterNotes?: string;
 //   };
-  
+
 //   // Work details
 //   department?: string;
 //   assignedTo?: string;
 //   startedAt?: string;
 //   completedAt?: string;
 //   workNotes?: string;
-  
+
 //   // Backend-ready fields
 //   id?: number; // For backend reference
 //   createdAt?: string;
@@ -176,17 +176,17 @@
 //   contactedAt?: string;
 //   assignedTo?: string;
 //   notes?: string;
-  
+
 //   // Workflow stages
 //   currentStage: WorkflowStage;
 //   pickupDetails?: PickupStage;
 //   serviceDetails?: ServiceStage;
 //   deliveryDetails?: DeliveryStage;
-  
+
 //   // Pricing
 //   quotedAmount?: number;
 //   finalAmount?: number;
-  
+
 
 // }
 
@@ -621,10 +621,10 @@
 //   finalAmount?: number;
 //   createdAt: string;
 //   updatedAt: string;
-  
+
 //   // Delivery-specific data
 //   deliveryDetails?: DeliveryDetails;
-  
+
 //   // Service details (for showing service completed photo)
 //   serviceDetails?: {
 //     estimatedCost?: number;
@@ -689,7 +689,7 @@ export interface PickupStage {
 export interface ServiceTypeStatus {
   type: ServiceType;
   status: ServiceStatus;
-  
+
   // Photos for this specific service
   photos: {
     beforePhoto?: string;
@@ -697,14 +697,14 @@ export interface ServiceTypeStatus {
     beforeNotes?: string;
     afterNotes?: string;
   };
-  
+
   // Work details
   department?: string;
   assignedTo?: string;
   startedAt?: string;
   completedAt?: string;
   workNotes?: string;
-  
+
   // Backend-ready fields
   id?: number; // For backend reference
   createdAt?: string;
@@ -833,13 +833,13 @@ export interface Enquiry {
   contactedAt?: string;
   assignedTo?: string;
   notes?: string;
-  
+
   // Workflow stages
   currentStage: WorkflowStage;
   pickupDetails?: PickupStage;
   serviceDetails?: ServiceStage;
   deliveryDetails?: DeliveryStage;
-  
+
   // Pricing
   quotedAmount?: number;
   finalAmount?: number;
@@ -934,12 +934,12 @@ export type WorkflowStage = "enquiry" | "pickup" | "service" | "billing" | "deli
 
 // Stage-specific statuses
 export type PickupStatus = "scheduled" | "assigned" | "collected" | "received";
-export type ServiceType = 
-  | 'Sole Replacement' 
-  | 'Zipper Repair' 
-  | 'Cleaning & Polish' 
-  | 'Stitching' 
-  | 'Leather Treatment' 
+export type ServiceType =
+  | 'Sole Replacement'
+  | 'Zipper Repair'
+  | 'Cleaning & Polish'
+  | 'Stitching'
+  | 'Leather Treatment'
   | 'Hardware Repair';
 
 export type ServiceStatus = 'pending' | 'in-progress' | 'done';
@@ -1275,10 +1275,10 @@ export interface DeliveryEnquiry {
   finalAmount?: number;
   createdAt: string;
   updatedAt: string;
-  
+
   // Delivery-specific data
   deliveryDetails?: DeliveryDetails;
-  
+
   // Service details (for showing service completed photo)
   serviceDetails?: {
     estimatedCost?: number;
@@ -1356,3 +1356,62 @@ export interface ExpenseFilters {
   page?: number;
   limit?: number;
 }
+
+// Report-specific interfaces for backend/frontend communication
+export interface ReportMetrics {
+  totalRevenue: number;
+  totalOrders: number;
+  activeCustomers: number;
+  totalExpenditure: number;
+  netProfit: number;
+}
+
+export interface MonthlyRevenueData {
+  month: string;
+  revenue: number;
+  orders: number;
+}
+
+export interface ServiceDistributionData {
+  name: string;
+  value: number; // percentage
+  color: string;
+}
+
+export interface TopCustomerData {
+  name: string;
+  orders: number;
+  revenue: number;
+}
+
+export interface ProfitLossData {
+  date: string;
+  revenue: number;
+  expense: number;
+}
+
+export interface ReportFilters {
+  startDate: string;
+  endDate: string;
+  period: 'week' | 'month' | 'quarter' | 'year';
+}
+
+export interface ReportData {
+  metrics: ReportMetrics;
+  revenueChartData: MonthlyRevenueData[];
+  serviceDistribution: ServiceDistributionData[];
+  topCustomers: TopCustomerData[];
+  profitLossData: ProfitLossData[];
+}
+
+export interface ReportExportData extends ReportData {
+  expenseBreakdown: any[];
+  period: string;
+  dateRange: {
+    startDate: string;
+    endDate: string;
+  };
+  generatedAt: string;
+}
+
+export type ReportPeriod = 'week' | 'month' | 'quarter' | 'year';
