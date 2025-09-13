@@ -278,55 +278,75 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
     setEditErrors(errors);
     return Object.keys(errors).length === 0;
   };
-  const handleSubmit = async () => {
+  const handleSubmit = async (): Promise<void> => {
+    // Validate only required fields
     if (!validateForm()) {
-      // Show toast with validation errors
       const errorCount = Object.keys(formErrors).length;
       const fieldLabels: { [key: string]: string } = {
         name: "Customer Name",
         number: "Phone Number",
         enquiryType: "Enquiry Source",
         product: "Product Type",
-        quantity: "Quantity"
+        quantity: "Quantity",
       };
 
-      const errorList = Object.keys(formErrors).map(field => `• ${fieldLabels[field] || field}: ${formErrors[field]}`);
+      const errorList = Object.keys(formErrors).map(
+        (field) => `• ${fieldLabels[field] || field}: ${formErrors[field]}`
+      );
 
       toast({
-        title: `Please fix ${errorCount} error${errorCount > 1 ? 's' : ''}`,
+        title: `Please fix ${errorCount} error${errorCount > 1 ? "s" : ""}`,
         description: (
           <div className="space-y-1">
             {errorList.map((error, index) => (
-              <div key={index} className="text-sm">{error}</div>
+              <div key={index} className="text-sm">
+                {error}
+              </div>
             ))}
           </div>
         ),
         className: "max-w-md bg-orange-50 border-orange-200 text-orange-800",
       });
+
       return;
     }
 
     try {
-      const newEnquiry = await addEnquiry({
+      // Send data to backend
+      await addEnquiry({
         customerName: formData.name,
-        phone: formData.number.replace(/\D/g, ''),
-        address: formData.location || "",
-        message: formData.message || "",
+        phone: formData.number.replace(/\D/g, ""),
+        address: formData.location?.trim() || "N/A",
+        message: formData.message?.trim() || "No message",
+
         inquiryType: formData.enquiryType as "Instagram" | "Facebook" | "WhatsApp",
-        product: formData.product as "Bag" | "Shoe" | "Wallet" | "Belt" | "All type furniture",
+        product: formData.product as
+          | "Bag"
+          | "Shoe"
+          | "Wallet"
+          | "Belt"
+          | "All type furniture",
         quantity: parseInt(formData.quantity) || 1,
-        date: new Date().toISOString().split('T')[0],
+        date: new Date().toISOString().split("T")[0],
         status: "new",
         contacted: false,
         currentStage: "enquiry",
-        // These are redundant and should be removed from your addEnquiry function
-        number: "",
-        name: "",
-        location: ""
+        // include the redundant fields to satisfy TypeScript
+        number: formData.number.replace(/\D/g, ""),
+        name: formData.name,
+        location: formData.location || "",
       });
 
-      // Reset form data and show success message
-      setFormData({ name: "", number: "", location: "", message: "", enquiryType: "", product: "", quantity: "1" });
+      // Reset form
+      setFormData({
+        name: "",
+        number: "",
+        location: "",
+        message: "",
+        enquiryType: "",
+        product: "",
+        quantity: "1",
+      });
       setFormErrors({});
       setShowSuccess(true);
 
@@ -336,15 +356,15 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
         setShowForm(false);
       }, 1000);
     } catch (error) {
-
-    } finally {
-      // ✅ Always close form after submit
-      setTimeout(() => {
-        setShowSuccess(true);
-        setShowForm(false);
-      }, 800);
+      console.error("Error submitting enquiry:", error);
+      toast({
+        title: "Submission failed",
+        description: "Something went wrong while adding the enquiry.",
+        className: "max-w-md bg-red-50 border-red-200 text-red-800",
+      });
     }
   };
+
 
   const handleEdit = (enquiry: Enquiry) => {
     setEditingId(enquiry.id);

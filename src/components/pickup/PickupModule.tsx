@@ -121,7 +121,7 @@ export function PickupModule() {
       if (enquiry) {
         toast({
           title: "WhatsApp Notification",
-          description: `WhatsApp sent to ${enquiry.customerName}: "Your ${enquiry.product} has been collected successfully."`,
+          description: `WhatsApp message sent to ${enquiry.customerName}: "Your ${enquiry.product} has been collected successfully."`,
           className: "bg-blue-600 text-white shadow-lg",
         });
       }
@@ -174,7 +174,7 @@ export function PickupModule() {
       if (enquiry) {
         toast({
           title: "WhatsApp Notification",
-          description: `WhatsApp sent to ${enquiry.customerName}: "We have received your ${enquiry.product} and it has been moved to service department."`,
+          description: `WhatsApp message sent to ${enquiry.customerName}: "We have received your ${enquiry.product} and it has been moved to service department."`,
           className: "bg-blue-50 border-blue-200 text-blue-800",
         });
       }
