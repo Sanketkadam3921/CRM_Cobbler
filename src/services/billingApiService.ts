@@ -1,6 +1,6 @@
-import { 
-  BillingStats, 
-  BillingEnquiry, 
+import {
+  BillingStats,
+  BillingEnquiry,
   BillingCreateRequest,
   BillingMoveToDeliveryRequest,
   ApiResponse
@@ -9,7 +9,7 @@ import { useState, useEffect, useCallback } from 'react';
 
 // API Configuration - SAME AS PICKUP/SERVICE
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (
-  typeof window !== 'undefined' && window.location.origin !== 'http://localhost:5173' 
+  typeof window !== 'undefined' && window.location.origin !== 'http://localhost:5173'
     ? `${window.location.origin}/api`
     : 'http://localhost:3001/api'
 );
@@ -33,7 +33,7 @@ class ApiClient {
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
-    
+
     const config: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
@@ -45,7 +45,7 @@ class ApiClient {
 
     try {
       const response = await fetch(url, config);
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
@@ -89,11 +89,11 @@ export class BillingApiService {
     try {
       console.log('🔄 Fetching billing statistics...');
       const response = await apiClient.get<ApiResponse<BillingStats>>('/billing/stats');
-      
+
       if (!response.success) {
         throw new Error(response.error || 'Failed to fetch billing statistics');
       }
-      
+
       console.log('✅ Billing statistics fetched successfully:', response.data);
       return response.data!;
     } catch (error) {
@@ -107,11 +107,11 @@ export class BillingApiService {
     try {
       console.log('🔄 Fetching billing enquiries...');
       const response = await apiClient.get<ApiResponse<BillingEnquiry[]>>('/billing/enquiries');
-      
+
       if (!response.success) {
         throw new Error(response.error || 'Failed to fetch billing enquiries');
       }
-      
+
       console.log('✅ Billing enquiries fetched successfully:', response.data?.length, 'enquiries');
       return response.data!;
     } catch (error) {
@@ -125,11 +125,11 @@ export class BillingApiService {
     try {
       console.log('🔄 Fetching billing enquiry:', enquiryId);
       const response = await apiClient.get<ApiResponse<BillingEnquiry>>(`/billing/enquiries/${enquiryId}`);
-      
+
       if (!response.success) {
         throw new Error(response.error || 'Failed to fetch billing enquiry');
       }
-      
+
       console.log('✅ Billing enquiry fetched successfully:', enquiryId);
       return response.data!;
     } catch (error) {
@@ -143,13 +143,13 @@ export class BillingApiService {
     try {
       console.log('🔄 Creating billing details for enquiry:', enquiryId);
       console.log('🔄 Billing data:', billingData);
-      
+
       const response = await apiClient.post<ApiResponse<any>>(`/billing/enquiries/${enquiryId}/billing`, billingData);
-      
+
       if (!response.success) {
         throw new Error(response.error || 'Failed to create billing details');
       }
-      
+
       console.log('✅ Billing details created successfully for enquiry:', enquiryId);
       return response.data!;
     } catch (error) {
@@ -163,11 +163,11 @@ export class BillingApiService {
     try {
       console.log('🔄 Fetching invoice data for enquiry:', enquiryId);
       const response = await apiClient.get<ApiResponse<any>>(`/billing/enquiries/${enquiryId}/invoice`);
-      
+
       if (!response.success) {
         throw new Error(response.error || 'Failed to fetch invoice data');
       }
-      
+
       console.log('✅ Invoice data fetched successfully for enquiry:', enquiryId);
       return response.data!;
     } catch (error) {
@@ -181,11 +181,11 @@ export class BillingApiService {
     try {
       console.log('🔄 Moving enquiry to delivery stage:', enquiryId);
       const response = await apiClient.patch<ApiResponse<any>>(`/billing/enquiries/${enquiryId}/move-to-delivery`, {});
-      
+
       if (!response.success) {
         throw new Error(response.error || 'Failed to move enquiry to delivery stage');
       }
-      
+
       console.log('✅ Enquiry moved to delivery stage successfully:', enquiryId);
       return response.data!;
     } catch (error) {
@@ -196,7 +196,7 @@ export class BillingApiService {
 }
 
 // Hook for managing billing enquiries with polling - SAME PATTERN AS PICKUP/SERVICE
-export function useBillingEnquiries(pollInterval: number = 200000) {
+export function useBillingEnquiries(pollInterval: number = 2000) {
   const [enquiries, setEnquiries] = useState<BillingEnquiry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -214,7 +214,7 @@ export function useBillingEnquiries(pollInterval: number = 200000) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch billing enquiries';
       setError(errorMessage);
       console.error('❌ Error fetching billing enquiries:', err);
-      
+
       // Set empty array on error to prevent UI issues
       setEnquiries([]);
     } finally {
@@ -242,9 +242,9 @@ export function useBillingEnquiries(pollInterval: number = 200000) {
   const createBillingOptimistic = useCallback(async (enquiryId: number, billingData: BillingCreateRequest) => {
     try {
       console.log('🔄 Creating billing optimistically for enquiry:', enquiryId);
-      
+
       // Update optimistically - add billing details to the enquiry
-      setEnquiries(prev => 
+      setEnquiries(prev =>
         prev.map(e => e.id === enquiryId ? {
           ...e,
           serviceDetails: {
@@ -258,12 +258,12 @@ export function useBillingEnquiries(pollInterval: number = 200000) {
           }
         } : e)
       );
-      
+
       // Make actual API call
       const result = await BillingApiService.createBilling(enquiryId, billingData);
-      
+
       // Replace optimistic update with real data
-      setEnquiries(prev => 
+      setEnquiries(prev =>
         prev.map(e => e.id === enquiryId ? {
           ...e,
           serviceDetails: {
@@ -272,7 +272,7 @@ export function useBillingEnquiries(pollInterval: number = 200000) {
           }
         } : e)
       );
-      
+
       console.log('✅ Billing created successfully for enquiry:', enquiryId);
       return result;
     } catch (error) {
@@ -286,13 +286,13 @@ export function useBillingEnquiries(pollInterval: number = 200000) {
   const moveToDeliveryOptimistic = useCallback(async (enquiryId: number) => {
     try {
       console.log('🔄 Moving to delivery optimistically for enquiry:', enquiryId);
-      
+
       // Remove from billing enquiries optimistically (will move to delivery stage)
       setEnquiries(prev => prev.filter(e => e.id !== enquiryId));
-      
+
       // Make actual API call
       const result = await BillingApiService.moveToDelivery(enquiryId);
-      
+
       console.log('✅ Enquiry moved to delivery successfully:', enquiryId);
       return result;
     } catch (error) {
@@ -330,7 +330,7 @@ export function useBillingStats(pollInterval: number = 500000) {
       console.log('🔄 Fetching billing statistics (polling)...');
       setError(null);
       const result = await BillingApiService.getBillingStats();
-      
+
       // Ensure all values are numbers with fallbacks
       const safeStats: BillingStats = {
         pendingBilling: Number(result.pendingBilling) || 0,
@@ -338,14 +338,14 @@ export function useBillingStats(pollInterval: number = 500000) {
         totalBilled: Number(result.totalBilled) || 0,
         invoicesSent: Number(result.invoicesSent) || 0
       };
-      
+
       setStats(safeStats);
       console.log('✅ Billing statistics updated:', safeStats);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch billing statistics';
       setError(errorMessage);
       console.error('❌ Error fetching billing statistics:', err);
-      
+
       // Set safe defaults on error
       setStats({
         pendingBilling: 0,
@@ -361,7 +361,7 @@ export function useBillingStats(pollInterval: number = 500000) {
   useEffect(() => {
     console.log('🚀 Initial billing statistics fetch...');
     fetchStats();
-    
+
     // Refresh stats every 5 seconds
     console.log('⏰ Setting up billing statistics polling with interval:', pollInterval, 'ms');
     const interval = setInterval(fetchStats, pollInterval);

@@ -69,10 +69,7 @@ const Login = () => {
           {/* Demo Credentials Notice */}
           <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <h3 className="text-sm font-medium text-blue-800 mb-2">Demo Credentials</h3>
-            <div className="text-sm text-blue-700 space-y-1">
-              <p><strong>Admin:</strong> admin@cobbler.com / password123</p>
-              <p><strong>Staff:</strong> staff@cobbler.com / password456</p>
-            </div>
+
           </div>
           <form onSubmit={handleLogin} className="space-y-6">
             {/* Email Field */}

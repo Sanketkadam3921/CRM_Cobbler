@@ -713,12 +713,16 @@ export function BillingModule() {
           <div className="flex items-center justify-between">
             <div>
               <div className="text-lg sm:text-2xl font-bold text-foreground">
-                ₹{statsLoading ? '...' : safeToFixed(stats.totalBilled)}
+                ₹
+                {statsLoading
+                  ? "..."
+                  : Number(stats.totalBilled || 0).toLocaleString("en-IN")}
               </div>
               <div className="text-xs sm:text-sm text-muted-foreground">
                 Total Billed
               </div>
             </div>
+
             <IndianRupee className="h-6 w-6 sm:h-8 sm:w-8 text-purple-500" />
           </div>
         </Card>
@@ -932,7 +936,7 @@ export function BillingModule() {
           </div>
         ) : filteredEnquiries.length === 0 ? (
           <Card className="p-8 text-center">
-            <Receipt className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <ReceiptIndianRupee className="h-12 w-12 text-blue-500 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-foreground mb-2">
               No Billing Items
             </h3>

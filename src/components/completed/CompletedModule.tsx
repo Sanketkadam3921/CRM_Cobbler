@@ -25,17 +25,17 @@ export function CompletedModule() {
 
   // REASON: Replaced localStorage data fetching with backend API hooks
   // Load completed enquiries from backend API with polling
-  const { 
-    enquiries, 
-    loading: enquiriesLoading, 
-    error: enquiriesError, 
-    lastUpdate 
+  const {
+    enquiries,
+    loading: enquiriesLoading,
+    error: enquiriesError,
+    lastUpdate
   } = useCompletedEnquiries(200000); // Poll every 2 seconds
 
-  const { 
-    stats, 
-    loading: statsLoading, 
-    error: statsError 
+  const {
+    stats,
+    loading: statsLoading,
+    error: statsError
   } = useCompletedStats(500000); // Poll every 5 seconds
 
   // REASON: Removed localStorage useEffect - now handled by API hooks
@@ -199,14 +199,14 @@ export function CompletedModule() {
         <h2 className="text-xl sm:text-2xl font-bold text-foreground">
           Completed Orders
         </h2>
-        
+
         {/* REASON: Added loading state for enquiries */}
         {enquiriesLoading && (
           <Card className="p-8 text-center">
             <div className="text-muted-foreground">Loading completed orders...</div>
           </Card>
         )}
-        
+
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
           {!enquiriesLoading && filteredEnquiries.map((enquiry) => (
             <Card

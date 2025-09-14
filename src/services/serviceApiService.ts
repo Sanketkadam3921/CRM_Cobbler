@@ -1,7 +1,7 @@
-import { 
-  ServiceDetails, 
-  ServiceStats, 
-  ServiceType, 
+import {
+  ServiceDetails,
+  ServiceStats,
+  ServiceType,
   ServiceAssignmentRequest,
   ServiceStartRequest,
   ServiceCompleteRequest,
@@ -13,7 +13,7 @@ import { useState, useEffect, useCallback } from 'react';
 
 // API Configuration - SAME AS PICKUP
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (
-  typeof window !== 'undefined' && window.location.origin !== 'http://localhost:5173' 
+  typeof window !== 'undefined' && window.location.origin !== 'http://localhost:5173'
     ? `${window.location.origin}/api`
     : 'http://localhost:3001/api'
 );
@@ -37,7 +37,7 @@ class ApiClient {
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
-    
+
     const config: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
@@ -49,7 +49,7 @@ class ApiClient {
 
     try {
       const response = await fetch(url, config);
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
@@ -92,11 +92,11 @@ export class ServiceApiService {
   static async getServiceStats(): Promise<ServiceStats> {
     try {
       const response = await apiClient.get<ApiResponse<ServiceStats>>('/services/stats');
-      
+
       if (!response.success) {
         throw new Error(response.error || 'Failed to fetch service statistics');
       }
-      
+
       return response.data!;
     } catch (error) {
       console.error('Failed to get service statistics:', error);
@@ -108,11 +108,11 @@ export class ServiceApiService {
   static async getServiceEnquiries(): Promise<ServiceDetails[]> {
     try {
       const response = await apiClient.get<ApiResponse<ServiceDetails[]>>('/services/enquiries');
-      
+
       if (!response.success) {
         throw new Error(response.error || 'Failed to fetch service enquiries');
       }
-      
+
       return response.data!;
     } catch (error) {
       console.error('Failed to get service enquiries:', error);
@@ -124,11 +124,11 @@ export class ServiceApiService {
   static async getEnquiryServiceDetails(enquiryId: number): Promise<ServiceDetails | null> {
     try {
       const response = await apiClient.get<ApiResponse<ServiceDetails>>(`/services/enquiries/${enquiryId}`);
-      
+
       if (!response.success) {
         throw new Error(response.error || 'Failed to fetch enquiry service details');
       }
-      
+
       return response.data!;
     } catch (error) {
       console.error('Failed to get enquiry service details:', error);
@@ -143,7 +143,7 @@ export class ServiceApiService {
         enquiryId,
         serviceTypes
       });
-      
+
       if (!response.success) {
         throw new Error(response.error || 'Failed to assign services');
       }
@@ -161,7 +161,7 @@ export class ServiceApiService {
         beforePhoto,
         notes
       });
-      
+
       if (!response.success) {
         throw new Error(response.error || 'Failed to start service');
       }
@@ -179,7 +179,7 @@ export class ServiceApiService {
         afterPhoto,
         notes
       });
-      
+
       if (!response.success) {
         throw new Error(response.error || 'Failed to complete service');
       }
@@ -197,7 +197,7 @@ export class ServiceApiService {
         afterPhoto,
         notes
       });
-      
+
       if (!response.success) {
         throw new Error(response.error || 'Failed to save final photo');
       }
@@ -215,7 +215,7 @@ export class ServiceApiService {
         actualCost,
         workNotes
       });
-      
+
       if (!response.success) {
         throw new Error(response.error || 'Failed to complete workflow');
       }
@@ -293,7 +293,7 @@ export function useServiceStats(pollInterval: number = 500000) {
 
   useEffect(() => {
     fetchStats();
-    
+
     // Refresh stats every 5 seconds
     const interval = setInterval(fetchStats, pollInterval);
     return () => clearInterval(interval);

@@ -39,13 +39,53 @@ export function ServiceModule() {
   const [finalPhotoNotes, setFinalPhotoNotes] = useState("");
   const [isProcessingPhoto, setIsProcessingPhoto] = useState(false);
 
-  // Helper function to convert file to base64 data URL
+  // Helper function to convert file to base64 data URL with better compression
   const fileToDataURL = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => {
         if (e.target?.result) {
-          resolve(e.target.result as string);
+          // Create an image to compress it properly
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            // Calculate dimensions to maintain aspect ratio while limiting size
+            const maxWidth = 1200;
+            const maxHeight = 1200;
+            let { width, height } = img;
+
+            if (width > height) {
+              if (width > maxWidth) {
+                height = (height * maxWidth) / width;
+                width = maxWidth;
+              }
+            } else {
+              if (height > maxHeight) {
+                width = (width * maxHeight) / height;
+                height = maxHeight;
+              }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+
+            if (ctx) {
+              // Use better image rendering
+              ctx.imageSmoothingEnabled = true;
+              ctx.imageSmoothingQuality = 'high';
+              ctx.drawImage(img, 0, 0, width, height);
+
+              // Convert to base64 with good quality
+              const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+              resolve(dataUrl);
+            } else {
+              reject(new Error('Failed to get canvas context'));
+            }
+          };
+          img.onerror = () => reject(new Error('Failed to load image'));
+          img.src = e.target.result as string;
         } else {
           reject(new Error('Failed to read file'));
         }
@@ -143,17 +183,21 @@ export function ServiceModule() {
   const handleFinalPhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      try {
-        const dataURL = await fileToDataURL(file);
-        setOverallAfterPhoto(dataURL);
-      } catch (error) {
-        console.error('Failed to convert final photo to data URL:', error);
+      // Bypassing the complex fileToDataURL for now to test
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setOverallAfterPhoto(reader.result as string);
+        console.log("✅ Simplified upload successful. Preview should appear.");
+      };
+      reader.onerror = (error) => {
+        console.error('❌ FileReader error:', error);
         toast({
-          title: "Error",
-          description: "Failed to process image. Please try again.",
+          title: "Error Reading File",
+          description: "There was an issue reading the selected file.",
           variant: "destructive",
         });
-      }
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -700,6 +744,7 @@ export function ServiceModule() {
                           src={enquiry.overallPhotos.beforePhoto}
                           alt="Before service"
                           className="w-full h-32 sm:h-40 object-cover rounded border"
+                          style={{ imageRendering: 'auto' }}
                         />
                       ) : (
                         <div className="h-32 sm:h-40 bg-muted rounded flex items-center justify-center border">
@@ -716,6 +761,7 @@ export function ServiceModule() {
                           src={enquiry.overallPhotos.afterPhoto}
                           alt="After service"
                           className="w-full h-32 sm:h-40 object-cover rounded border"
+                          style={{ imageRendering: 'auto' }}
                         />
                       ) : (
                         <div className="h-32 sm:h-40 bg-muted rounded flex items-center justify-center border">
@@ -764,10 +810,10 @@ export function ServiceModule() {
                     </Button>
                   )}
 
+                {/* Show Take Final Photo button when all services are done */}
                 {enquiry.serviceTypes &&
                   enquiry.serviceTypes.length > 0 &&
                   enquiry.serviceTypes.every((service) => service.status === "done") &&
-                  enquiry.overallPhotos?.beforePhoto &&
                   !enquiry.overallPhotos?.afterPhoto && (
                     <Button
                       size="sm"
@@ -871,7 +917,7 @@ export function ServiceModule() {
                             <img
                               src={overallBeforePhoto}
                               alt="Overall before photo"
-                              className="w-full h-32 object-cover rounded-md border"
+                              className="w-full h-48 object-cover rounded-md border"
                               style={{ imageRendering: 'auto' }}
                             />
                           </div>
@@ -939,7 +985,7 @@ export function ServiceModule() {
                             <img
                               src={overallAfterPhoto}
                               alt="Final after photo"
-                              className="w-full h-32 object-cover rounded-md border"
+                              className="w-full h-48 object-cover rounded-md border"
                               style={{ imageRendering: 'auto' }}
                             />
                           </div>

@@ -555,7 +555,7 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         <Card className="p-3 sm:p-4 bg-white border shadow-sm">
           <div className="text-lg sm:text-2xl font-bold text-gray-900">
             {statsLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : calculatedStats.totalCurrentMonth}
@@ -566,7 +566,7 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
           <div className="text-lg sm:text-2xl font-bold text-blue-600">
             {statsLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : calculatedStats.newThisWeek}
           </div>
-          <div className="text-xs sm:text-sm text-gray-500">This Week</div>
+          <div className="text-xs sm:text-sm text-gray-500">This Week Pending</div>
         </Card>
         <Card className="p-3 sm:p-4 bg-white border shadow-sm">
           <div className="text-lg sm:text-2xl font-bold text-green-600">
@@ -574,12 +574,7 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
           </div>
           <div className="text-xs sm:text-sm text-gray-500">Converted</div>
         </Card>
-        <Card className="p-3 sm:p-4 bg-white border shadow-sm">
-          <div className="text-lg sm:text-2xl font-bold text-yellow-600">
-            {statsLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : calculatedStats.pendingFollowUp}
-          </div>
-          <div className="text-xs sm:text-sm text-gray-500">Pending Follow-up</div>
-        </Card>
+
       </div>
 
       {/* Add Enquiry Modal */}

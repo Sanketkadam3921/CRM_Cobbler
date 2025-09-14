@@ -7,8 +7,53 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Camera, ArrowLeft, CheckCircle, Clock } from "lucide-react";
 import { ServiceDetails, ServiceType } from "@/types";
-import { imageUploadHelper } from "@/utils/localStorage";
 import { serviceApiService } from "@/services/serviceApiService";
+
+// Better image compression function with higher quality
+const compressImageFile = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      // Calculate dimensions to maintain aspect ratio while limiting size
+      const maxWidth = 1200;
+      const maxHeight = 1200;
+      let { width, height } = img;
+
+      if (width > height) {
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width;
+          width = maxWidth;
+        }
+      } else {
+        if (height > maxHeight) {
+          width = (width * maxHeight) / height;
+          height = maxHeight;
+        }
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+
+      if (ctx) {
+        // Use better image rendering
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Convert to base64 with high quality
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+        resolve(dataUrl);
+      } else {
+        reject(new Error('Failed to get canvas context'));
+      }
+    };
+    img.onerror = () => reject(new Error('Failed to load image'));
+    img.src = URL.createObjectURL(file);
+  });
+};
 
 interface ServiceTypeDetailProps {
   enquiryId: number;
@@ -45,15 +90,20 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
     loadServiceDetails();
   }, [enquiryId]);
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // Create a temporary URL for the high-quality preview
-      const previewUrl = URL.createObjectURL(file);
-      setSelectedImage(previewUrl);
+      try {
+        // Create a high-quality compressed image
+        const compressedDataUrl = await compressImageFile(file);
+        setSelectedImage(compressedDataUrl);
 
-      // Store the original file object for API upload later
-      setSelectedFile(file);
+        // Store the compressed data as a file-like object for API upload
+        setSelectedFile(file);
+      } catch (error) {
+        console.error('Failed to process image:', error);
+        alert('Failed to process image. Please try again.');
+      }
     }
   };
 
@@ -70,7 +120,8 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
         return;
       }
 
-      const compressedImageData = await imageUploadHelper.handleImageUpload(selectedFile);
+      // Use the high-quality compressed image
+      const compressedImageData = await compressImageFile(selectedFile);
       await serviceApiService.startService(enquiryId, serviceTypeData.id, compressedImageData, notes);
 
       console.log('✅ Service started successfully');
@@ -108,7 +159,8 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
         return;
       }
 
-      const compressedImageData = await imageUploadHelper.handleImageUpload(selectedFile);
+      // Use the high-quality compressed image
+      const compressedImageData = await compressImageFile(selectedFile);
       await serviceApiService.completeService(enquiryId, serviceTypeData.id, compressedImageData, notes);
 
       console.log('✅ Service completed successfully');
@@ -237,31 +289,31 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
         </div>
       </Card>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card className="p-4 bg-gradient-card border-0 shadow-soft">
           <h3 className="text-sm font-semibold text-foreground mb-2">Before Photo</h3>
           {serviceTypeData?.photos?.beforePhoto ? (
             <div className="space-y-2">
-              <div className="relative overflow-hidden rounded-md border" style={{ paddingTop: '75%' }}>
+              <div className="w-full h-64 md:h-80 overflow-hidden rounded-md border">
                 <img
                   src={serviceTypeData.photos.beforePhoto}
                   alt="Before service"
-                  className="absolute inset-0 h-full w-full object-contain"
+                  className="w-full h-full object-cover"
+                  style={{ imageRendering: 'auto' }}
                   loading="lazy"
                   onError={(e) => {
                     console.error('Failed to load before photo:', e);
-                    e.currentTarget.style.display = 'none';
                   }}
                 />
               </div>
               {serviceTypeData.photos.beforeNotes && (
-                <p className="text-xs text-muted-foreground">{serviceTypeData.photos.beforeNotes}</p>
+                <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">{serviceTypeData.photos.beforeNotes}</p>
               )}
             </div>
           ) : (
-            <div className="text-center py-6 text-muted-foreground">
-              <Camera className="h-8 w-8 mx-auto mb-1 opacity-50" />
-              <p className="text-xs">No before photo</p>
+            <div className="w-full h-64 md:h-80 text-center py-6 text-muted-foreground bg-muted/50 rounded border-2 border-dashed flex flex-col items-center justify-center">
+              <Camera className="h-12 w-12 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">No before photo</p>
             </div>
           )}
         </Card>
@@ -270,26 +322,26 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
           <h3 className="text-sm font-semibold text-foreground mb-2">After Photo</h3>
           {serviceTypeData?.photos?.afterPhoto ? (
             <div className="space-y-2">
-              <div className="relative overflow-hidden rounded-md border" style={{ paddingTop: '75%' }}>
+              <div className="w-full h-64 md:h-80 overflow-hidden rounded-md border">
                 <img
                   src={serviceTypeData.photos.afterPhoto}
                   alt="After service"
-                  className="absolute inset-0 h-full w-full object-contain"
+                  className="w-full h-full object-cover"
+                  style={{ imageRendering: 'auto' }}
                   loading="lazy"
                   onError={(e) => {
                     console.error('Failed to load after photo:', e);
-                    e.currentTarget.style.display = 'none';
                   }}
                 />
               </div>
               {serviceTypeData.photos.afterNotes && (
-                <p className="text-xs text-muted-foreground">{serviceTypeData.photos.afterNotes}</p>
+                <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">{serviceTypeData.photos.afterNotes}</p>
               )}
             </div>
           ) : (
-            <div className="text-center py-6 text-muted-foreground">
-              <Camera className="h-8 w-8 mx-auto mb-1 opacity-50" />
-              <p className="text-xs">No after photo</p>
+            <div className="w-full h-64 md:h-80 text-center py-6 text-muted-foreground bg-muted/50 rounded border-2 border-dashed flex flex-col items-center justify-center">
+              <Camera className="h-12 w-12 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">No after photo</p>
             </div>
           )}
         </Card>
@@ -301,7 +353,7 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
         {serviceTypeData?.status === "pending" && (
           <div className="space-y-3">
             <div className="space-y-2">
-              <Label className="text-xs">Take Before Photo</Label>
+              <Label className="text-sm font-medium">Take Before Photo</Label>
               <div className="flex gap-2">
                 <Input
                   type="file"
@@ -312,31 +364,34 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
                 />
                 <Label
                   htmlFor="before-photo"
-                  className="cursor-pointer flex items-center justify-center space-x-2 border border-input bg-background px-3 py-2 text-xs ring-offset-background hover:bg-accent hover:text-accent-foreground rounded-md flex-1"
+                  className="cursor-pointer flex items-center justify-center space-x-2 border border-input bg-background px-3 py-2 text-sm ring-offset-background hover:bg-accent hover:text-accent-foreground rounded-md flex-1"
                 >
-                  <Camera className="h-3 w-3" />
+                  <Camera className="h-4 w-4" />
                   <span>Take Photo</span>
                 </Label>
               </div>
               {selectedImage && (
                 <div className="mt-2">
-                  <img
-                    src={selectedImage}
-                    alt="Before photo preview"
-                    className="w-full h-24 object-contain rounded-md border"
-                  />
+                  <div className="w-full h-48 overflow-hidden rounded-md border">
+                    <img
+                      src={selectedImage}
+                      alt="Preview"
+                      className="w-full h-full object-cover"
+                      style={{ imageRendering: 'auto' }}
+                    />
+                  </div>
                 </div>
               )}
             </div>
 
             <div className="space-y-1">
-              <Label className="text-xs">Notes (Optional)</Label>
+              <Label className="text-sm font-medium">Notes (Optional)</Label>
               <Textarea
-                placeholder="Add notes..."
+                placeholder="Add notes about the condition before starting work..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                rows={2}
-                className="text-xs"
+                rows={3}
+                className="text-sm"
               />
             </div>
 
@@ -345,7 +400,7 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
               className="w-full bg-blue-600 hover:bg-blue-700 text-sm"
               disabled={!selectedFile}
             >
-              <Clock className="h-3 w-3 mr-1" />
+              <Clock className="h-4 w-4 mr-2" />
               Start Service
             </Button>
           </div>
@@ -354,7 +409,7 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
         {serviceTypeData?.status === "in-progress" && (
           <div className="space-y-3">
             <div className="space-y-2">
-              <Label className="text-xs">Take After Photo</Label>
+              <Label className="text-sm font-medium">Take After Photo</Label>
               <div className="flex gap-2">
                 <Input
                   type="file"
@@ -365,31 +420,34 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
                 />
                 <Label
                   htmlFor="after-photo"
-                  className="cursor-pointer flex items-center justify-center space-x-2 border border-input bg-background px-3 py-2 text-xs ring-offset-background hover:bg-accent hover:text-accent-foreground rounded-md flex-1"
+                  className="cursor-pointer flex items-center justify-center space-x-2 border border-input bg-background px-3 py-2 text-sm ring-offset-background hover:bg-accent hover:text-accent-foreground rounded-md flex-1"
                 >
-                  <Camera className="h-3 w-3" />
+                  <Camera className="h-4 w-4" />
                   <span>Take Photo</span>
                 </Label>
               </div>
               {selectedImage && (
                 <div className="mt-2">
-                  <img
-                    src={selectedImage}
-                    alt="After photo preview"
-                    className="w-full h-24 object-contain rounded-md border"
-                  />
+                  <div className="w-full h-48 overflow-hidden rounded-md border">
+                    <img
+                      src={selectedImage}
+                      alt="After photo preview"
+                      className="w-full h-full object-cover"
+                      style={{ imageRendering: 'auto' }}
+                    />
+                  </div>
                 </div>
               )}
             </div>
 
             <div className="space-y-1">
-              <Label className="text-xs">Work Notes (Optional)</Label>
+              <Label className="text-sm font-medium">Work Notes (Optional)</Label>
               <Textarea
-                placeholder="Add work notes..."
+                placeholder="Add notes about the work completed..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                rows={2}
-                className="text-xs"
+                rows={3}
+                className="text-sm"
               />
             </div>
 
@@ -398,17 +456,17 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
               className="w-full bg-green-600 hover:bg-green-700 text-sm"
               disabled={!selectedFile}
             >
-              <CheckCircle className="h-3 w-3 mr-1" />
+              <CheckCircle className="h-4 w-4 mr-2" />
               Complete Service
             </Button>
           </div>
         )}
 
         {serviceTypeData?.status === "done" && (
-          <div className="text-center py-4">
-            <CheckCircle className="h-8 w-8 mx-auto mb-1 text-green-500" />
-            <p className="text-sm font-semibold text-foreground">Service Completed!</p>
-            <p className="text-xs text-muted-foreground">
+          <div className="text-center py-6">
+            <CheckCircle className="h-12 w-12 mx-auto mb-2 text-green-500" />
+            <p className="text-lg font-semibold text-foreground mb-1">Service Completed!</p>
+            <p className="text-sm text-muted-foreground">
               This service has been completed successfully.
             </p>
           </div>
