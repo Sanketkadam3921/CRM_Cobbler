@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
-import { Users, Calendar, Package, TrendingUp, ClipboardCheck, AlertTriangle } from "lucide-react";
+import { Users, Calendar, Package, TrendingUp, ClipboardCheck, AlertTriangle, Truck, Clock, MapPin } from "lucide-react";
 import { enquiriesStorage, workflowHelpers } from "@/utils/localStorage";
 import { useDashboardData, DashboardData } from "@/services/dashboardApiService";
+import { useDeliveryEnquiries, DeliveryEnquiry } from "@/services/deliveryApiService";
 
 const stats = [
   {
@@ -75,6 +76,42 @@ interface DashboardOverviewProps {
   onNavigate: (view: string, action?: string) => void;
 }
 
+// Helper function to format date for display
+const formatDeliveryDate = (dateString: string) => {
+  const date = new Date(dateString);
+  const today = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  if (date.toDateString() === today.toDateString()) {
+    return `Today, ${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
+  } else if (date.toDateString() === tomorrow.toDateString()) {
+    return `Tomorrow, ${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
+  } else {
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+  }
+};
+
+// Helper function to get delivery status color
+const getDeliveryStatusColor = (status: string) => {
+  switch (status) {
+    case 'scheduled':
+      return 'text-blue-600 bg-blue-50 border-blue-200';
+    case 'out-for-delivery':
+      return 'text-amber-600 bg-amber-50 border-amber-200';
+    case 'ready-for-delivery':
+      return 'text-green-600 bg-green-50 border-green-200';
+    default:
+      return 'text-gray-600 bg-gray-50 border-gray-200';
+  }
+};
+
 export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
   const [dynamicStats, setDynamicStats] = useState(stats);
   const [recentActivity, setRecentActivity] = useState(fallbackRecentActivity);
@@ -83,6 +120,23 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
 
   // Try to use API data first, fallback to localStorage if API fails
   const { data: dashboardData, loading, error, refreshData } = useDashboardData();
+
+  // Get delivery enquiries for upcoming deliveries
+  const { enquiries: deliveryEnquiries, loading: deliveryLoading, error: deliveryError } = useDeliveryEnquiries();
+
+  // Get upcoming deliveries (next 5 scheduled or ready for delivery)
+  const upcomingDeliveries = deliveryEnquiries
+    .filter(enquiry =>
+      enquiry.deliveryDetails?.status === 'scheduled' ||
+      enquiry.deliveryDetails?.status === 'ready-for-delivery' ||
+      enquiry.deliveryDetails?.status === 'out-for-delivery'
+    )
+    .sort((a, b) => {
+      const aTime = a.deliveryDetails?.scheduledTime || '';
+      const bTime = b.deliveryDetails?.scheduledTime || '';
+      return new Date(aTime).getTime() - new Date(bTime).getTime();
+    })
+    .slice(0, 5);
 
   useEffect(() => {
     // Avoid unnecessary re-renders by checking if data actually changed
@@ -173,7 +227,8 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
         { item: 'Sole adhesive', stock: 1 }
       ]);
     }
-  }, [dashboardData, error]); // Keep minimal dependencies
+  }, [dashboardData, error]);
+
   return (
     <div className="space-y-4 sm:space-y-6 animate-fade-in p-2 sm:p-0">
       <div className="flex items-center justify-between">
@@ -191,7 +246,7 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
 
         {/* API Status and Refresh */}
         <div className="flex items-center gap-2">
-          {loading && (
+          {(loading || deliveryLoading) && (
             <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           )}
           {error && !useLocalStorage && (
@@ -207,6 +262,102 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
           )}
         </div>
       </div>
+
+      {/* Upcoming Deliveries Card */}
+      <Card className="p-4 sm:p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 shadow-soft">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-base sm:text-lg font-semibold text-blue-900 flex items-center">
+            <Truck className="h-5 w-5 mr-2 text-blue-600" />
+            Upcoming Deliveries
+          </h3>
+          <button
+            onClick={() => onNavigate("delivery")}
+            className="text-xs px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+          >
+            View All
+          </button>
+        </div>
+
+        {deliveryLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+            <span className="ml-2 text-sm text-blue-600">Loading deliveries...</span>
+          </div>
+        ) : upcomingDeliveries.length > 0 ? (
+          <div className="space-y-3">
+            {upcomingDeliveries.map((enquiry) => (
+              <div
+                key={enquiry.id}
+                className="flex items-center justify-between p-3 bg-white rounded-lg border border-blue-100 hover:shadow-sm transition-shadow"
+              >
+                <div className="flex items-center space-x-3 flex-1 min-w-0">
+                  <div className="flex-shrink-0">
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                      <Package className="h-4 w-4 text-blue-600" />
+                    </div>
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center space-x-2">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {enquiry.customerName}
+                      </p>
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getDeliveryStatusColor(enquiry.deliveryDetails?.status || '')}`}>
+                        {enquiry.deliveryDetails?.status?.replace('-', ' ') || 'Pending'}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center space-x-4 mt-1">
+                      {enquiry.deliveryDetails?.scheduledTime && (
+                        <div className="flex items-center text-xs text-gray-500">
+                          <Clock className="h-3 w-3 mr-1" />
+                          {formatDeliveryDate(enquiry.deliveryDetails.scheduledTime)}
+                        </div>
+                      )}
+
+                      {enquiry.deliveryDetails?.deliveryMethod && (
+                        <div className="flex items-center text-xs text-gray-500">
+                          <MapPin className="h-3 w-3 mr-1" />
+                          {enquiry.deliveryDetails.deliveryMethod === 'home-delivery' ? 'Home' : 'Pickup'}
+                        </div>
+                      )}
+
+                      {enquiry.deliveryDetails?.assignedTo && (
+                        <div className="text-xs text-gray-500">
+                          Assigned: {enquiry.deliveryDetails.assignedTo}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex-shrink-0 ml-2">
+                  <div className="text-right">
+                    <p className="text-xs text-gray-500">
+                      #{enquiry.id}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <Truck className="h-12 w-12 text-blue-300 mb-3" />
+            <p className="text-sm text-blue-600 font-medium">No upcoming deliveries</p>
+            <p className="text-xs text-blue-500 mt-1">All deliveries are completed or not yet scheduled</p>
+          </div>
+        )}
+
+        {deliveryError && (
+          <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-xs text-red-600 flex items-center">
+              <AlertTriangle className="h-3 w-3 mr-1" />
+              Unable to load delivery data: {deliveryError}
+            </p>
+          </div>
+        )}
+      </Card>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
