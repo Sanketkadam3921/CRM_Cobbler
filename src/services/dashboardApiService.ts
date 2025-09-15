@@ -2,12 +2,15 @@ import { ApiResponse } from '@/types';
 import { useState, useEffect, useCallback } from 'react';
 
 // API Configuration
-// const API_BASE_URL = 'http://localhost:3001/api';
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (
-  typeof window !== 'undefined' && window.location.origin !== 'http://localhost:5173' 
-    ? `${window.location.origin}/api`
-    : 'http://localhost:3001/api'
-);
+
+// const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (
+//   typeof window !== 'undefined' && window.location.origin !== 'http://localhost:5173' 
+//     ? `${window.location.origin}/api`
+//     : 'http://localhost:3001/api'
+// );
+
+const API_BASE_URL = 'http://localhost:3001/api';
+
 const X_TOKEN = import.meta.env.VITE_X_TOKEN || 'cobbler_super_secret_token_2024';
 
 // Dashboard Data Types
@@ -45,7 +48,7 @@ class ApiClient {
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
-    
+
     const config: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
@@ -57,14 +60,14 @@ class ApiClient {
 
     try {
       const response = await fetch(url, config);
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
       }
 
       const result: ApiResponse<T> = await response.json();
-      
+
       if (!result.success) {
         throw new Error(result.error || 'API request failed');
       }

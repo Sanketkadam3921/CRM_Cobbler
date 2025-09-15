@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Search, User, Clock } from "lucide-react";
+import { stringUtils } from "@/utils";
 
 interface PickupOrder {
   id: number;
@@ -19,16 +20,15 @@ interface PickupOrder {
 }
 
 const samplePickups: PickupOrder[] = [
-  { id: 1, customerName: "Rajesh Kumar", customerPhone: "+91 98765 43210", address: "123 MG Road, Pune", items: "Leather Shoes, Hand Bag", quantity: 2, status: "pending", scheduledTime: "16/01/2024 10:00 AM", pin: "1234" },
-  { id: 2, customerName: "Priya Sharma", customerPhone: "+91 87654 32109", address: "456 FC Road, Pune", items: "Sports Shoes", quantity: 1, status: "assigned", assignedTo: "Ramesh", scheduledTime: "16/01/2024 2:00 PM", pin: "5678" },
-  { id: 3, customerName: "Anjali Mehta", customerPhone: "+91 76543 21098", address: "789 JM Road, Pune", items: "Leather Jacket", quantity: 1, status: "pending", scheduledTime: "17/01/2024 11:00 AM", pin: "9876" },
-  { id: 4, customerName: "Vikram Singh", customerPhone: "+91 65432 10987", address: "101 Koregaon Park, Pune", items: "3 pairs of formal shoes", quantity: 3, status: "pending", scheduledTime: "17/01/2024 3:00 PM", pin: "5432" },
-  { id: 5, customerName: "Sunita Patil", customerPhone: "+91 54321 09876", address: "212 Baner, Pune", items: "Designer handbag", quantity: 1, status: "assigned", assignedTo: "Suresh", scheduledTime: "18/01/2024 12:00 PM", pin: "1122" },
-  { id: 6, customerName: "Rohan Desai", customerPhone: "+91 43210 98765", address: "333 Aundh, Pune", items: "Suede boots", quantity: 1, status: "picked-up", scheduledTime: "15/01/2024 10:00 AM", pin: "3344" },
-  { id: 7, customerName: "Kavita Rao", customerPhone: "+91 32109 87654", address: "444 Viman Nagar, Pune", items: "2 leather belts", quantity: 2, status: "completed", scheduledTime: "14/01/2024 2:00 PM", pin: "5566" },
-  { id: 8, customerName: "Sameer Joshi", customerPhone: "+91 21098 76543", address: "555 Hinjewadi, Pune", items: "Office bag", quantity: 1, status: "pending", scheduledTime: "18/01/2024 5:00 PM", pin: "7788" },
+  { id: 1, customerName: "Rajesh Kumar", customerPhone: "+91 98765 43210", address: "123 MG Road, Pune", items: "Leather Shoes, Hand Bag", quantity: 2, status: "pending", scheduledTime: "2024-01-16 10:00 AM", pin: "1234" },
+  { id: 2, customerName: "Priya Sharma", customerPhone: "+91 87654 32109", address: "456 FC Road, Pune", items: "Sports Shoes", quantity: 1, status: "assigned", assignedTo: "Ramesh", scheduledTime: "2024-01-16 2:00 PM", pin: "5678" },
+  { id: 3, customerName: "Anjali Mehta", customerPhone: "+91 76543 21098", address: "789 JM Road, Pune", items: "Leather Jacket", quantity: 1, status: "pending", scheduledTime: "2024-01-17 11:00 AM", pin: "9876" },
+  { id: 4, customerName: "Vikram Singh", customerPhone: "+91 65432 10987", address: "101 Koregaon Park, Pune", items: "3 pairs of formal shoes", quantity: 3, status: "pending", scheduledTime: "2024-01-17 3:00 PM", pin: "5432" },
+  { id: 5, customerName: "Sunita Patil", customerPhone: "+91 54321 09876", address: "212 Baner, Pune", items: "Designer handbag", quantity: 1, status: "assigned", assignedTo: "Suresh", scheduledTime: "2024-01-18 12:00 PM", pin: "1122" },
+  { id: 6, customerName: "Rohan Desai", customerPhone: "+91 43210 98765", address: "333 Aundh, Pune", items: "Suede boots", quantity: 1, status: "picked-up", scheduledTime: "2024-01-15 10:00 AM", pin: "3344" },
+  { id: 7, customerName: "Kavita Rao", customerPhone: "+91 32109 87654", address: "444 Viman Nagar, Pune", items: "2 leather belts", quantity: 2, status: "completed", scheduledTime: "2024-01-14 2:00 PM", pin: "5566" },
+  { id: 8, customerName: "Sameer Joshi", customerPhone: "+91 21098 76543", address: "555 Hinjewadi, Pune", items: "Office bag", quantity: 1, status: "pending", scheduledTime: "2024-01-18 5:00 PM", pin: "7788" },
 ];
-
 
 interface PendingPickupsTableProps {
   onBack: () => void;
@@ -122,7 +122,7 @@ export function PendingPickupsTable({ onBack }: PendingPickupsTableProps) {
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-foreground text-lg">{pickup.customerName}</h3>
               <Badge className={`${getStatusColor(pickup.status)} text-xs`}>
-                {pickup.status}
+                {stringUtils.capitalizeWords(pickup.status)}
               </Badge>
             </div>
             <p className="text-sm text-muted-foreground">{pickup.customerPhone}</p>

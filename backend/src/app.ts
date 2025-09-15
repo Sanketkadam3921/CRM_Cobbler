@@ -5,6 +5,7 @@ import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import path from 'path';
+import fs from 'fs';
 //import { apiLimiter } from "./middleware/rateLimiter";
 
 
@@ -21,7 +22,6 @@ import expensesRouter from './routes/expenses';
 import inventoryRouter from './routes/inventory';
 import dashboardRouter from './routes/dashboard';
 import reportRoutes from './routes/report';
-
 
 // Load environment variables
 dotenv.config();
@@ -137,7 +137,6 @@ app.use('/api/dashboard', dashboardRouter);
 app.use('/api/reports', reportRoutes);
 
 
-
 // ALWAYS serve uploaded files
 app.use('/bills', express.static(path.join(process.cwd(), 'public/bills')));
 
@@ -186,6 +185,13 @@ app.use((error: any, req: express.Request, res: express.Response, next: express.
 // Initialize database and start server
 const startServer = async (): Promise<void> => {
   try {
+    // Create required directories
+    const requiredDirs = ['public/bills', 'logs'];
+    requiredDirs.forEach(dir => {
+      fs.mkdirSync(dir, { recursive: true });
+      console.log(`📁 Directory ensured: ${dir}`);
+    });
+
     // Initialize database connection
     await initializeDatabase();
     logDatabase.connection('Database connection established successfully');

@@ -26,11 +26,12 @@ import {
   Send,
   CheckCircle,
   Loader2,
-  Phone,
 } from "lucide-react";
 import { Enquiry, PickupStatus, ServiceType } from "@/types";
+import { imageUploadHelper } from "@/utils/localStorage";
 import { usePickupEnquiries, usePickupStats } from "@/services/pickupApiService";
 import { useToast } from "@/hooks/use-toast";
+import { stringUtils } from "@/utils";
 
 export function PickupModule() {
   const { toast } = useToast();
@@ -38,7 +39,7 @@ export function PickupModule() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [receivedNotes, setReceivedNotes] = useState("");
 
-  // Use pickup API hooks with 2-second polling (FIXED - was 200000ms)
+  // Use pickup API hooks with 2-second polling
   const {
     enquiries,
     loading: enquiriesLoading,
@@ -46,13 +47,21 @@ export function PickupModule() {
     assignPickup,
     markCollected,
     markReceived
-  } = usePickupEnquiries(2000); // 2 seconds instead of 200000
+  } = usePickupEnquiries(200000);
 
   const {
     stats,
     loading: statsLoading,
     error: statsError
-  } = usePickupStats(2000); // 2 seconds instead of 200000
+  } = usePickupStats();
+
+  // Use stats from API instead of calculating locally
+  const calculatedStats = stats || {
+    scheduledPickups: 0,
+    assignedPickups: 0,
+    collectedPickups: 0,
+    receivedPickups: 0
+  };
 
   const filteredEnquiries = enquiries.filter(
     (enquiry) =>
@@ -99,7 +108,6 @@ export function PickupModule() {
         title: "Photo Required",
         description: "Please upload a collection proof photo",
         variant: "destructive",
-        className: "bg-red-600 text-white shadow-lg",
       });
       return;
     }
@@ -113,7 +121,7 @@ export function PickupModule() {
       toast({
         title: "Pickup Collected!",
         description: "Pickup has been marked as collected successfully",
-        className: "bg-blue-600 text-white shadow-lg",
+        className: "bg-green-50 border-green-200 text-green-800",
       });
 
       // Send WhatsApp notification (simulated)
@@ -121,8 +129,8 @@ export function PickupModule() {
       if (enquiry) {
         toast({
           title: "WhatsApp Notification",
-          description: `WhatsApp message sent to ${enquiry.customerName}: "Your ${enquiry.product} has been collected successfully."`,
-          className: "bg-blue-600 text-white shadow-lg",
+          description: `WhatsApp sent to ${enquiry.customerName}: "Your ${enquiry.product} has been collected successfully."`,
+          className: "bg-blue-50 border-blue-200 text-blue-800",
         });
       }
     } catch (error) {
@@ -130,17 +138,24 @@ export function PickupModule() {
         title: "Error",
         description: "Failed to mark pickup as collected",
         variant: "destructive",
-        className: "bg-red-600 text-white shadow-lg",
       });
     }
   };
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // Create a temporary URL for the file object
-      const imageUrl = URL.createObjectURL(file);
-      setSelectedImage(imageUrl);
+      try {
+        const thumbnailData = await imageUploadHelper.handleImageUpload(file);
+        setSelectedImage(thumbnailData);
+      } catch (error) {
+        console.error('Failed to process image:', error);
+        toast({
+          title: "Error",
+          description: "Failed to process image. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -174,7 +189,7 @@ export function PickupModule() {
       if (enquiry) {
         toast({
           title: "WhatsApp Notification",
-          description: `WhatsApp message sent to ${enquiry.customerName}: "We have received your ${enquiry.product} and it has been moved to service department."`,
+          description: `WhatsApp sent to ${enquiry.customerName}: "We have received your ${enquiry.product} and it has been moved to service department."`,
           className: "bg-blue-50 border-blue-200 text-blue-800",
         });
       }
@@ -219,11 +234,7 @@ export function PickupModule() {
           <div className="flex items-center justify-between">
             <div>
               <div className="text-lg sm:text-2xl font-bold text-foreground">
-                {statsLoading ? (
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                ) : (
-                  stats?.scheduledPickups || 0
-                )}
+                {statsLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : calculatedStats.scheduledPickups}
               </div>
               <div className="text-xs sm:text-sm text-muted-foreground">
                 Scheduled Pickups
@@ -232,16 +243,11 @@ export function PickupModule() {
             <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-warning" />
           </div>
         </Card>
-
         <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-lg sm:text-2xl font-bold text-foreground">
-                {statsLoading ? (
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                ) : (
-                  stats?.assignedPickups || 0
-                )}
+                {statsLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : calculatedStats.assignedPickups}
               </div>
               <div className="text-xs sm:text-sm text-muted-foreground">
                 Assigned
@@ -250,16 +256,11 @@ export function PickupModule() {
             <User className="h-6 w-6 sm:h-8 sm:w-8 text-blue-500" />
           </div>
         </Card>
-
         <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-lg sm:text-2xl font-bold text-foreground">
-                {statsLoading ? (
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                ) : (
-                  stats?.collectedPickups || 0
-                )}
+                {statsLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : calculatedStats.collectedPickups}
               </div>
               <div className="text-xs sm:text-sm text-muted-foreground">
                 Collected
@@ -268,16 +269,11 @@ export function PickupModule() {
             <Package className="h-6 w-6 sm:h-8 sm:w-8 text-purple-500" />
           </div>
         </Card>
-
         <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-lg sm:text-2xl font-bold text-foreground">
-                {statsLoading ? (
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                ) : (
-                  stats?.receivedPickups || 0
-                )}
+                {statsLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : calculatedStats.receivedPickups}
               </div>
               <div className="text-xs sm:text-sm text-muted-foreground">
                 Received
@@ -288,16 +284,15 @@ export function PickupModule() {
         </Card>
       </div>
 
-      <Card className="p-3 sm:p-4 bg-white border-0 shadow-lg rounded-full">
+      {/* Search */}
+      <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
         <div className="relative">
-          <Search
-            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 sm:h-5 sm:w-5"
-          />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
-            placeholder="Search pickups"
+            placeholder="Search pickups by customer, address, product..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 pr-3 w-full text-sm sm:text-base"
+            className="pl-10"
           />
         </div>
       </Card>
@@ -305,7 +300,7 @@ export function PickupModule() {
       {/* Pickup Items */}
       <div className="space-y-4">
         <h2 className="text-xl sm:text-2xl font-bold text-foreground">
-          Scheduled Pickups
+          Pickup Workflow
         </h2>
 
         {enquiriesLoading ? (
@@ -339,20 +334,16 @@ export function PickupModule() {
                     <h3 className="font-semibold text-foreground text-base sm:text-lg">
                       {enquiry.customerName}
                     </h3>
-                    <div className="flex items-center space-x-1 text-gray-400">
-                      <Phone className="h-4 w-4" />
-                      <span className="text-sm">
-                        {enquiry.phone.startsWith('+91') ? enquiry.phone : `+91 ${enquiry.phone}`}
-                      </span>
-                    </div>
-
+                    <p className="text-sm text-muted-foreground">
+                      {enquiry.phone}
+                    </p>
                   </div>
                   <Badge
                     className={`${getStatusColor(
                       enquiry.pickupDetails?.status || "scheduled"
-                    )} text-xs self-start capitalize`}
+                    )} text-xs self-start`}
                   >
-                    {enquiry.pickupDetails?.status || "scheduled"}
+                    {stringUtils.capitalizeWords(enquiry.pickupDetails?.status || "scheduled")}
                   </Badge>
                 </div>
 
@@ -365,14 +356,9 @@ export function PickupModule() {
                   </div>
 
                   <div className="flex items-center space-x-2">
-                    {/* Quantity badge */}
-                    <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
-                      Quantity: {enquiry.quantity}
-                    </div>
-
-                    {/* Product name */}
+                    <Package className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                     <span className="text-sm text-foreground">
-                      {enquiry.product}
+                      {enquiry.product} ({enquiry.quantity} items)
                     </span>
                   </div>
 
@@ -387,9 +373,10 @@ export function PickupModule() {
 
                   {enquiry.pickupDetails?.assignedTo && (
                     <div className="flex items-center space-x-2">
-                      <div className="bg-green-100 text-green-800 border border-green-200 px-2 py-1 rounded-full text-xs font-medium">
+                      <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      <span className="text-sm text-foreground">
                         Assigned: {enquiry.pickupDetails.assignedTo}
-                      </div>
+                      </span>
                     </div>
                   )}
 
@@ -461,7 +448,15 @@ export function PickupModule() {
                                 <img
                                   src={selectedImage}
                                   alt="Collection proof"
-                                  className="w-full h-auto object-cover rounded-md border"
+                                  className="w-full max-h-48 object-contain rounded-md border bg-gray-50"
+                                  loading="eager"
+                                  decoding="sync"
+                                  style={{
+                                    imageRendering: 'crisp-edges',
+                                    transform: 'translateZ(0)',
+                                    backfaceVisibility: 'hidden',
+                                    WebkitBackfaceVisibility: 'hidden'
+                                  } as React.CSSProperties}
                                 />
                               </div>
                             )}
@@ -523,11 +518,20 @@ export function PickupModule() {
                                 <img
                                   src={selectedImage}
                                   alt="Received item condition"
-                                  className="w-full h-32 object-cover rounded-md border"
+                                  className="w-full max-h-48 object-contain rounded-md border bg-gray-50"
+                                  loading="eager"
+                                  decoding="sync"
+                                  style={{
+                                    imageRendering: 'crisp-edges',
+                                    transform: 'translateZ(0)',
+                                    backfaceVisibility: 'hidden',
+                                    WebkitBackfaceVisibility: 'hidden'
+                                  } as React.CSSProperties}
                                 />
                               </div>
                             )}
                           </div>
+
                           <div className="space-y-2">
                             <Label htmlFor="notes">
                               Notes / Remarks (Optional)
@@ -540,6 +544,7 @@ export function PickupModule() {
                               rows={3}
                             />
                           </div>
+
                           <Button
                             onClick={() => handleItemReceived(enquiry.id)}
                             className="w-full bg-green-600 hover:bg-green-700"

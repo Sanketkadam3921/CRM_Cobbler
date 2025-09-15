@@ -51,7 +51,7 @@ const fallbackRecentActivity = [
   {
     id: 2,
     type: "pickup",
-    message: "Pickup scheduled for Ravi Kumar - 3 shoes", 
+    message: "Pickup scheduled for Ravi Kumar - 3 shoes",
     time: "15 minutes ago",
     status: "scheduled",
   },
@@ -78,7 +78,7 @@ interface DashboardOverviewProps {
 export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
   const [dynamicStats, setDynamicStats] = useState(stats);
   const [recentActivity, setRecentActivity] = useState(fallbackRecentActivity);
-  const [lowStockAlerts, setLowStockAlerts] = useState<Array<{item: string; stock: number}>>([]);
+  const [lowStockAlerts, setLowStockAlerts] = useState<Array<{ item: string; stock: number }>>([]);
   const [useLocalStorage, setUseLocalStorage] = useState(false);
 
   // Try to use API data first, fallback to localStorage if API fails
@@ -95,7 +95,7 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
           value: dashboardData.totalEnquiries.toString(),
         },
         {
-          ...stats[1], 
+          ...stats[1],
           value: dashboardData.pendingPickups.toString(),
         },
         {
@@ -128,23 +128,23 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
       // Only fallback to localStorage when API completely fails and we have no data
       console.warn('Dashboard API failed, using localStorage:', error);
       setUseLocalStorage(true);
-      
+
       // Calculate real-time stats from localStorage using new integrated workflow
       const enquiries = enquiriesStorage.getAll();
       const pickupEnquiries = workflowHelpers.getPickupEnquiries();
       const serviceEnquiries = workflowHelpers.getServiceEnquiries();
-      
-      const pendingPickups = pickupEnquiries.filter(e => 
+
+      const pendingPickups = pickupEnquiries.filter(e =>
         e.pickupDetails?.status === 'scheduled' || e.pickupDetails?.status === 'assigned'
       ).length;
-      const inServiceItems = serviceEnquiries.filter(e => 
+      const inServiceItems = serviceEnquiries.filter(e =>
         e.currentStage === 'service'
       ).length;
-      const completedServices = serviceEnquiries.filter(e => 
+      const completedServices = serviceEnquiries.filter(e =>
         e.currentStage === 'completed' || e.currentStage === 'delivery'
       ).length;
       const totalServices = serviceEnquiries.length;
-      
+
       setDynamicStats([
         {
           ...stats[0],
@@ -166,7 +166,7 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
 
       // Use fallback activity
       setRecentActivity(fallbackRecentActivity);
-      
+
       // Set fallback low stock alerts
       setLowStockAlerts([
         { item: 'Leather polish', stock: 2 },
@@ -188,7 +188,7 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
             )}
           </p>
         </div>
-        
+
         {/* API Status and Refresh */}
         <div className="flex items-center gap-2">
           {loading && (
@@ -211,33 +211,30 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
         {dynamicStats.map((stat) => (
-          <Card 
-            key={stat.name} 
-            className="p-4 sm:p-6 bg-gradient-card border-0 shadow-soft hover:shadow-medium transition-all duration-300 cursor-pointer group" 
+          <Card
+            key={stat.name}
+            className="p-4 sm:p-6 bg-gradient-card border-0 shadow-soft hover:shadow-medium transition-all duration-300 cursor-pointer group"
             onClick={() => onNavigate(stat.redirectTo)}
           >
             <div className="flex items-center justify-between">
               <div className="min-w-0 flex-1">
                 <p className="text-xs sm:text-sm font-medium text-muted-foreground group-hover:text-primary transition-colors truncate">{stat.name}</p>
                 <p className="text-xl sm:text-2xl font-bold text-foreground">{stat.value}</p>
-                <p className={`text-xs sm:text-sm ${
-                  stat.changeType === "positive" ? "text-success" :
+                <p className={`text-xs sm:text-sm ${stat.changeType === "positive" ? "text-success" :
                   stat.changeType === "warning" ? "text-warning" :
-                  "text-muted-foreground"
-                }`}>
+                    "text-muted-foreground"
+                  }`}>
                   {stat.change}
                 </p>
               </div>
-              <div className={`p-2 sm:p-3 rounded-lg group-hover:scale-105 transition-transform flex-shrink-0 ${
-                stat.changeType === "positive" ? "bg-success/10" :
+              <div className={`p-2 sm:p-3 rounded-lg group-hover:scale-105 transition-transform flex-shrink-0 ${stat.changeType === "positive" ? "bg-success/10" :
                 stat.changeType === "warning" ? "bg-warning/10" :
-                "bg-primary/10"
-              }`}>
-                <stat.icon className={`h-5 w-5 sm:h-6 sm:w-6 ${
-                  stat.changeType === "positive" ? "text-success" :
+                  "bg-primary/10"
+                }`}>
+                <stat.icon className={`h-5 w-5 sm:h-6 sm:w-6 ${stat.changeType === "positive" ? "text-success" :
                   stat.changeType === "warning" ? "text-warning" :
-                  "text-primary"
-                }`} />
+                    "text-primary"
+                  }`} />
               </div>
             </div>
           </Card>
@@ -251,12 +248,11 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
           <div className="space-y-3 sm:space-y-4">
             {recentActivity.map((activity) => (
               <div key={activity.id} className="flex items-start space-x-3 p-2 sm:p-3 rounded-lg hover:bg-muted/50 transition-colors">
-                <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
-                  activity.status === "new" ? "bg-primary" :
+                <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${activity.status === "new" ? "bg-primary" :
                   activity.status === "completed" ? "bg-success" :
-                  activity.status === "warning" ? "bg-warning" :
-                  "bg-muted-foreground"
-                }`} />
+                    activity.status === "warning" ? "bg-warning" :
+                      "bg-muted-foreground"
+                  }`} />
                 <div className="flex-1 min-w-0">
                   <p className="text-xs sm:text-sm font-medium text-foreground break-words">{activity.message}</p>
                   <p className="text-xs text-muted-foreground">{activity.time}</p>
@@ -269,7 +265,7 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
         <Card className="p-4 sm:p-6 bg-gradient-card border-0 shadow-soft">
           <h3 className="text-base sm:text-lg font-semibold text-foreground mb-4">Quick Actions</h3>
           <div className="grid grid-cols-2 gap-2 sm:gap-3">
-            <button 
+            <button
               onClick={() => onNavigate("crm", "add-enquiry")}
               className="p-3 sm:p-4 text-left rounded-lg border border-border hover:bg-primary/5 hover:border-primary/20 transition-all group"
             >
@@ -277,7 +273,7 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
               <div className="text-xs sm:text-sm font-medium text-foreground">Add Enquiry</div>
               <div className="text-xs text-muted-foreground">Create new lead</div>
             </button>
-            <button 
+            <button
               onClick={() => onNavigate("pickup", "schedule-pickup")}
               className="p-3 sm:p-4 text-left rounded-lg border border-border hover:bg-primary/5 hover:border-primary/20 transition-all group"
             >
@@ -285,7 +281,7 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
               <div className="text-xs sm:text-sm font-medium text-foreground">Schedule Pickup</div>
               <div className="text-xs text-muted-foreground">Book collection</div>
             </button>
-            <button 
+            <button
               onClick={() => onNavigate("inventory", "add-inventory")}
               className="p-3 sm:p-4 text-left rounded-lg border border-border hover:bg-primary/5 hover:border-primary/20 transition-all group"
             >
@@ -293,7 +289,7 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
               <div className="text-xs sm:text-sm font-medium text-foreground">Add Inventory</div>
               <div className="text-xs text-muted-foreground">Update stock</div>
             </button>
-            <button 
+            <button
               onClick={() => onNavigate("expenses", "add-expense")}
               className="p-3 sm:p-4 text-left rounded-lg border border-border hover:bg-primary/5 hover:border-primary/20 transition-all group"
             >

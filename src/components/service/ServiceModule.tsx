@@ -8,9 +8,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Camera, CheckCircle, Clock, DollarSign, FileText, Image, Search, Upload, Send, ArrowRight, CheckSquare, Wrench, Eye, Loader2, Phone } from "lucide-react";
+import { Camera, CheckCircle, Clock, DollarSign, FileText, Image, Search, Upload, Send, ArrowRight, CheckSquare, Wrench, Eye, Loader2 } from "lucide-react";
 import { ServiceDetails, ServiceStatus, ServiceType, ServiceTypeStatus } from "@/types";
-// import { imageUploadHelper } from "@/utils/localStorage"; // We will not use this for the preview
+import { imageUploadHelper } from "@/utils/localStorage";
 import { ServiceTypeDetail } from "./ServiceTypeDetail";
 import { useServiceEnquiries, useServiceStats, serviceApiService } from "@/services/serviceApiService";
 import { useToast } from "@/hooks/use-toast";
@@ -39,56 +39,6 @@ export function ServiceModule() {
   const [finalPhotoNotes, setFinalPhotoNotes] = useState("");
   const [isProcessingPhoto, setIsProcessingPhoto] = useState(false);
 
-  // Helper function to convert file to base64 data URL with better compression
-  const fileToDataURL = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        if (!e.target?.result) {
-          return reject(new Error('Failed to read file.'));
-        }
-        const img = document.createElement('img'); // Use document.createElement for clarity
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-          if (!ctx) {
-            return reject(new Error('Failed to get canvas context.'));
-          }
-
-          const maxWidth = 1200;
-          const maxHeight = 1200;
-          let { width, height } = img;
-
-          if (width > height) {
-            if (width > maxWidth) {
-              height = (height * maxWidth) / width;
-              width = maxWidth;
-            }
-          } else {
-            if (height > maxHeight) {
-              width = (width * maxHeight) / height;
-              height = maxHeight;
-            }
-          }
-
-          canvas.width = width;
-          canvas.height = height;
-
-          ctx.imageSmoothingEnabled = true;
-          ctx.imageSmoothingQuality = 'high';
-          ctx.drawImage(img, 0, 0, width, height);
-
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.85); // 85% quality is a good balance
-          resolve(dataUrl);
-        };
-        img.onerror = () => reject(new Error('Failed to load image for processing.'));
-        img.src = e.target.result as string;
-      };
-      reader.onerror = () => reject(new Error('FileReader failed.'));
-      reader.readAsDataURL(file);
-    });
-  };
-
   // API hooks handle data loading and stats automatically
   // No need for manual useEffect or stats calculation
   console.log('🔍 ServiceModule - beforeenquiries:', enquiries);
@@ -100,23 +50,6 @@ export function ServiceModule() {
         service.type.toLowerCase().includes(searchTerm.toLowerCase())
       )
   );
-
-  // Utility function to capitalize words for display
-  const capitalizeWords = (text: string) => {
-    if (!text) return "";
-    return text
-      .split(/[\s-_]+/)
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(" ");
-  };
-
-  const capitalizeStatus = (status: string) => {
-    if (!status) return "";
-    return status
-      .split("-")
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
-  };
 
   // Debug logging
   console.log('🔍 ServiceModule - enquiries:', enquiries);
@@ -140,70 +73,44 @@ export function ServiceModule() {
     }
   };
 
-  const handleImageUpload = (setter: React.Dispatch<React.SetStateAction<string | null>>) =>
-    async (event: React.ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0];
-      if (!file) return;
-
-      setIsProcessingPhoto(true); // Optional: show a loading spinner
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
       try {
-        const dataURL = await fileToDataURL(file);
-        setter(dataURL);
-        toast({
-          title: "Success",
-          description: "Image has been uploaded and compressed.",
-        });
+        const thumbnailData = await imageUploadHelper.handleImageUpload(file);
+        setSelectedImage(thumbnailData);
       } catch (error) {
-        console.error('Image processing failed:', error);
-        toast({
-          title: "Upload Error",
-          description: "Could not process the image. Please try a different file.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsProcessingPhoto(false); // Hide spinner
+        console.error('Failed to process image:', error);
+        alert('Failed to process image. Please try again.');
       }
-    };
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = (error) => reject(error);
-    });
+    }
   };
 
-  /**
-   * A single, reusable handler for any photo upload.
-   * Pass the correct state setter function (e.g., setOverallBeforePhoto) when you call it.
-   */
-  const createPhotoUploadHandler = (setter: React.Dispatch<React.SetStateAction<string | null>>) =>
-    async (event: React.ChangeEvent<HTMLInputElement>) => {
-      // 1. Get the file from the input event
-      const file = event.target.files?.[0];
-      if (!file) {
-        return; // No file selected, do nothing
-      }
-
-      // 2. Try to convert the file to a Base64 string
+  const handleOverallPhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
       try {
-        const base64String = await fileToBase64(file);
-        setter(base64String); // 3. Update the component's state with the result
-
-        console.log("✅ Image successfully processed.");
-
+        const thumbnailData = await imageUploadHelper.handleImageUpload(file);
+        setOverallBeforePhoto(thumbnailData);
       } catch (error) {
-        console.error('❌ Error reading file:', error);
-        toast({
-          title: "Error Reading File",
-          description: "There was an issue processing the selected file.",
-          variant: "destructive",
-        });
+        console.error('Failed to process image:', error);
+        alert('Failed to process image. Please try again.');
       }
-    };
-  const handleOverallPhotoUpload = createPhotoUploadHandler(setOverallBeforePhoto);
-  const handleFinalPhotoUpload = createPhotoUploadHandler(setOverallAfterPhoto);
+    }
+  };
 
+  const handleFinalPhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      try {
+        const thumbnailData = await imageUploadHelper.handleImageUpload(file);
+        setOverallAfterPhoto(thumbnailData);
+      } catch (error) {
+        console.error('Failed to process image:', error);
+        alert('Failed to process image. Please try again.');
+      }
+    }
+  };
 
   const startService = async (enquiryId: number, serviceType: ServiceType, department: string) => {
     try {
@@ -233,7 +140,7 @@ export function ServiceModule() {
       // Show success notification
       toast({
         title: "Service Started!",
-        description: `${capitalizeWords(serviceType)} has been started for enquiry #${enquiryId}`,
+        description: `${serviceType} has been started for enquiry #${enquiryId}`,
         className: "bg-blue-50 border-blue-200 text-blue-800",
       });
 
@@ -241,7 +148,7 @@ export function ServiceModule() {
       if (enquiry) {
         toast({
           title: "WhatsApp Notification",
-          description: `WhatsApp sent to ${enquiry.customerName}: "Your ${enquiry.product} has been sent to ${department} for ${capitalizeWords(serviceType)} work."`,
+          description: `WhatsApp sent to ${enquiry.customerName}: "Your ${enquiry.product} has been sent to ${department} for ${serviceType} work."`,
           className: "bg-blue-50 border-blue-200 text-blue-800",
         });
       }
@@ -282,7 +189,7 @@ export function ServiceModule() {
       // Show success notification
       toast({
         title: "Service Completed!",
-        description: `${capitalizeWords(serviceType)} has been completed for enquiry #${enquiryId}`,
+        description: `${serviceType} has been completed for enquiry #${enquiryId}`,
         className: "bg-green-50 border-green-200 text-green-800",
       });
 
@@ -290,7 +197,7 @@ export function ServiceModule() {
       if (enquiry) {
         toast({
           title: "WhatsApp Notification",
-          description: `WhatsApp sent to ${enquiry.customerName}: "Your ${capitalizeWords(serviceType)} work on ${enquiry.product} has been completed."`,
+          description: `WhatsApp sent to ${enquiry.customerName}: "Your ${serviceType} work on ${enquiry.product} has been completed."`,
           className: "bg-blue-50 border-blue-200 text-blue-800",
         });
       }
@@ -550,16 +457,19 @@ export function ServiceModule() {
   };
 
   const getProgressText = (serviceTypes: ServiceTypeStatus[]) => {
-    if (!serviceTypes || serviceTypes.length === 0) return "No Services Assigned";
-    const doneCount = serviceTypes.filter(s => s.status === "done").length;
-    return `${doneCount}/${serviceTypes.length} Services Completed`;
+    if (!serviceTypes || serviceTypes.length === 0) {
+      return "No services assigned";
+    }
+    const doneCount = serviceTypes.filter(service => service.status === "done").length;
+    const totalCount = serviceTypes.length;
+    return `${doneCount}/${totalCount} services completed`;
   };
 
   const getOverallStatus = (serviceTypes: ServiceTypeStatus[]) => {
     if (!serviceTypes || serviceTypes.length === 0) {
-      return "Pending";
+      return "Unassigned";
     } else if (serviceTypes.every(service => service.status === "done")) {
-      return "Done";
+      return "All Done";
     } else if (serviceTypes.some(service => service.status === "in-progress")) {
       return "In Progress";
     } else {
@@ -579,14 +489,17 @@ export function ServiceModule() {
     );
   }
 
-
   return (
     <div className="space-y-4 sm:space-y-6 animate-fade-in p-2 sm:p-0">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Service Workflow</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">Manage Multi-Service Work From Received Items</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+            Service Workflow
+          </h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
+            Manage multi-service work from received items
+          </p>
         </div>
       </div>
 
@@ -598,7 +511,9 @@ export function ServiceModule() {
               <div className="text-lg sm:text-2xl font-bold text-foreground">
                 {statsLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : stats.pendingCount}
               </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">Pending Services</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">
+                Pending Services
+              </div>
             </div>
             <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-warning" />
           </div>
@@ -609,7 +524,9 @@ export function ServiceModule() {
               <div className="text-lg sm:text-2xl font-bold text-foreground">
                 {statsLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : stats.inProgressCount}
               </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">In Progress</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">
+                In Progress
+              </div>
             </div>
             <Wrench className="h-6 w-6 sm:h-8 sm:w-8 text-blue-500" />
           </div>
@@ -620,7 +537,9 @@ export function ServiceModule() {
               <div className="text-lg sm:text-2xl font-bold text-foreground">
                 {statsLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : stats.doneCount}
               </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">Completed Services</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">
+                Completed Services
+              </div>
             </div>
             <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-success" />
           </div>
@@ -631,20 +550,21 @@ export function ServiceModule() {
               <div className="text-lg sm:text-2xl font-bold text-foreground">
                 {statsLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : stats.totalServices}
               </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">Total Services</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">
+                Total Services
+              </div>
             </div>
             <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-purple-500" />
           </div>
         </Card>
       </div>
 
-
       {/* Search */}
       <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
-            placeholder="Search Services"
+            placeholder="Search services by customer, product, service type..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -653,28 +573,28 @@ export function ServiceModule() {
       </Card>
 
       {/* Service Items */}
-      <div className="space-y-6">
-
+      <div className="space-y-4">
         <h2 className="text-xl sm:text-2xl font-bold text-foreground">
           Service Queue
         </h2>
-
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
           {filteredEnquiries.map((enquiry) => (
-            <Card key={enquiry.enquiryId} className="p-4 sm:p-6 bg-gradient-card border-0 shadow-soft hover:shadow-medium transition-all duration-300">
+            <Card
+              key={enquiry.enquiryId}
+              className="p-4 sm:p-6 bg-gradient-card border-0 shadow-soft hover:shadow-medium transition-all duration-300"
+            >
               <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-4 gap-3">
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-foreground text-base sm:text-lg truncate">{capitalizeWords(enquiry.customerName)}</h3>
-                  <div className="flex items-center space-x-1 text-gray-400">
-                    <Phone className="h-4 w-4" />
-                    <span className="text-sm">
-                      {enquiry.phone.startsWith('+91') ? enquiry.phone : `+91 ${enquiry.phone}`}
-                    </span>
-                  </div>
+                  <h3 className="font-semibold text-foreground text-base sm:text-lg">
+                    {enquiry.customerName}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {enquiry.phone}
+                  </p>
                 </div>
-                <div className="flex flex-col items-start sm:items-end gap-2">
+                <div className="flex flex-col items-end gap-2">
                   <Badge className={`${getStatusColor(getOverallStatus(enquiry.serviceTypes || []) as ServiceStatus)} text-xs px-2 py-1 rounded-full font-medium`}>
-                    {capitalizeStatus(getOverallStatus(enquiry.serviceTypes || []))}
+                    {getOverallStatus(enquiry.serviceTypes || [])}
                   </Badge>
                   <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-xs px-2 py-1 rounded-full font-medium">
                     {getProgressText(enquiry.serviceTypes || [])}
@@ -682,19 +602,16 @@ export function ServiceModule() {
                 </div>
               </div>
 
-              {/* Product & Estimated Cost */}
               <div className="space-y-3">
                 <div className="flex items-center space-x-2">
-                  <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
-                    Quantity: {enquiry.quantity}
-                  </div>
-                  <span className="text-gray-500 text-sm">{enquiry.product}</span>
+                  <Image className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  <span className="text-sm text-foreground">
+                    {enquiry.product} ({enquiry.quantity} items)
+                  </span>
                 </div>
 
-
-
-
                 <div className="flex items-center space-x-2">
+                  <DollarSign className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                   <span className="text-sm font-semibold text-foreground">
                     Estimated: ₹{enquiry.estimatedCost || 0}
                   </span>
@@ -705,34 +622,30 @@ export function ServiceModule() {
                   <h4 className="text-sm font-medium text-foreground">Services:</h4>
                   {enquiry.serviceTypes && enquiry.serviceTypes.length > 0 ? (
                     enquiry.serviceTypes.map((service, index) => (
-                      <div
-                        key={index}
-                        className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-2 bg-muted/50 rounded"
-                      >
+                      <div key={index} className="flex items-center justify-between p-2 bg-muted/50 rounded">
                         <div className="flex items-center space-x-2">
-                          <span className="text-sm text-foreground">{capitalizeWords(service.type)}</span>
-                          <Badge className={`${getStatusColor(service.status as ServiceStatus)} text-xs px-2 py-1 rounded-full font-medium`}>
-                            {capitalizeWords(service.status)}
+                          <span className="text-sm text-foreground">{service.type}</span>
+                          <Badge className={`${getStatusColor(service.status)} text-xs`}>
+                            {service.status}
                           </Badge>
                         </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-xs mt-2 sm:mt-0"
-                          onClick={() =>
-                            setSelectedServiceDetail({
-                              enquiryId: enquiry.enquiryId,
-                              serviceType: service.type,
-                            })
-                          }
-                        >
-                          <Eye className="h-3 w-3 mr-1" />
-                          View
-                        </Button>
+                        <div className="flex space-x-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-xs"
+                            onClick={() => setSelectedServiceDetail({ enquiryId: enquiry.enquiryId, serviceType: service.type })}
+                          >
+                            <Eye className="h-3 w-3 mr-1" />
+                            View
+                          </Button>
+                        </div>
                       </div>
                     ))
                   ) : (
-                    <div className="text-sm text-muted-foreground">No Services Assigned Yet</div>
+                    <div className="text-sm text-muted-foreground">
+                      No services assigned yet
+                    </div>
                   )}
                 </div>
 
@@ -742,43 +655,55 @@ export function ServiceModule() {
                   <div className="grid grid-cols-2 gap-2">
                     {/* Before Photo */}
                     <div className="text-center">
-                      <p className="text-sm font-semibold text-muted-foreground mb-1">Before</p>
+                      <p className="text-xs text-muted-foreground mb-1">Before</p>
                       {enquiry.overallPhotos?.beforePhoto ? (
                         <img
                           src={enquiry.overallPhotos.beforePhoto}
                           alt="Before service"
-                          className="w-full h-32 sm:h-40 object-cover rounded border"
-                          style={{ imageRendering: 'auto' }}
+                          className="h-20 w-full object-contain rounded border bg-gray-50"
+                          loading="eager"
+                          decoding="sync"
+                          style={{
+                            imageRendering: 'crisp-edges',
+                            transform: 'translateZ(0)',
+                            backfaceVisibility: 'hidden',
+                            WebkitBackfaceVisibility: 'hidden'
+                          } as React.CSSProperties}
                         />
                       ) : (
-                        <div className="h-32 sm:h-40 bg-muted rounded flex items-center justify-center border">
-                          <span className="text-sm font-semibold text-muted-foreground">No Before Photo</span>
+                        <div className="h-20 bg-muted rounded flex items-center justify-center border">
+                          <span className="text-xs text-muted-foreground">No before photo</span>
                         </div>
                       )}
                     </div>
-
                     {/* After Photo */}
                     <div className="text-center">
-                      <p className="text-sm font-semibold text-muted-foreground mb-1">After</p>
+                      <p className="text-xs text-muted-foreground mb-1">After</p>
                       {enquiry.overallPhotos?.afterPhoto ? (
                         <img
                           src={enquiry.overallPhotos.afterPhoto}
                           alt="After service"
-                          className="w-full h-32 sm:h-40 object-cover rounded border"
-                          style={{ imageRendering: 'auto' }}
+                          className="h-20 w-full object-contain rounded border bg-gray-50"
+                          loading="eager"
+                          decoding="sync"
+                          style={{
+                            imageRendering: 'crisp-edges',
+                            transform: 'translateZ(0)',
+                            backfaceVisibility: 'hidden',
+                            WebkitBackfaceVisibility: 'hidden'
+                          } as React.CSSProperties}
                         />
                       ) : (
-                        <div className="h-32 sm:h-40 bg-muted rounded flex items-center justify-center border">
-                          <span className="text-sm font-semibold text-muted-foreground">No After Photo</span>
+                        <div className="h-20 bg-muted rounded flex items-center justify-center border"
+                        >
+                          <span className="text-xs text-muted-foreground">No after photo</span>
                         </div>
                       )}
                     </div>
                   </div>
                 </div>
-
               </div>
 
-              {/* Action Buttons */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
                 <Button
                   size="sm"
@@ -801,8 +726,7 @@ export function ServiceModule() {
                   </Button>
                 )}
 
-                {enquiry.serviceTypes &&
-                  enquiry.serviceTypes.length > 0 &&
+                {enquiry.serviceTypes && enquiry.serviceTypes.length > 0 &&
                   !enquiry.overallPhotos?.beforePhoto && (
                     <Button
                       size="sm"
@@ -814,10 +738,9 @@ export function ServiceModule() {
                     </Button>
                   )}
 
-                {/* Show Take Final Photo button when all services are done */}
-                {enquiry.serviceTypes &&
-                  enquiry.serviceTypes.length > 0 &&
-                  enquiry.serviceTypes.every((service) => service.status === "done") &&
+                {enquiry.serviceTypes && enquiry.serviceTypes.length > 0 &&
+                  enquiry.serviceTypes.every(service => service.status === "done") &&
+                  enquiry.overallPhotos?.beforePhoto &&
                   !enquiry.overallPhotos?.afterPhoto && (
                     <Button
                       size="sm"
@@ -829,9 +752,8 @@ export function ServiceModule() {
                     </Button>
                   )}
 
-                {enquiry.serviceTypes &&
-                  enquiry.serviceTypes.length > 0 &&
-                  enquiry.serviceTypes.every((service) => service.status === "done") &&
+                {enquiry.serviceTypes && enquiry.serviceTypes.length > 0 &&
+                  enquiry.serviceTypes.every(service => service.status === "done") &&
                   enquiry.overallPhotos?.beforePhoto &&
                   enquiry.overallPhotos?.afterPhoto && (
                     <Button
@@ -840,7 +762,7 @@ export function ServiceModule() {
                       onClick={() => serviceComplete(enquiry.enquiryId)}
                     >
                       <ArrowRight className="h-3 w-3 mr-1" />
-                      Send To Billing
+                      All Services Complete - Send to Billing
                     </Button>
                   )}
               </div>
@@ -854,7 +776,7 @@ export function ServiceModule() {
                     </DialogHeader>
                     <div className="space-y-4">
                       <div className="space-y-2">
-                        <Label>Select Service Types (Multi-Select)</Label>
+                        <Label>Select Service Types (Multi-select)</Label>
                         <div className="space-y-2">
                           {["Sole Replacement", "Zipper Repair", "Cleaning & Polish", "Stitching", "Leather Treatment", "Hardware Repair"].map((serviceType) => (
                             <div key={serviceType} className="flex items-center space-x-2">
@@ -864,7 +786,7 @@ export function ServiceModule() {
                                 onCheckedChange={() => handleServiceTypeToggle(serviceType as ServiceType)}
                               />
                               <Label htmlFor={`service-${serviceType}`} className="text-sm">
-                                {capitalizeWords(serviceType)}
+                                {serviceType}
                               </Label>
                             </div>
                           ))}
@@ -921,8 +843,15 @@ export function ServiceModule() {
                             <img
                               src={overallBeforePhoto}
                               alt="Overall before photo"
-                              className="w-full h-48 object-cover rounded-md border"
-                              style={{ imageRendering: 'auto' }}
+                              className="w-full max-h-48 object-contain rounded-md border bg-gray-50"
+                              loading="eager"
+                              decoding="sync"
+                              style={{
+                                imageRendering: 'crisp-edges',
+                                transform: 'translateZ(0)',
+                                backfaceVisibility: 'hidden',
+                                WebkitBackfaceVisibility: 'hidden'
+                              } as React.CSSProperties}
                             />
                           </div>
                         )}
@@ -931,7 +860,7 @@ export function ServiceModule() {
                         <Label htmlFor="overall-notes">Notes (Optional)</Label>
                         <Textarea
                           id="overall-notes"
-                          placeholder="Add Notes About The Overall Condition..."
+                          placeholder="Add notes about the overall condition..."
                           value={overallPhotoNotes}
                           onChange={(e) => setOverallPhotoNotes(e.target.value)}
                           rows={3}
@@ -989,8 +918,15 @@ export function ServiceModule() {
                             <img
                               src={overallAfterPhoto}
                               alt="Final after photo"
-                              className="w-full h-48 object-cover rounded-md border"
-                              style={{ imageRendering: 'auto' }}
+                              className="w-full max-h-48 object-contain rounded-md border bg-gray-50"
+                              loading="eager"
+                              decoding="sync"
+                              style={{
+                                imageRendering: 'crisp-edges',
+                                transform: 'translateZ(0)',
+                                backfaceVisibility: 'hidden',
+                                WebkitBackfaceVisibility: 'hidden'
+                              } as React.CSSProperties}
                             />
                           </div>
                         )}
@@ -999,7 +935,7 @@ export function ServiceModule() {
                         <Label htmlFor="final-notes">Final Notes (Optional)</Label>
                         <Textarea
                           id="final-notes"
-                          placeholder="Add Final Notes About The Completed Work..."
+                          placeholder="Add final notes about the completed work..."
                           value={finalPhotoNotes}
                           onChange={(e) => setFinalPhotoNotes(e.target.value)}
                           rows={3}
@@ -1032,12 +968,12 @@ export function ServiceModule() {
         {enquiriesLoading ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-            <span className="ml-2 text-gray-600">Loading Service Enquiries...</span>
+            <span className="ml-2 text-gray-600">Loading service enquiries...</span>
           </div>
         ) : enquiriesError ? (
           <div className="flex items-center justify-center py-8">
             <div className="text-center">
-              <p className="text-red-600 mb-2">Error Loading Service Enquiries</p>
+              <p className="text-red-600 mb-2">Error loading service enquiries</p>
               <p className="text-sm text-gray-500">{enquiriesError}</p>
             </div>
           </div>
@@ -1048,7 +984,7 @@ export function ServiceModule() {
               No Service Items
             </h3>
             <p className="text-muted-foreground">
-              Service Items Will Appear Here Once Items Are Received From Pickup.
+              Service items will appear here once items are received from pickup.
             </p>
           </Card>
         ) : null}
