@@ -1,7 +1,7 @@
-import { 
-  Enquiry, 
-  InventoryItem, 
-  Expense, 
+import {
+  Enquiry,
+  InventoryItem,
+  Expense,
   StaffMember,
   BusinessInfo
 } from "@/types";
@@ -31,16 +31,16 @@ export const imageStorage = {
     return `img_${enquiryId}_${stage}_${type}`;
   },
 
-  // Create thumbnail preview from image data
-  createThumbnail: (imageData: string, maxWidth: number = 150, maxHeight: number = 150): Promise<string> => {
+  // Create thumbnail preview from image data with BETTER QUALITY
+  createThumbnail: (imageData: string, maxWidth: number = 300, maxHeight: number = 300): Promise<string> => {
     return new Promise((resolve) => {
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
-        
+
         if (!ctx) {
-          resolve(imageData); // Fallback to original if canvas not supported
+          resolve(imageData);
           return;
         }
 
@@ -61,18 +61,72 @@ export const imageStorage = {
         canvas.width = width;
         canvas.height = height;
 
-        // Draw thumbnail
+        // Enable high-quality rendering
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+
+        // Draw thumbnail with better quality
         ctx.drawImage(img, 0, 0, width, height);
-        
-        // Convert to base64 with reduced quality
-        const thumbnailData = canvas.toDataURL('image/jpeg', 0.7);
+
+        // Convert to base64 with BETTER QUALITY (85% instead of 70%)
+        const thumbnailData = canvas.toDataURL('image/jpeg', 0.85);
         resolve(thumbnailData);
       };
-      
+
       img.onerror = () => {
-        resolve(imageData); // Fallback to original if image fails to load
+        resolve(imageData);
       };
-      
+
+      img.src = imageData;
+    });
+  },
+
+  // Create display thumbnail for UI (separate from storage thumbnail)
+  createDisplayThumbnail: (imageData: string, maxWidth: number = 300, maxHeight: number = 300): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+
+        if (!ctx) {
+          resolve(imageData);
+          return;
+        }
+
+        // Calculate thumbnail dimensions
+        let { width, height } = img;
+        if (width > height) {
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = (width * maxHeight) / height;
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        // Enable high-quality rendering for thumbnails too
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+
+        // Draw thumbnail
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Convert to base64 with good quality for display
+        const thumbnailData = canvas.toDataURL('image/jpeg', 0.85);
+        resolve(thumbnailData);
+      };
+
+      img.onerror = () => {
+        resolve(imageData);
+      };
+
       img.src = imageData;
     });
   },
@@ -80,7 +134,7 @@ export const imageStorage = {
   // Store image data as thumbnail
   save: async (key: string, imageData: string): Promise<void> => {
     try {
-      // Create thumbnail for storage
+      // Create thumbnail for storage with better quality
       const thumbnailData = await imageStorage.createThumbnail(imageData);
       localStorage.setItem(key, thumbnailData);
     } catch (error) {
@@ -121,12 +175,12 @@ export const imageStorage = {
   },
 
   // Create a simple placeholder image
-  createPlaceholder: (text: string, width: number = 150, height: number = 150): string => {
+  createPlaceholder: (text: string, width: number = 300, height: number = 300): string => {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
-    
+
     if (!ctx) {
-      return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDE1MCAxNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxNTAiIGhlaWdodD0iMTUwIiBmaWxsPSIjRjNGNEY2Ii8+Cjx0ZXh0IHg9Ijc1IiB5PSI3NSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjEyIiBmaWxsPSIjNkI3MjgwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+UGxhY2Vob2xkZXI8L3RleHQ+Cjwvc3ZnPgo=';
+      return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgdmlld0JveD0iMCAwIDMwMCAzMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIiBmaWxsPSIjRjNGNEY2Ii8+Cjx0ZXh0IHg9IjE1MCIgeT0iMTUwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTYiIGZpbGw9IiM2QjcyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5QbGFjZWhvbGRlcjwvdGV4dD4KPC9zdmc+Cg==';
     }
 
     canvas.width = width;
@@ -143,12 +197,12 @@ export const imageStorage = {
 
     // Text
     ctx.fillStyle = '#6b7280';
-    ctx.font = '12px Arial';
+    ctx.font = '16px Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(text, width / 2, height / 2);
 
-    return canvas.toDataURL('image/png', 0.8);
+    return canvas.toDataURL('image/png', 0.9);
   }
 };
 
@@ -170,19 +224,19 @@ export const storage = {
       localStorage.setItem(key, JSON.stringify(value));
     } catch (error) {
       console.warn(`Storage quota exceeded for key "${key}". Attempting cleanup...`);
-      
+
       // If quota exceeded, try to clean up old data
       try {
         // Clear old data to free space
         localStorage.removeItem('cobbler_service_orders');
         localStorage.removeItem('cobbler_pickup_orders');
-        
+
         // Try saving again
         localStorage.setItem(key, JSON.stringify(value));
         console.log('Successfully saved after cleanup');
       } catch (cleanupError) {
         console.error(`Failed to save even after cleanup:`, cleanupError);
-        
+
         // If still failing, try to compress the data by removing large fields
         try {
           const compressedValue = JSON.stringify(value).replace(/data:image\/[^;]+;base64,[^"]+/g, '[IMAGE_DATA]');
@@ -221,28 +275,28 @@ export const storage = {
 // Initialize data in localStorage if not present
 export const initializeData = (): void => {
   const isInitialized = storage.get(STORAGE_KEYS.INITIALIZED, false);
-  
+
   // Force reinitialize with new schema (remove this check after migration)
   const currentVersion = storage.get<string>('cobbler_schema_version', '1.0');
   const newVersion = '4.0'; // Force refresh with new billing system
-  
+
   if (!isInitialized || currentVersion !== newVersion) {
     console.log('Initializing localStorage with new integrated workflow data...');
-    
+
     // Clear any old fragmented data
     localStorage.removeItem('cobbler_service_orders');
     localStorage.removeItem('cobbler_pickup_orders');
-    
+
     // Initialize with new integrated data structure
     storage.set(STORAGE_KEYS.ENQUIRIES, sampleEnquiries);
     storage.set(STORAGE_KEYS.INVENTORY, sampleInventory);
     storage.set(STORAGE_KEYS.EXPENSES, sampleExpenses);
     storage.set(STORAGE_KEYS.STAFF, sampleStaff);
-    
+
     // Mark as initialized with new version
     storage.set(STORAGE_KEYS.INITIALIZED, true);
     storage.set('cobbler_schema_version', newVersion);
-    
+
     console.log('New integrated workflow data initialized in localStorage');
   }
 };
@@ -250,12 +304,12 @@ export const initializeData = (): void => {
 // Enquiries data management
 export const enquiriesStorage = {
   getAll: (): Enquiry[] => storage.get(STORAGE_KEYS.ENQUIRIES, []),
-  
+
   save: (enquiries: Enquiry[]): void => {
     // Save data directly without cleaning image data
     storage.set(STORAGE_KEYS.ENQUIRIES, enquiries);
   },
-  
+
   add: (enquiry: Omit<Enquiry, 'id'>): Enquiry => {
     const enquiries = enquiriesStorage.getAll();
     const newId = Math.max(0, ...enquiries.map(e => e.id)) + 1;
@@ -264,30 +318,27 @@ export const enquiriesStorage = {
     enquiriesStorage.save(enquiries);
     return newEnquiry;
   },
-  
+
   update: (id: number, updates: Partial<Enquiry>): Enquiry | null => {
     const enquiries = enquiriesStorage.getAll();
     const index = enquiries.findIndex(e => e.id === id);
     if (index === -1) return null;
-    
+
     enquiries[index] = { ...enquiries[index], ...updates };
     enquiriesStorage.save(enquiries);
     return enquiries[index];
   },
-  
+
   delete: (id: number): boolean => {
     const enquiries = enquiriesStorage.getAll();
     const index = enquiries.findIndex(e => e.id === id);
     if (index === -1) return false;
-    
+
     enquiries.splice(index, 1);
     enquiriesStorage.save(enquiries);
     return true;
   }
 };
-
-// Pickup Orders and Service Orders are now integrated into Enquiries
-// Use enquiriesStorage for all workflow management
 
 // Helper functions for workflow management
 export const workflowHelpers = {
@@ -296,38 +347,38 @@ export const workflowHelpers = {
     const enquiries = enquiriesStorage.getAll();
     return enquiries.filter(e => e.currentStage === stage);
   },
-  
+
   // Get pickup stage enquiries
   getPickupEnquiries: (): Enquiry[] => {
     return workflowHelpers.getByStage('pickup');
   },
-  
+
   // Get service stage enquiries  
   getServiceEnquiries: (): Enquiry[] => {
     return workflowHelpers.getByStage('service');
   },
-  
+
   // Get billing stage enquiries
   getBillingEnquiries: (): Enquiry[] => {
     return workflowHelpers.getByStage('billing');
   },
-  
+
   // Get delivery stage enquiries
   getDeliveryEnquiries: (): Enquiry[] => {
     return workflowHelpers.getByStage('delivery');
   },
-  
+
   // Get completed stage enquiries
   getCompletedEnquiries: (): Enquiry[] => {
     return workflowHelpers.getByStage('completed');
   },
-  
+
   // Transition enquiry to next stage
   transitionToStage: (enquiryId: number, newStage: string): boolean => {
     const enquiries = enquiriesStorage.getAll();
     const index = enquiries.findIndex(e => e.id === enquiryId);
     if (index === -1) return false;
-    
+
     enquiries[index] = { ...enquiries[index], currentStage: newStage as any };
     enquiriesStorage.save(enquiries);
     return true;
@@ -337,9 +388,9 @@ export const workflowHelpers = {
 // Inventory data management
 export const inventoryStorage = {
   getAll: (): InventoryItem[] => storage.get(STORAGE_KEYS.INVENTORY, []),
-  
+
   save: (items: InventoryItem[]): void => storage.set(STORAGE_KEYS.INVENTORY, items),
-  
+
   add: (item: Omit<InventoryItem, 'id'>): InventoryItem => {
     const items = inventoryStorage.getAll();
     const newId = Math.max(0, ...items.map(i => i.id)) + 1;
@@ -348,22 +399,22 @@ export const inventoryStorage = {
     inventoryStorage.save(items);
     return newItem;
   },
-  
+
   update: (id: number, updates: Partial<InventoryItem>): InventoryItem | null => {
     const items = inventoryStorage.getAll();
     const index = items.findIndex(i => i.id === id);
     if (index === -1) return null;
-    
+
     items[index] = { ...items[index], ...updates };
     inventoryStorage.save(items);
     return items[index];
   },
-  
+
   delete: (id: number): boolean => {
     const items = inventoryStorage.getAll();
     const index = items.findIndex(i => i.id === id);
     if (index === -1) return false;
-    
+
     items.splice(index, 1);
     inventoryStorage.save(items);
     return true;
@@ -373,9 +424,9 @@ export const inventoryStorage = {
 // Expenses data management
 export const expensesStorage = {
   getAll: (): Expense[] => storage.get(STORAGE_KEYS.EXPENSES, []),
-  
+
   save: (expenses: Expense[]): void => storage.set(STORAGE_KEYS.EXPENSES, expenses),
-  
+
   add: (expense: Omit<Expense, 'id'>): Expense => {
     const expenses = expensesStorage.getAll();
     const newId = Math.max(0, ...expenses.map(e => e.id)) + 1;
@@ -384,22 +435,22 @@ export const expensesStorage = {
     expensesStorage.save(expenses);
     return newExpense;
   },
-  
+
   update: (id: number, updates: Partial<Expense>): Expense | null => {
     const expenses = expensesStorage.getAll();
     const index = expenses.findIndex(e => e.id === id);
     if (index === -1) return null;
-    
+
     expenses[index] = { ...expenses[index], ...updates };
     expensesStorage.save(expenses);
     return expenses[index];
   },
-  
+
   delete: (id: number): boolean => {
     const expenses = expensesStorage.getAll();
     const index = expenses.findIndex(e => e.id === id);
     if (index === -1) return false;
-    
+
     expenses.splice(index, 1);
     expensesStorage.save(expenses);
     return true;
@@ -409,9 +460,9 @@ export const expensesStorage = {
 // Staff data management
 export const staffStorage = {
   getAll: (): StaffMember[] => storage.get(STORAGE_KEYS.STAFF, []),
-  
+
   save: (staff: StaffMember[]): void => storage.set(STORAGE_KEYS.STAFF, staff),
-  
+
   add: (member: Omit<StaffMember, 'id'>): StaffMember => {
     const staff = staffStorage.getAll();
     const newId = Math.max(0, ...staff.map(s => s.id)) + 1;
@@ -420,22 +471,22 @@ export const staffStorage = {
     staffStorage.save(staff);
     return newMember;
   },
-  
+
   update: (id: number, updates: Partial<StaffMember>): StaffMember | null => {
     const staff = staffStorage.getAll();
     const index = staff.findIndex(s => s.id === id);
     if (index === -1) return null;
-    
+
     staff[index] = { ...staff[index], ...updates };
     staffStorage.save(staff);
     return staff[index];
   },
-  
+
   delete: (id: number): boolean => {
     const staff = staffStorage.getAll();
     const index = staff.findIndex(s => s.id === id);
     if (index === -1) return false;
-    
+
     staff.splice(index, 1);
     staffStorage.save(staff);
     return true;
@@ -457,9 +508,9 @@ export const businessInfoStorage = {
     website: "www.ranjitsrepair.com",
     tagline: "Quality Repair Services"
   }),
-  
+
   save: (businessInfo: BusinessInfo): void => storage.set(STORAGE_KEYS.BUSINESS_INFO, businessInfo),
-  
+
   update: (updates: Partial<BusinessInfo>): BusinessInfo => {
     const current = businessInfoStorage.get();
     const updated = { ...current, ...updates };
@@ -493,22 +544,23 @@ export const importAllData = (data: ReturnType<typeof exportAllData>): void => {
   if (data.inventory) storage.set(STORAGE_KEYS.INVENTORY, data.inventory);
   if (data.expenses) storage.set(STORAGE_KEYS.EXPENSES, data.expenses);
   if (data.staff) storage.set(STORAGE_KEYS.STAFF, data.staff);
-  
+
   console.log('Data import completed');
 };
 
-// Utility to handle image uploads with thumbnail creation
+// Utility to handle image uploads with HIGH QUALITY preservation
 export const imageUploadHelper = {
-  // Handle file upload and create thumbnail
-  handleImageUpload: async (file: File): Promise<string> => {
+  // Handle file upload and preserve FULL QUALITY for API
+  handleImageUpload: async (file: File, maxSize: number = 1920): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = async (e) => {
         try {
           const imageData = e.target?.result as string;
-          // Create thumbnail immediately
-          const thumbnailData = await imageStorage.createThumbnail(imageData);
-          resolve(thumbnailData);
+
+          // Create HIGH QUALITY version for API submission
+          const highQualityData = await imageUploadHelper.createHighQualityImage(imageData, maxSize);
+          resolve(highQualityData);
         } catch (error) {
           reject(error);
         }
@@ -518,10 +570,116 @@ export const imageUploadHelper = {
     });
   },
 
-  // Save image with automatic thumbnail creation
+  // Create HIGH QUALITY image for API submission
+  createHighQualityImage: (imageData: string, maxSize: number = 1920): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+
+        if (!ctx) {
+          resolve(imageData); // Fallback to original if canvas not supported
+          return;
+        }
+
+        // Calculate dimensions while preserving aspect ratio
+        let { width, height } = img;
+
+        // Only resize if image is larger than maxSize
+        if (width > maxSize || height > maxSize) {
+          if (width > height) {
+            if (width > maxSize) {
+              height = (height * maxSize) / width;
+              width = maxSize;
+            }
+          } else {
+            if (height > maxSize) {
+              width = (width * maxSize) / height;
+              height = maxSize;
+            }
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        // Enable high-quality rendering
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+
+        // Draw image with high quality
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Convert to base64 with HIGH QUALITY (95% instead of 70%)
+        const highQualityData = canvas.toDataURL('image/jpeg', 0.95);
+        resolve(highQualityData);
+      };
+
+      img.onerror = () => {
+        resolve(imageData); // Fallback to original if image fails to load
+      };
+
+      img.src = imageData;
+    });
+  },
+
+  // Create thumbnail for display only (separate from API submission)
+  createDisplayThumbnail: (imageData: string, maxWidth: number = 300, maxHeight: number = 300): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+
+        if (!ctx) {
+          resolve(imageData);
+          return;
+        }
+
+        // Calculate thumbnail dimensions
+        let { width, height } = img;
+        if (width > height) {
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = (width * maxHeight) / height;
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        // Enable high-quality rendering for thumbnails too
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+
+        // Draw thumbnail
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Convert to base64 with good quality for display
+        const thumbnailData = canvas.toDataURL('image/jpeg', 0.85);
+        resolve(thumbnailData);
+      };
+
+      img.onerror = () => {
+        resolve(imageData);
+      };
+
+      img.src = imageData;
+    });
+  },
+
+  // Save image with automatic thumbnail creation for localStorage
   saveImage: async (enquiryId: number, stage: string, type: string, imageData: string): Promise<void> => {
     const key = imageStorage.generateKey(enquiryId, stage, type);
-    await imageStorage.save(key, imageData);
+    // Create thumbnail for localStorage to save space
+    const thumbnailData = await imageUploadHelper.createDisplayThumbnail(imageData);
+    await imageStorage.save(key, thumbnailData);
   },
 
   // Get image thumbnail
