@@ -97,6 +97,13 @@ const formatDeliveryDate = (dateString: string) => {
     });
   }
 };
+// Helper to convert "out-for-delivery" -> "Out For Delivery"
+const formatStatus = (status: string) => {
+  return status
+    .split("-")
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+};
 
 // Helper function to get delivery status color
 const getDeliveryStatusColor = (status: string) => {
@@ -303,8 +310,9 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
                         {enquiry.customerName}
                       </p>
                       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getDeliveryStatusColor(enquiry.deliveryDetails?.status || '')}`}>
-                        {enquiry.deliveryDetails?.status?.replace('-', ' ') || 'Pending'}
+                        {formatStatus(enquiry.deliveryDetails?.status || 'Pending')}
                       </span>
+
                     </div>
 
                     <div className="flex items-center space-x-4 mt-1">
