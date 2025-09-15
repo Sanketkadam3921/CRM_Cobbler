@@ -765,30 +765,33 @@ export function BillingModule() {
               key={enquiry.id}
               className="p-4 sm:p-6 bg-gradient-card border-0 shadow-soft hover:shadow-medium transition-all duration-300"
             >
-              <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-4 gap-3">
+              {/* === RESPONSIVE CHANGE START === */}
+              {/* Use flex-wrap to allow items to wrap gracefully on small screens */}
+              <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 mb-4">
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-foreground text-base sm:text-lg">
+                  <h3 className="font-semibold text-foreground text-base sm:text-lg truncate">
                     {enquiry.customerName}
                   </h3>
-                  <div className="flex items-center space-x-1 text-gray-600">
+                  <div className="flex items-center space-x-1 text-muted-foreground">
                     <Phone className="h-4 w-4" />
                     <span className="text-sm">
                       {enquiry.phone.startsWith('+91') ? enquiry.phone : `+91 ${enquiry.phone}`}
                     </span>
                   </div>
-
                 </div>
-                <div className="flex flex-col items-end gap-2">
-                  <Badge className={`${enquiry.serviceDetails?.billingDetails ? 'bg-green-500 text-white' : 'bg-yellow-500 text-white'} text-xs px-2 py-1 rounded-full font-medium`}>
+                {/* This container now wraps badges horizontally */}
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  <Badge className={`${enquiry.serviceDetails?.billingDetails ? 'bg-green-500 text-white' : 'bg-yellow-500 text-white'} text-xs px-2 py-1 rounded-full font-medium shrink-0`}>
                     {enquiry.serviceDetails?.billingDetails ? 'Billed' : 'Pending Billing'}
                   </Badge>
                   {enquiry.serviceDetails?.billingDetails?.invoiceNumber && (
-                    <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-xs px-2 py-1 rounded-full font-medium">
+                    <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-xs px-2 py-1 rounded-full font-medium shrink-0">
                       {enquiry.serviceDetails.billingDetails.invoiceNumber}
                     </Badge>
                   )}
                 </div>
               </div>
+              {/* === RESPONSIVE CHANGE END === */}
 
               <div className="space-y-3">
                 <div className="flex items-center space-x-2">
