@@ -9,8 +9,7 @@ import { useState, useEffect, useCallback } from 'react';
 //     : 'http://localhost:3001/api'
 // );
 
-const API_BASE_URL = 'http://localhost:3001/api';
-
+const API_BASE_URL = "/api";
 const X_TOKEN = import.meta.env.VITE_X_TOKEN || 'cobbler_super_secret_token_2024';
 
 // Dashboard Data Types
