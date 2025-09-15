@@ -7,7 +7,8 @@ export default defineConfig({
     host: "::",
     port: 3002, // frontend dev port
     proxy: {
-      '/api': 'http://localhost:3001', // forward API calls to backend Docker container
+      "/api": "http://localhost:3001", // local backend
+      "/render-api": "https://crm-cobbler.onrender.com", // deployed Render backend
     },
   },
   plugins: [react()],
