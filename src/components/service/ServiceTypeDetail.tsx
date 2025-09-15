@@ -27,6 +27,11 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
   const [modalImage, setModalImage] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
 
+  // Helper function to capitalize first letter
+  const capitalizeFirst = (str: string) => {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  };
+
   useEffect(() => {
     const loadServiceDetails = async () => {
       try {
@@ -179,15 +184,15 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
 
   return (
     <div className="space-y-4 animate-fade-in p-2 sm:p-0">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <Button variant="outline" size="sm" onClick={onBack}>
+      {/* Header - Mobile Optimized */}
+      <div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-center justify-between">
+        <div className="flex flex-col space-y-2 sm:space-y-0 sm:flex-row sm:items-center sm:space-x-4">
+          <Button variant="outline" size="sm" onClick={onBack} className="w-fit">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
           <div>
-            <h1 className="text-xl font-bold text-foreground">
+            <h1 className="text-lg sm:text-xl font-bold text-foreground">
               {serviceType}
             </h1>
             <p className="text-sm text-muted-foreground">
@@ -196,20 +201,20 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
           </div>
         </div>
         {serviceTypeData && (
-          <Badge className={`${getStatusColor(serviceTypeData.status)} text-sm px-3 py-1`}>
-            {serviceTypeData.status}
+          <Badge className={`${getStatusColor(serviceTypeData.status)} text-sm px-3 py-1 w-fit`}>
+            {capitalizeFirst(serviceTypeData.status)}
           </Badge>
         )}
       </div>
 
-      {/* Compact Info */}
+      {/* Compact Info - Mobile Optimized */}
       <Card className="p-4 bg-gradient-card border-0 shadow-soft">
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <p><span className="font-medium">Status:</span> {serviceTypeData?.status || 'pending'}</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-sm">
+          <div className="space-y-1">
+            <p><span className="font-medium">Status:</span> {capitalizeFirst(serviceTypeData?.status || 'pending')}</p>
             <p><span className="font-medium">Amount:</span> ₹{serviceDetails.quotedAmount || 0}</p>
           </div>
-          <div>
+          <div className="space-y-1">
             {serviceTypeData?.startedAt && (
               <p><span className="font-medium">Started:</span> {new Date(serviceTypeData.startedAt).toLocaleDateString()}</p>
             )}
@@ -220,8 +225,8 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
         </div>
       </Card>
 
-      {/* Photos Section - Compact */}
-      <div className="grid grid-cols-2 gap-4">
+      {/* Photos Section - Mobile Optimized */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Before Photo */}
         <Card className="p-4 bg-gradient-card border-0 shadow-soft">
           <h3 className="text-sm font-semibold text-foreground mb-2">Before Photo</h3>
@@ -230,18 +235,18 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
               <img
                 src={serviceTypeData.photos.beforePhoto}
                 alt="Before service"
-                className="w-full h-64 object-contain rounded-md border bg-black cursor-pointer"
+                className="w-full h-48 sm:h-64 object-contain rounded-md border bg-black cursor-pointer"
                 loading="lazy"
                 onClick={() => setModalImage(serviceTypeData.photos.beforePhoto)}
               />
 
               {serviceTypeData.photos.beforeNotes && (
-                <p className="text-xs text-muted-foreground">{serviceTypeData.photos.beforeNotes}</p>
+                <p className="text-xs text-muted-foreground break-words">{serviceTypeData.photos.beforeNotes}</p>
               )}
             </div>
           ) : (
-            <div className="text-center py-6 text-muted-foreground">
-              <Camera className="h-8 w-8 mx-auto mb-1 opacity-50" />
+            <div className="text-center py-8 sm:py-6 text-muted-foreground">
+              <Camera className="h-8 w-8 mx-auto mb-2 opacity-50" />
               <p className="text-xs">No before photo</p>
             </div>
           )}
@@ -255,30 +260,30 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
               <img
                 src={serviceTypeData.photos.afterPhoto}
                 alt="After service"
-                className="w-full h-64 object-contain rounded-md border bg-black cursor-pointer"
+                className="w-full h-48 sm:h-64 object-contain rounded-md border bg-black cursor-pointer"
                 loading="lazy"
                 onClick={() => setModalImage(serviceTypeData.photos.afterPhoto)}
               />
 
               {serviceTypeData.photos.afterNotes && (
-                <p className="text-xs text-muted-foreground">{serviceTypeData.photos.afterNotes}</p>
+                <p className="text-xs text-muted-foreground break-words">{serviceTypeData.photos.afterNotes}</p>
               )}
             </div>
           ) : (
-            <div className="text-center py-6 text-muted-foreground">
-              <Camera className="h-8 w-8 mx-auto mb-1 opacity-50" />
+            <div className="text-center py-8 sm:py-6 text-muted-foreground">
+              <Camera className="h-8 w-8 mx-auto mb-2 opacity-50" />
               <p className="text-xs">No after photo</p>
             </div>
           )}
         </Card>
       </div>
 
-      {/* Action Section - Compact */}
+      {/* Action Section - Mobile Optimized */}
       <Card className="p-4 bg-gradient-card border-0 shadow-soft">
         <h3 className="text-sm font-semibold text-foreground mb-3">Actions</h3>
 
         {serviceTypeData?.status === "pending" && (
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div className="space-y-2">
               <Label className="text-xs">Take Before Photo</Label>
               <div className="flex gap-2">
@@ -302,20 +307,20 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
                   <img
                     src={previewImage}
                     alt="Before photo preview"
-                    className="w-full h-24 object-cover rounded-md border"
+                    className="w-full h-32 sm:h-24 object-cover rounded-md border"
                   />
                 </div>
               )}
             </div>
 
-            <div className="space-y-1">
+            <div className="space-y-2">
               <Label className="text-xs">Notes (Optional)</Label>
               <Textarea
                 placeholder="Add notes..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                rows={2}
-                className="text-xs"
+                rows={3}
+                className="text-xs resize-none"
               />
             </div>
 
@@ -331,7 +336,7 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
         )}
 
         {serviceTypeData?.status === "in-progress" && (
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div className="space-y-2">
               <Label className="text-xs">Take After Photo</Label>
               <div className="flex gap-2">
@@ -355,20 +360,20 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
                   <img
                     src={previewImage}
                     alt="After photo preview"
-                    className="w-full h-24 object-cover rounded-md border"
+                    className="w-full h-32 sm:h-24 object-cover rounded-md border"
                   />
                 </div>
               )}
             </div>
 
-            <div className="space-y-1">
+            <div className="space-y-2">
               <Label className="text-xs">Work Notes (Optional)</Label>
               <Textarea
                 placeholder="Add work notes..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                rows={2}
-                className="text-xs"
+                rows={3}
+                className="text-xs resize-none"
               />
             </div>
 
@@ -384,9 +389,9 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
         )}
 
         {serviceTypeData?.status === "done" && (
-          <div className="text-center py-4">
-            <CheckCircle className="h-8 w-8 mx-auto mb-1 text-green-500" />
-            <p className="text-sm font-semibold text-foreground">Service Completed!</p>
+          <div className="text-center py-6">
+            <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-500" />
+            <p className="text-sm font-semibold text-foreground mb-1">Service Completed!</p>
             <p className="text-xs text-muted-foreground">
               This service has been completed successfully.
             </p>
@@ -394,22 +399,22 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
         )}
       </Card>
 
-      {/* Photo Viewer Modal */}
+      {/* Photo Viewer Modal - Mobile Optimized */}
       {modalImage && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
           onClick={() => setModalImage(null)}
         >
-          <div className="relative max-w-4xl max-h-[90vh]">
+          <div className="relative max-w-4xl w-full max-h-[90vh]">
             <img
               src={modalImage}
               alt="Full view"
-              className="w-auto max-h-[90vh] object-contain rounded-lg shadow-lg cursor-zoom-in"
+              className="w-full max-h-[90vh] object-contain rounded-lg shadow-lg cursor-zoom-in"
               onClick={(e) => e.stopPropagation()}
             />
             <button
               onClick={() => setModalImage(null)}
-              className="absolute top-2 right-2 bg-black/70 text-white px-3 py-1 rounded-md hover:bg-black"
+              className="absolute top-2 right-2 bg-black/70 text-white px-3 py-1 rounded-md hover:bg-black text-sm"
             >
               ✕
             </button>

@@ -26,6 +26,7 @@ import {
   Send,
   CheckCircle,
   Loader2,
+  Phone,
 } from "lucide-react";
 import { Enquiry, PickupStatus, ServiceType } from "@/types";
 import { imageUploadHelper } from "@/utils/localStorage";
@@ -129,7 +130,7 @@ export function PickupModule() {
       if (enquiry) {
         toast({
           title: "WhatsApp Notification",
-          description: `WhatsApp sent to ${enquiry.customerName}: "Your ${enquiry.product} has been collected successfully."`,
+          description: `WhatsApp message sent to ${enquiry.customerName}: "Your ${enquiry.product} has been successfully collected."`,
           className: "bg-blue-50 border-blue-200 text-blue-800",
         });
       }
@@ -189,7 +190,7 @@ export function PickupModule() {
       if (enquiry) {
         toast({
           title: "WhatsApp Notification",
-          description: `WhatsApp sent to ${enquiry.customerName}: "We have received your ${enquiry.product} and it has been moved to service department."`,
+          description: `WhatsApp message sent to ${enquiry.customerName}: "We have received your ${enquiry.product} and it has been moved to service department."`,
           className: "bg-blue-50 border-blue-200 text-blue-800",
         });
       }
@@ -289,7 +290,7 @@ export function PickupModule() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
-            placeholder="Search pickups by customer, address, product..."
+            placeholder="Search pickups"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -300,13 +301,12 @@ export function PickupModule() {
       {/* Pickup Items */}
       <div className="space-y-4">
         <h2 className="text-xl sm:text-2xl font-bold text-foreground">
-          Pickup Workflow
-        </h2>
+          Pickup Queue        </h2>
 
         {enquiriesLoading ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-            <span className="ml-2 text-gray-600">Loading pickup enquiries...</span>
+            <span className="ml-2 text-gray-600">Loading pickup enquiries</span>
           </div>
         ) : enquiriesError ? (
           <div className="flex items-center justify-center py-8">
@@ -334,9 +334,13 @@ export function PickupModule() {
                     <h3 className="font-semibold text-foreground text-base sm:text-lg">
                       {enquiry.customerName}
                     </h3>
-                    <p className="text-sm text-muted-foreground">
-                      {enquiry.phone}
-                    </p>
+                    <div className="flex items-center space-x-1 text-gray-600 text-sm">
+                      <Phone className="h-4 w-4 flex-shrink-0" />
+                      <span>
+                        {enquiry.phone.startsWith("+91") ? enquiry.phone : `+91 ${enquiry.phone}`}
+                      </span>
+                    </div>
+
                   </div>
                   <Badge
                     className={`${getStatusColor(
@@ -347,7 +351,14 @@ export function PickupModule() {
                   </Badge>
                 </div>
 
+
                 <div className="space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                      Quantity: {enquiry.quantity}
+                    </div>
+                    <span className="text-gray-500 text-sm">{enquiry.product}</span>
+                  </div>
                   <div className="flex items-start space-x-2">
                     <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                     <span className="text-sm text-foreground break-words">
@@ -355,12 +366,7 @@ export function PickupModule() {
                     </span>
                   </div>
 
-                  <div className="flex items-center space-x-2">
-                    <Package className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                    <span className="text-sm text-foreground">
-                      {enquiry.product} ({enquiry.quantity} items)
-                    </span>
-                  </div>
+
 
                   {enquiry.pickupDetails?.scheduledTime && (
                     <div className="flex items-center space-x-2">
@@ -373,7 +379,6 @@ export function PickupModule() {
 
                   {enquiry.pickupDetails?.assignedTo && (
                     <div className="flex items-center space-x-2">
-                      <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                       <span className="text-sm text-foreground">
                         Assigned: {enquiry.pickupDetails.assignedTo}
                       </span>
@@ -538,7 +543,7 @@ export function PickupModule() {
                             </Label>
                             <Textarea
                               id="notes"
-                              placeholder="Add any notes about the received item..."
+                              placeholder="Add any notes about the received item"
                               value={receivedNotes}
                               onChange={(e) => setReceivedNotes(e.target.value)}
                               rows={3}
