@@ -21,7 +21,10 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
   const [serviceDetails, setServiceDetails] = useState<ServiceDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+  // Separate states for preview and modal
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [modalImage, setModalImage] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
 
   useEffect(() => {
@@ -46,7 +49,7 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
     if (file) {
       try {
         const thumbnailData = await imageUploadHelper.handleImageUpload(file);
-        setSelectedImage(thumbnailData);
+        setPreviewImage(thumbnailData);
       } catch (error) {
         console.error('Failed to process image:', error);
         alert('Failed to process image. Please try again.');
@@ -55,7 +58,7 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
   };
 
   const startService = async () => {
-    if (!serviceDetails || !selectedImage) return;
+    if (!serviceDetails || !previewImage) return;
 
     try {
       // Find the service type ID
@@ -66,12 +69,18 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
       }
 
       // Call API to start service
-      await serviceApiService.startService(enquiryId, serviceTypeData.id, selectedImage, notes);
+      await serviceApiService.startService(enquiryId, serviceTypeData.id, previewImage, notes);
       console.log('✅ Service started successfully');
 
-      // Reset form
-      setSelectedImage(null);
+      // Reset form - clear both preview and notes
+      setPreviewImage(null);
       setNotes("");
+
+      // Reset file input
+      const fileInput = document.getElementById('before-photo') as HTMLInputElement;
+      if (fileInput) {
+        fileInput.value = '';
+      }
 
       // Refresh data to show updated status
       const updatedDetails = await serviceApiService.getEnquiryServiceDetails(enquiryId);
@@ -88,7 +97,7 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
   };
 
   const completeService = async () => {
-    if (!serviceDetails || !selectedImage) return;
+    if (!serviceDetails || !previewImage) return;
 
     try {
       // Find the service type ID
@@ -99,12 +108,18 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
       }
 
       // Call API to complete service
-      await serviceApiService.completeService(enquiryId, serviceTypeData.id, selectedImage, notes);
+      await serviceApiService.completeService(enquiryId, serviceTypeData.id, previewImage, notes);
       console.log('✅ Service completed successfully');
 
-      // Reset form
-      setSelectedImage(null);
+      // Reset form - clear both preview and notes
+      setPreviewImage(null);
       setNotes("");
+
+      // Reset file input
+      const fileInput = document.getElementById('after-photo') as HTMLInputElement;
+      if (fileInput) {
+        fileInput.value = '';
+      }
 
       // Refresh data to show updated status
       const updatedDetails = await serviceApiService.getEnquiryServiceDetails(enquiryId);
@@ -217,7 +232,7 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
                 alt="Before service"
                 className="w-full h-64 object-contain rounded-md border bg-black cursor-pointer"
                 loading="lazy"
-                onClick={() => setSelectedImage(serviceTypeData.photos.beforePhoto)}
+                onClick={() => setModalImage(serviceTypeData.photos.beforePhoto)}
               />
 
               {serviceTypeData.photos.beforeNotes && (
@@ -242,7 +257,7 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
                 alt="After service"
                 className="w-full h-64 object-contain rounded-md border bg-black cursor-pointer"
                 loading="lazy"
-                onClick={() => setSelectedImage(serviceTypeData.photos.afterPhoto)}
+                onClick={() => setModalImage(serviceTypeData.photos.afterPhoto)}
               />
 
               {serviceTypeData.photos.afterNotes && (
@@ -282,10 +297,10 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
                   <span>Take Photo</span>
                 </Label>
               </div>
-              {selectedImage && (
+              {previewImage && (
                 <div className="mt-2">
                   <img
-                    src={selectedImage}
+                    src={previewImage}
                     alt="Before photo preview"
                     className="w-full h-24 object-cover rounded-md border"
                   />
@@ -307,7 +322,7 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
             <Button
               onClick={startService}
               className="w-full bg-blue-600 hover:bg-blue-700 text-sm"
-              disabled={!selectedImage}
+              disabled={!previewImage}
             >
               <Clock className="h-3 w-3 mr-1" />
               Start Service
@@ -335,10 +350,10 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
                   <span>Take Photo</span>
                 </Label>
               </div>
-              {selectedImage && (
+              {previewImage && (
                 <div className="mt-2">
                   <img
-                    src={selectedImage}
+                    src={previewImage}
                     alt="After photo preview"
                     className="w-full h-24 object-cover rounded-md border"
                   />
@@ -360,7 +375,7 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
             <Button
               onClick={completeService}
               className="w-full bg-green-600 hover:bg-green-700 text-sm"
-              disabled={!selectedImage}
+              disabled={!previewImage}
             >
               <CheckCircle className="h-3 w-3 mr-1" />
               Complete Service
@@ -377,33 +392,31 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
             </p>
           </div>
         )}
-        {/* Photo Viewer Modal */}
-        {selectedImage && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
-            onClick={() => setSelectedImage(null)}
-          >
-            <div className="relative max-w-4xl max-h-[90vh]">
-              <img
-                src={selectedImage}
-                alt="Full view"
-                className="w-auto max-h-[90vh] object-contain rounded-lg shadow-lg cursor-zoom-in"
-                onClick={(e) => e.stopPropagation()}
-              />
-              <button
-                onClick={() => setSelectedImage(null)}
-                className="absolute top-2 right-2 bg-black/70 text-white px-3 py-1 rounded-md hover:bg-black"
-              >
-                ✕
-              </button>
-            </div>
-          </div>
-        )}
-
       </Card>
+
+      {/* Photo Viewer Modal */}
+      {modalImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
+          onClick={() => setModalImage(null)}
+        >
+          <div className="relative max-w-4xl max-h-[90vh]">
+            <img
+              src={modalImage}
+              alt="Full view"
+              className="w-auto max-h-[90vh] object-contain rounded-lg shadow-lg cursor-zoom-in"
+              onClick={(e) => e.stopPropagation()}
+            />
+            <button
+              onClick={() => setModalImage(null)}
+              className="absolute top-2 right-2 bg-black/70 text-white px-3 py-1 rounded-md hover:bg-black"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
     </div>
-
-
   );
 }
 
@@ -419,4 +432,3 @@ function getStatusColor(status: string) {
       return "bg-gray-500 text-white";
   }
 }
-
