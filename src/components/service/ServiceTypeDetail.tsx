@@ -215,8 +215,11 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
               <img
                 src={serviceTypeData.photos.beforePhoto}
                 alt="Before service"
-                className="w-full h-32 object-cover rounded-md border"
+                className="w-full h-64 object-contain rounded-md border bg-black cursor-pointer"
+                loading="lazy"
+                onClick={() => setSelectedImage(serviceTypeData.photos.beforePhoto)}
               />
+
               {serviceTypeData.photos.beforeNotes && (
                 <p className="text-xs text-muted-foreground">{serviceTypeData.photos.beforeNotes}</p>
               )}
@@ -237,8 +240,11 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
               <img
                 src={serviceTypeData.photos.afterPhoto}
                 alt="After service"
-                className="w-full h-32 object-cover rounded-md border"
+                className="w-full h-64 object-contain rounded-md border bg-black cursor-pointer"
+                loading="lazy"
+                onClick={() => setSelectedImage(serviceTypeData.photos.afterPhoto)}
               />
+
               {serviceTypeData.photos.afterNotes && (
                 <p className="text-xs text-muted-foreground">{serviceTypeData.photos.afterNotes}</p>
               )}
@@ -371,8 +377,33 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
             </p>
           </div>
         )}
+        {/* Photo Viewer Modal */}
+        {selectedImage && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
+            onClick={() => setSelectedImage(null)}
+          >
+            <div className="relative max-w-4xl max-h-[90vh]">
+              <img
+                src={selectedImage}
+                alt="Full view"
+                className="w-auto max-h-[90vh] object-contain rounded-lg shadow-lg cursor-zoom-in"
+                onClick={(e) => e.stopPropagation()}
+              />
+              <button
+                onClick={() => setSelectedImage(null)}
+                className="absolute top-2 right-2 bg-black/70 text-white px-3 py-1 rounded-md hover:bg-black"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
+
       </Card>
     </div>
+
+
   );
 }
 
@@ -388,3 +419,4 @@ function getStatusColor(status: string) {
       return "bg-gray-500 text-white";
   }
 }
+
