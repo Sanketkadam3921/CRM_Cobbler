@@ -356,12 +356,7 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
         setShowForm(false);
       }, 1000);
     } catch (error) {
-      console.error("Error submitting enquiry:", error);
-      toast({
-        title: "Submission failed",
-        description: "Something went wrong while adding the enquiry.",
-        className: "max-w-md bg-red-50 border-red-200 text-red-800",
-      });
+
     }
   };
 
