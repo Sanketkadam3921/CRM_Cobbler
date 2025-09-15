@@ -275,7 +275,7 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base sm:text-lg font-semibold text-blue-900 flex items-center">
             <Truck className="h-5 w-5 mr-2 text-blue-600" />
-            Upcoming Deliveries
+            Upcoming Deliveries & Delivery Status
           </h3>
           <button
             onClick={() => onNavigate("delivery")}
