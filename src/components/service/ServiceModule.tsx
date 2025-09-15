@@ -44,53 +44,47 @@ export function ServiceModule() {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => {
-        if (e.target?.result) {
-          // Create an image to compress it properly
-          const img = new Image();
-          img.onload = () => {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-
-            // Calculate dimensions to maintain aspect ratio while limiting size
-            const maxWidth = 1200;
-            const maxHeight = 1200;
-            let { width, height } = img;
-
-            if (width > height) {
-              if (width > maxWidth) {
-                height = (height * maxWidth) / width;
-                width = maxWidth;
-              }
-            } else {
-              if (height > maxHeight) {
-                width = (width * maxHeight) / height;
-                height = maxHeight;
-              }
-            }
-
-            canvas.width = width;
-            canvas.height = height;
-
-            if (ctx) {
-              // Use better image rendering
-              ctx.imageSmoothingEnabled = true;
-              ctx.imageSmoothingQuality = 'high';
-              ctx.drawImage(img, 0, 0, width, height);
-
-              // Convert to base64 with good quality
-              const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-              resolve(dataUrl);
-            } else {
-              reject(new Error('Failed to get canvas context'));
-            }
-          };
-          img.onerror = () => reject(new Error('Failed to load image'));
-          img.src = e.target.result as string;
-        } else {
-          reject(new Error('Failed to read file'));
+        if (!e.target?.result) {
+          return reject(new Error('Failed to read file.'));
         }
+        const img = document.createElement('img'); // Use document.createElement for clarity
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            return reject(new Error('Failed to get canvas context.'));
+          }
+
+          const maxWidth = 1200;
+          const maxHeight = 1200;
+          let { width, height } = img;
+
+          if (width > height) {
+            if (width > maxWidth) {
+              height = (height * maxWidth) / width;
+              width = maxWidth;
+            }
+          } else {
+            if (height > maxHeight) {
+              width = (width * maxHeight) / height;
+              height = maxHeight;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, 0, 0, width, height);
+
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.85); // 85% quality is a good balance
+          resolve(dataUrl);
+        };
+        img.onerror = () => reject(new Error('Failed to load image for processing.'));
+        img.src = e.target.result as string;
       };
-      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.onerror = () => reject(new Error('FileReader failed.'));
       reader.readAsDataURL(file);
     });
   };
@@ -146,60 +140,70 @@ export function ServiceModule() {
     }
   };
 
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
+  const handleImageUpload = (setter: React.Dispatch<React.SetStateAction<string | null>>) =>
+    async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      setIsProcessingPhoto(true); // Optional: show a loading spinner
       try {
         const dataURL = await fileToDataURL(file);
-        setSelectedImage(dataURL);
-      } catch (error) {
-        console.error('Failed to convert image to data URL:', error);
+        setter(dataURL);
         toast({
-          title: "Error",
-          description: "Failed to process image. Please try again.",
+          title: "Success",
+          description: "Image has been uploaded and compressed.",
+        });
+      } catch (error) {
+        console.error('Image processing failed:', error);
+        toast({
+          title: "Upload Error",
+          description: "Could not process the image. Please try a different file.",
           variant: "destructive",
         });
+      } finally {
+        setIsProcessingPhoto(false); // Hide spinner
       }
-    }
-  };
-
-  const handleOverallPhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      try {
-        const dataURL = await fileToDataURL(file);
-        setOverallBeforePhoto(dataURL);
-      } catch (error) {
-        console.error('Failed to convert overall photo to data URL:', error);
-        toast({
-          title: "Error",
-          description: "Failed to process image. Please try again.",
-          variant: "destructive",
-        });
-      }
-    }
-  };
-
-  const handleFinalPhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      // Bypassing the complex fileToDataURL for now to test
+    };
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setOverallAfterPhoto(reader.result as string);
-        console.log("✅ Simplified upload successful. Preview should appear.");
-      };
-      reader.onerror = (error) => {
-        console.error('❌ FileReader error:', error);
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
+  /**
+   * A single, reusable handler for any photo upload.
+   * Pass the correct state setter function (e.g., setOverallBeforePhoto) when you call it.
+   */
+  const createPhotoUploadHandler = (setter: React.Dispatch<React.SetStateAction<string | null>>) =>
+    async (event: React.ChangeEvent<HTMLInputElement>) => {
+      // 1. Get the file from the input event
+      const file = event.target.files?.[0];
+      if (!file) {
+        return; // No file selected, do nothing
+      }
+
+      // 2. Try to convert the file to a Base64 string
+      try {
+        const base64String = await fileToBase64(file);
+        setter(base64String); // 3. Update the component's state with the result
+
+        console.log("✅ Image successfully processed.");
+
+      } catch (error) {
+        console.error('❌ Error reading file:', error);
         toast({
           title: "Error Reading File",
-          description: "There was an issue reading the selected file.",
+          description: "There was an issue processing the selected file.",
           variant: "destructive",
         });
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+      }
+    };
+  const handleOverallPhotoUpload = createPhotoUploadHandler(setOverallBeforePhoto);
+  const handleFinalPhotoUpload = createPhotoUploadHandler(setOverallAfterPhoto);
+
 
   const startService = async (enquiryId: number, serviceType: ServiceType, department: string) => {
     try {
