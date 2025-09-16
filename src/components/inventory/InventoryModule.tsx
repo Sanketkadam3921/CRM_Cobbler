@@ -40,21 +40,21 @@ interface FormData {
 
 export default function InventoryManager() {
   // Replaced localStorage state management with backend API hooks for proper data persistence
-  const { 
-    items: inventory, 
-    loading: inventoryLoading, 
-    error: inventoryError, 
-    createItem, 
-    updateItem, 
-    deleteItem 
+  const {
+    items: inventory,
+    loading: inventoryLoading,
+    error: inventoryError,
+    createItem,
+    updateItem,
+    deleteItem
   } = useInventoryItems();
-  
-  const { 
-    stats, 
-    loading: statsLoading, 
-    error: statsError 
+
+  const {
+    stats,
+    loading: statsLoading,
+    error: statsError
   } = useInventoryStats();
-  
+
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
@@ -129,10 +129,20 @@ export default function InventoryManager() {
       return;
     }
 
+    // Validate for negative values
+    const quantity = parseFloat(formData.quantity);
+    const purchasePrice = parseFloat(formData.purchasePrice);
+    const sellingPrice = parseFloat(formData.sellingPrice);
+
+    if (quantity < 0 || purchasePrice < 0 || sellingPrice < 0) {
+      alert("Values cannot be negative. Please enter positive numbers only.");
+      return;
+    }
+
     try {
       console.log('🔄 [InventoryModule] Creating new inventory item...');
       const newQuantity = parseInt(formData.quantity);
-      
+
       await createItem({
         name: formData.name,
         category: formData.category,
@@ -141,7 +151,7 @@ export default function InventoryManager() {
         purchasePrice: parseFloat(formData.purchasePrice),
         sellingPrice: parseFloat(formData.sellingPrice)
       });
-      
+
       console.log('✅ [InventoryModule] Successfully created inventory item');
       resetForm();
       setShowAddForm(false);
@@ -166,11 +176,17 @@ export default function InventoryManager() {
       return;
     }
 
+    // Validate for negative values
+    if (newQuantity < 0) {
+      alert("Quantity cannot be negative. Please enter a positive number.");
+      return;
+    }
+
     try {
       console.log('🔄 [InventoryModule] Updating inventory item quantity:', item.id, 'to', newQuantity);
-      
+
       await updateItem(item.id, newQuantity, updaterName);
-      
+
       console.log('✅ [InventoryModule] Successfully updated inventory item quantity');
       checkStockAlert({ ...item, quantity: newQuantity });
       setEditingItem(null);
@@ -186,7 +202,7 @@ export default function InventoryManager() {
   // Updated to use backend API for restocking instead of localStorage
   const handleRestock = async (item: InventoryItem, additionalQuantity: number) => {
     if (additionalQuantity <= 0) {
-      alert("Please enter a valid quantity to add");
+      alert("Please enter a valid quantity to add (must be greater than 0)");
       return;
     }
     if (!updaterName.trim()) {
@@ -197,9 +213,9 @@ export default function InventoryManager() {
     try {
       console.log('🔄 [InventoryModule] Restocking inventory item:', item.id, 'with', additionalQuantity);
       const newQuantity = item.quantity + additionalQuantity;
-      
+
       await updateItem(item.id, newQuantity, updaterName);
-      
+
       console.log('✅ [InventoryModule] Successfully restocked inventory item');
       setEditingItem(null);
       setShowUpdateForm(false);
@@ -216,9 +232,9 @@ export default function InventoryManager() {
     if (confirm(`Are you sure you want to delete "${name}"?`)) {
       try {
         console.log('🔄 [InventoryModule] Deleting inventory item:', id);
-        
+
         await deleteItem(id);
-        
+
         console.log('✅ [InventoryModule] Successfully deleted inventory item:', id);
       } catch (error) {
         console.error('❌ [InventoryModule] Failed to delete inventory item:', error);
@@ -248,7 +264,7 @@ export default function InventoryManager() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-              Inventory Management
+            Inventory Management
           </h1>
           <p className="text-sm sm:text-base text-gray-600">
             Track materials and stock levels
@@ -258,7 +274,7 @@ export default function InventoryManager() {
           onClick={() => setShowAddForm(true)}
           className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto"
         >
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="h-4 w-4 mr-1" />
           Add Item
         </Button>
       </div>
@@ -275,7 +291,6 @@ export default function InventoryManager() {
                 Total Items
               </div>
             </div>
-            <Package className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
           </div>
         </Card>
         <Card className="p-3 sm:p-4 bg-white border border-gray-200 shadow-sm">
@@ -288,7 +303,6 @@ export default function InventoryManager() {
                 Total Quantity
               </div>
             </div>
-            <TrendingDown className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
           </div>
         </Card>
         <Card className="p-3 sm:p-4 bg-white border border-gray-200 shadow-sm">
@@ -301,7 +315,6 @@ export default function InventoryManager() {
                 Low Stock Alerts
               </div>
             </div>
-            <AlertTriangle className="h-6 w-6 sm:h-8 sm:w-8 text-red-600" />
           </div>
         </Card>
         <Card className="p-3 sm:p-4 bg-white border border-gray-200 shadow-sm">
@@ -314,7 +327,6 @@ export default function InventoryManager() {
                 Well Stocked
               </div>
             </div>
-            <Package className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
           </div>
         </Card>
       </div>
@@ -344,7 +356,7 @@ export default function InventoryManager() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
           <Input
-            placeholder="Search inventory..."
+            placeholder="Search Inventory"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10 border-gray-300"
@@ -367,7 +379,7 @@ export default function InventoryManager() {
                   size="sm"
                   onClick={() => setShowAddForm(false)}
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-4 w-4 text-red-600" />
                 </Button>
               </div>
 
@@ -450,9 +462,12 @@ export default function InventoryManager() {
                     <Input
                       type="number"
                       value={formData.quantity}
-                      onChange={(e) =>
-                        handleFormChange("quantity", e.target.value)
-                      }
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === "" || (parseFloat(value) >= 0)) {
+                          handleFormChange("quantity", value);
+                        }
+                      }}
                       placeholder="0"
                       min="0"
                       required
@@ -468,9 +483,12 @@ export default function InventoryManager() {
                       type="number"
                       // step="0.01"
                       value={formData.purchasePrice}
-                      onChange={(e) =>
-                        handleFormChange("purchasePrice", e.target.value)
-                      }
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === "" || (parseFloat(value) >= 0)) {
+                          handleFormChange("purchasePrice", value);
+                        }
+                      }}
                       placeholder="0"
                       min="0"
                       required
@@ -488,9 +506,12 @@ export default function InventoryManager() {
                       type="number"
                       // step="0.01"
                       value={formData.sellingPrice}
-                      onChange={(e) =>
-                        handleFormChange("sellingPrice", e.target.value)
-                      }
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === "" || (parseFloat(value) >= 0)) {
+                          handleFormChange("sellingPrice", value);
+                        }
+                      }}
                       placeholder="0"
                       min="0"
                       required
@@ -535,7 +556,7 @@ export default function InventoryManager() {
                   size="sm"
                   onClick={() => setShowUpdateForm(false)}
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-4 w-4 text-red-600" />
                 </Button>
               </div>
 
@@ -559,7 +580,12 @@ export default function InventoryManager() {
                   <Input
                     type="number"
                     value={updateQuantity}
-                    onChange={(e) => setUpdateQuantity(e.target.value)}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === "" || (parseFloat(value) >= 0)) {
+                        setUpdateQuantity(value);
+                      }
+                    }}
                     placeholder="Enter new quantity"
                     min="0"
                     className="no-spinner"
@@ -616,13 +642,13 @@ export default function InventoryManager() {
                   size="sm"
                   onClick={() => setShowHistoryModal(null)}
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-4 w-4 text-red-600" />
                 </Button>
               </div>
             </div>
             <div className="p-6 overflow-y-auto">
               {showHistoryModal.history &&
-              showHistoryModal.history.length > 0 ? (
+                showHistoryModal.history.length > 0 ? (
                 <ul className="space-y-4">
                   {showHistoryModal.history
                     .slice()
@@ -644,16 +670,15 @@ export default function InventoryManager() {
                             </span>
                           </p>
                           <p className="text-xs text-gray-500 mb-1">
-                            {new Date(entry.date).toLocaleString()}
+                            {new Date(entry.date).toLocaleDateString('en-GB')}
                           </p>
                           <p className="text-sm text-gray-700">
                             Quantity changed by{" "}
                             <span
-                              className={`font-bold ${
-                                entry.quantityChange >= 0
-                                  ? "text-green-600"
-                                  : "text-red-600"
-                              }`}
+                              className={`font-bold ${entry.quantityChange >= 0
+                                ? "text-green-600"
+                                : "text-red-600"
+                                }`}
                             >
                               {entry.quantityChange > 0
                                 ? `+${entry.quantityChange}`
@@ -703,7 +728,7 @@ export default function InventoryManager() {
       )}
 
       {/* Inventory List - Added loading and error states for backend API integration */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {!inventoryLoading && filteredInventory.length > 0 ? (
           filteredInventory.map((item) => (
             <Card
@@ -735,16 +760,16 @@ export default function InventoryManager() {
                 <div className="border-t border-gray-200 pt-3 space-y-2 text-xs text-gray-500">
                   <div className="flex items-center">
                     <Calendar className="h-3 w-3 mr-2" />
-                    Last Updated: {item.lastUpdated}
+                    <span className="font-semibold text-blue-600">Last Updated:</span> <span className="ml-1">{new Date(item.lastUpdated).toLocaleDateString('en-GB')}</span>
                   </div>
                   <div className="flex items-center">
                     <User className="h-3 w-3 mr-2" />
-                    Updated By: {item.lastUpdatedBy || "N/A"}
+                    <span className="font-semibold text-green-600">Updated By:</span> <span className="ml-1">{item.lastUpdatedBy || "N/A"}</span>
                   </div>
                 </div>
               </div>
 
-              <div className="flex space-x-2 mt-4">
+              <div className="flex flex-col sm:flex-row gap-2 mt-4">
                 <Button
                   variant="outline"
                   size="sm"
@@ -776,7 +801,7 @@ export default function InventoryManager() {
             </Card>
           ))
         ) : !inventoryLoading ? (
-          <div className="col-span-1 md:col-span-2 lg:col-span-3 text-center py-10 text-gray-500">
+          <div className="col-span-1 sm:col-span-2 lg:col-span-3 text-center py-10 text-gray-500">
             <Package className="h-12 w-12 mx-auto mb-2" />
             <p>No inventory items found.</p>
             <p className="text-sm">

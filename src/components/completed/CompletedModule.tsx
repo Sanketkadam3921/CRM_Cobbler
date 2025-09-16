@@ -5,13 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
   Search,
-  CheckCircle,
-  Calendar,
-  Package,
-  User,
-  MapPin,
   Archive,
-  Eye,
+  MapPin,
+  Package,
+  Calendar,
+  DollarSign,
+  User,
 } from "lucide-react";
 // REASON: Replaced localStorage imports with backend API service
 // import { Enquiry } from "@/types";
@@ -84,20 +83,18 @@ export function CompletedModule() {
   );
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-IN', {
-      day: 'numeric',
-      month: 'short',
+    return new Date(dateString).toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
       year: 'numeric'
     });
   };
 
   const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleString('en-IN', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return new Date(dateString).toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
     });
   };
 
@@ -128,7 +125,9 @@ export function CompletedModule() {
                 Total Completed
               </div>
             </div>
-            <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-success" />
+            <div className="h-6 w-6 sm:h-8 sm:w-8 text-success flex items-center justify-center">
+              <span className="text-lg font-bold">✓</span>
+            </div>
           </div>
         </Card>
         <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
@@ -141,7 +140,9 @@ export function CompletedModule() {
                 This Week
               </div>
             </div>
-            <Calendar className="h-6 w-6 sm:h-8 sm:w-8 text-blue-500" />
+            <div className="h-6 w-6 sm:h-8 sm:w-8 text-blue-500 flex items-center justify-center">
+              <span className="text-lg font-bold">📅</span>
+            </div>
           </div>
         </Card>
         <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
@@ -167,7 +168,9 @@ export function CompletedModule() {
                 Avg Days
               </div>
             </div>
-            <Package className="h-6 w-6 sm:h-8 sm:w-8 text-purple-500" />
+            <div className="h-6 w-6 sm:h-8 sm:w-8 text-purple-500 flex items-center justify-center">
+              <span className="text-lg font-bold">📦</span>
+            </div>
           </div>
         </Card>
       </div>
@@ -186,13 +189,43 @@ export function CompletedModule() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
-            placeholder="Search completed orders by customer, address, product..."
+            placeholder="Search completed orders"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
+            style={{
+              '--placeholder-animation': 'scroll-left 15s linear infinite',
+            } as React.CSSProperties}
           />
         </div>
       </Card>
+
+      <style>{`
+        @keyframes scroll-left {
+          0% {
+            transform: translateX(100%);
+          }
+          100% {
+            transform: translateX(-100%);
+          }
+        }
+        
+        @media (max-width: 640px) {
+          input::placeholder {
+            animation: var(--placeholder-animation);
+            white-space: nowrap;
+            overflow: hidden;
+            display: inline-block;
+            width: 200%;
+          }
+        }
+        
+        @media (min-width: 641px) {
+          input::placeholder {
+            animation: none;
+          }
+        }
+      `}</style>
 
       {/* Completed Items */}
       <div className="space-y-4">
@@ -228,50 +261,32 @@ export function CompletedModule() {
               </div>
 
               <div className="space-y-3">
-                <div className="flex items-start space-x-2">
-                  <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                  <span className="text-sm text-foreground break-words">
-                    {enquiry.address}
-                  </span>
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-foreground break-words">{enquiry.address}</span>
                 </div>
 
                 <div className="flex items-center space-x-2">
-                  <Package className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                   <span className="text-sm text-foreground">
                     {enquiry.product} ({enquiry.quantity} items)
                   </span>
                 </div>
 
-                {/* REASON: Updated to use backend API data structure for service types */}
-                {enquiry.serviceTypes && (
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm text-foreground">
-                      {/* <strong>Service:</strong> {enquiry.serviceTypes} */}
-                    </span>
-                  </div>
-                )}
-
-                {/* REASON: Show final amount (subtotal + GST) with INR symbol */}
                 <div className="flex items-center space-x-2">
-                  <span className="h-4 w-4 text-muted-foreground flex-shrink-0 text-sm font-bold">₹</span>
                   <span className="text-sm font-semibold text-foreground">
                     Final Amount: ₹{(Number(enquiry.subtotalAmount || 0) + Number(enquiry.gstAmount || 0)).toFixed(2)}
                   </span>
                 </div>
 
                 <div className="flex items-center space-x-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                   <span className="text-sm text-foreground">
-                    <strong>Ordered:</strong> {formatDate(enquiry.date)}
+                    Ordered: {formatDate(enquiry.date)}
                   </span>
                 </div>
 
-                {/* REASON: Updated to use backend API data structure for delivery details */}
                 {enquiry.deliveredAt && (
                   <div className="flex items-center space-x-2">
-                    <CheckCircle className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                     <span className="text-sm text-foreground">
-                      <strong>Delivered:</strong> {formatDateTime(enquiry.deliveredAt)}
+                      Delivered: {formatDateTime(enquiry.deliveredAt)}
                     </span>
                   </div>
                 )}
@@ -279,16 +294,17 @@ export function CompletedModule() {
                 {enquiry.deliveryMethod && (
                   <div className="flex items-center space-x-2">
                     <span className="text-sm text-foreground">
-                      <strong>Delivery:</strong> {enquiry.deliveryMethod === 'customer-pickup' ? 'Customer Pickup' : 'Home Delivery'}
+                      Delivery: {enquiry.deliveryMethod === 'customer-pickup' ? 'Customer Pickup' : 'Home Delivery'}
                     </span>
                   </div>
                 )}
 
                 {enquiry.deliveryNotes && (
-                  <div className="bg-muted/50 p-2 rounded">
-                    <span className="text-sm text-foreground">
-                      <strong>Notes:</strong> {enquiry.deliveryNotes}
-                    </span>
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium text-foreground">Notes:</h4>
+                    <div className="bg-muted/50 p-2 rounded">
+                      <p className="text-sm text-foreground">{enquiry.deliveryNotes}</p>
+                    </div>
                   </div>
                 )}
               </div>

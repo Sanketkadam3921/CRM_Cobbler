@@ -321,19 +321,19 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
                   <p className="text-xs sm:text-sm font-medium text-muted-foreground group-hover:text-primary transition-colors truncate">{stat.name}</p>
                   <p className="text-xl sm:text-2xl font-bold text-foreground">{stat.value}</p>
                   <p className={`text-xs sm:text-sm ${stat.changeType === "positive" ? "text-success" :
-                      stat.changeType === "warning" ? "text-warning" :
-                        "text-muted-foreground"
+                    stat.changeType === "warning" ? "text-warning" :
+                      "text-muted-foreground"
                     }`}>
                     {stat.change}
                   </p>
                 </div>
                 <div className={`p-2 sm:p-3 rounded-lg group-hover:scale-105 transition-transform flex-shrink-0 ${stat.changeType === "positive" ? "bg-success/10" :
-                    stat.changeType === "warning" ? "bg-warning/10" :
-                      "bg-primary/10"
+                  stat.changeType === "warning" ? "bg-warning/10" :
+                    "bg-primary/10"
                   }`}>
                   <stat.icon className={`h-5 w-5 sm:h-6 sm:w-6 ${stat.changeType === "positive" ? "text-success" :
-                      stat.changeType === "warning" ? "text-warning" :
-                        "text-primary"
+                    stat.changeType === "warning" ? "text-warning" :
+                      "text-primary"
                     }`} />
                 </div>
               </div>

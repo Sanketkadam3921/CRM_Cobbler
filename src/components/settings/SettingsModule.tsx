@@ -38,7 +38,7 @@ export function SettingsModule() {
     orderUpdates: true,
     customerApprovals: true,
   });
-  
+
   const [businessInfo, setBusinessInfo] = useState<BusinessInfo>({
     businessName: "Ranjit's Shoe & Bag Repair",
     ownerName: "Ranjit Kumar",
@@ -89,7 +89,7 @@ export function SettingsModule() {
       </div>
 
       <Tabs defaultValue="business" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="business" className="flex items-center space-x-2">
             <Settings className="h-4 w-4" />
             <span className="hidden sm:inline">Business</span>
@@ -98,17 +98,9 @@ export function SettingsModule() {
             <User className="h-4 w-4" />
             <span className="hidden sm:inline">Staff</span>
           </TabsTrigger>
-          <TabsTrigger value="notifications" className="flex items-center space-x-2">
-            <Bell className="h-4 w-4" />
-            <span className="hidden sm:inline">Notifications</span>
-          </TabsTrigger>
           <TabsTrigger value="security" className="flex items-center space-x-2">
             <Shield className="h-4 w-4" />
             <span className="hidden sm:inline">Security</span>
-          </TabsTrigger>
-          <TabsTrigger value="system" className="flex items-center space-x-2">
-            <Database className="h-4 w-4" />
-            <span className="hidden sm:inline">System</span>
           </TabsTrigger>
         </TabsList>
 
@@ -123,9 +115,9 @@ export function SettingsModule() {
                 <div className="flex items-center space-x-4">
                   {businessInfo.logo ? (
                     <div className="w-24 h-24 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden border-2 border-gray-200">
-                      <img 
-                        src={businessInfo.logo} 
-                        alt="Business Logo" 
+                      <img
+                        src={businessInfo.logo}
+                        alt="Business Logo"
                         className="w-full h-full object-contain"
                       />
                     </div>
@@ -167,74 +159,74 @@ export function SettingsModule() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="businessName">Business Name</Label>
-                  <Input 
+                  <Input
                     id="businessName"
                     value={businessInfo.businessName}
-                    onChange={(e) => setBusinessInfo({...businessInfo, businessName: e.target.value})}
+                    onChange={(e) => setBusinessInfo({ ...businessInfo, businessName: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="tagline">Tagline</Label>
-                  <Input 
+                  <Input
                     id="tagline"
                     value={businessInfo.tagline}
-                    onChange={(e) => setBusinessInfo({...businessInfo, tagline: e.target.value})}
+                    onChange={(e) => setBusinessInfo({ ...businessInfo, tagline: e.target.value })}
                     placeholder="Quality Repair Services"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="ownerName">Owner Name</Label>
-                  <Input 
+                  <Input
                     id="ownerName"
                     value={businessInfo.ownerName}
-                    onChange={(e) => setBusinessInfo({...businessInfo, ownerName: e.target.value})}
+                    onChange={(e) => setBusinessInfo({ ...businessInfo, ownerName: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="website">Website</Label>
-                  <Input 
+                  <Input
                     id="website"
                     value={businessInfo.website}
-                    onChange={(e) => setBusinessInfo({...businessInfo, website: e.target.value})}
+                    onChange={(e) => setBusinessInfo({ ...businessInfo, website: e.target.value })}
                     placeholder="www.yourbusiness.com"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone Number</Label>
-                  <Input 
+                  <Input
                     id="phone"
                     value={businessInfo.phone}
-                    onChange={(e) => setBusinessInfo({...businessInfo, phone: e.target.value})}
+                    onChange={(e) => setBusinessInfo({ ...businessInfo, phone: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email Address</Label>
-                  <Input 
+                  <Input
                     id="email"
                     type="email"
                     value={businessInfo.email}
-                    onChange={(e) => setBusinessInfo({...businessInfo, email: e.target.value})}
+                    onChange={(e) => setBusinessInfo({ ...businessInfo, email: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="address">Business Address</Label>
-                  <Textarea 
+                  <Textarea
                     id="address"
                     value={businessInfo.address}
-                    onChange={(e) => setBusinessInfo({...businessInfo, address: e.target.value})}
+                    onChange={(e) => setBusinessInfo({ ...businessInfo, address: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="gstNumber">GST Number</Label>
-                  <Input 
+                  <Input
                     id="gstNumber"
                     value={businessInfo.gstNumber}
-                    onChange={(e) => setBusinessInfo({...businessInfo, gstNumber: e.target.value})}
+                    onChange={(e) => setBusinessInfo({ ...businessInfo, gstNumber: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="timezone">Timezone</Label>
-                  <Select value={businessInfo.timezone} onValueChange={(value) => setBusinessInfo({...businessInfo, timezone: value})}>
+                  <Select value={businessInfo.timezone} onValueChange={(value) => setBusinessInfo({ ...businessInfo, timezone: value })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -293,75 +285,6 @@ export function SettingsModule() {
           </Card>
         </TabsContent>
 
-        {/* Notifications */}
-        <TabsContent value="notifications" className="space-y-6">
-          <Card className="p-6 bg-gradient-card border-0 shadow-soft">
-            <h3 className="text-lg font-semibold text-foreground mb-4">Notification Preferences</h3>
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-base">Email Alerts</Label>
-                  <p className="text-sm text-muted-foreground">Receive important notifications via email</p>
-                </div>
-                <Switch 
-                  checked={notifications.emailAlerts}
-                  onCheckedChange={(checked) => setNotifications({...notifications, emailAlerts: checked})}
-                />
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-base">SMS Alerts</Label>
-                  <p className="text-sm text-muted-foreground">Receive urgent notifications via SMS</p>
-                </div>
-                <Switch 
-                  checked={notifications.smsAlerts}
-                  onCheckedChange={(checked) => setNotifications({...notifications, smsAlerts: checked})}
-                />
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-base">Low Stock Alerts</Label>
-                  <p className="text-sm text-muted-foreground">Get notified when inventory is running low</p>
-                </div>
-                <Switch 
-                  checked={notifications.lowStockAlerts}
-                  onCheckedChange={(checked) => setNotifications({...notifications, lowStockAlerts: checked})}
-                />
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-base">Order Updates</Label>
-                  <p className="text-sm text-muted-foreground">Notifications for order status changes</p>
-                </div>
-                <Switch 
-                  checked={notifications.orderUpdates}
-                  onCheckedChange={(checked) => setNotifications({...notifications, orderUpdates: checked})}
-                />
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-base">Customer Approvals</Label>
-                  <p className="text-sm text-muted-foreground">Notifications when customers approve work</p>
-                </div>
-                <Switch 
-                  checked={notifications.customerApprovals}
-                  onCheckedChange={(checked) => setNotifications({...notifications, customerApprovals: checked})}
-                />
-              </div>
-            </div>
-            <div className="flex justify-end mt-6">
-              <Button className="bg-gradient-primary hover:opacity-90">
-                <Save className="h-4 w-4 mr-2" />
-                Save Preferences
-              </Button>
-            </div>
-          </Card>
-        </TabsContent>
-
         {/* Security Settings */}
         <TabsContent value="security" className="space-y-6">
           <Card className="p-6 bg-gradient-card border-0 shadow-soft">
@@ -401,100 +324,6 @@ export function SettingsModule() {
                 <Save className="h-4 w-4 mr-2" />
                 Update Security
               </Button>
-            </div>
-          </Card>
-        </TabsContent>
-
-        {/* System Settings */}
-        <TabsContent value="system" className="space-y-6">
-          <Card className="p-6 bg-gradient-card border-0 shadow-soft">
-            <h3 className="text-lg font-semibold text-foreground mb-4">System Configuration</h3>
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="backupFrequency">Backup Frequency</Label>
-                  <Select defaultValue="daily">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="daily">Daily</SelectItem>
-                      <SelectItem value="weekly">Weekly</SelectItem>
-                      <SelectItem value="monthly">Monthly</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="dataRetention">Data Retention (months)</Label>
-                  <Select defaultValue="12">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="6">6 months</SelectItem>
-                      <SelectItem value="12">12 months</SelectItem>
-                      <SelectItem value="24">24 months</SelectItem>
-                      <SelectItem value="unlimited">Unlimited</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <Separator />
-              <div className="space-y-4">
-                <h4 className="font-medium text-foreground">System Maintenance</h4>
-                <div className="flex flex-wrap gap-2">
-                  <Button variant="outline">
-                    <Database className="h-4 w-4 mr-2" />
-                    Backup Data
-                  </Button>
-                  <Button variant="outline">
-                    <Database className="h-4 w-4 mr-2" />
-                    Clean Logs
-                  </Button>
-                  <Button variant="outline">
-                    <Database className="h-4 w-4 mr-2" />
-                    Export Data
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => {
-                      if (confirm('This will reset all data to sample data. Are you sure?')) {
-                        resetToSampleData();
-                        window.location.reload();
-                      }
-                    }}
-                  >
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Reset to Sample Data
-                  </Button>
-                </div>
-              </div>
-              <Separator />
-              <div className="space-y-4">
-                <h4 className="font-medium text-foreground">System Information</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Version:</span>
-                      <span className="text-foreground">v1.0.0</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Last Backup:</span>
-                      <span className="text-foreground">2024-01-15 02:00 AM</span>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Database Size:</span>
-                      <span className="text-foreground">45.2 MB</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Uptime:</span>
-                      <span className="text-foreground">15 days, 4 hours</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
           </Card>
         </TabsContent>

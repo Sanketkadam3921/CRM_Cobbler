@@ -1,18 +1,20 @@
-// expenseApiService.ts
-
 import { ApiResponse } from '@/types';
 import { useState, useEffect, useCallback } from 'react';
 
 // API Configuration
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (
-  typeof window !== 'undefined' && window.location.origin !== 'http://localhost:5173'
-    ? `${window.location.origin}/api`
-    : 'http://localhost:3001/api'
-);
+
+//  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (
+//   typeof window !== 'undefined' && window.location.origin !== 'http://localhost:5173' 
+//     ? `${window.location.origin}/api`
+//     : 'http://localhost:3001/api'
+// );
+
+const API_BASE_URL = 'http://localhost:3001/api';
+
 
 const X_TOKEN = import.meta.env.VITE_X_TOKEN || 'cobbler_super_secret_token_2024';
 
-// Expense Data Types
+// Expense Data Types - matching backend ExpenseModel and ExpenseController
 export interface Expense {
   id: number;
   title: string;
@@ -103,33 +105,28 @@ class ApiClient {
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
 
-    const headers: HeadersInit = {
-      'X-Token': this.token,
-      ...options.headers,
-    };
-
-    // ==================================================================
-    // === FIXED: Correctly set Content-Type header for JSON requests ===
-    // ==================================================================
-    // If the body is NOT FormData, we assume it's a JSON payload
-    // and correctly add the 'Content-Type' header.
-    if (!(options.body instanceof FormData)) {
-      headers['Content-Type'] = 'application/json';
-    }
-
     const config: RequestInit = {
+      headers: {
+        'X-Token': this.token,
+        ...options.headers,
+      },
       ...options,
-      headers,
     };
+
+    // Don't set Content-Type for FormData
+    if (!(options.body instanceof FormData)) {
+      config.headers = {
+        'Content-Type': 'application/json',
+        ...config.headers,
+      };
+    }
 
     try {
       const response = await fetch(url, config);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.message || `HTTP ${response.status}: ${response.statusText}`
-        );
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
       }
 
       const result: ApiResponse<T> = await response.json();
@@ -245,37 +242,96 @@ const apiClient = new ApiClient(API_BASE_URL, X_TOKEN);
 
 // Expense API Service
 export const expenseApiService = {
+  // Expense CRUD operations
   getExpenses: async (filters: ExpenseFilters = {}): Promise<ExpenseListResponse> => {
-    return apiClient.getExpenses(filters);
-  },
-  getExpenseById: async (id: number): Promise<Expense> => {
-    return apiClient.getExpenseById(id);
-  },
-  createExpense: async (data: ExpenseCreateRequest): Promise<Expense> => {
-    return apiClient.createExpense(data);
-  },
-  updateExpense: async (id: number, data: Partial<ExpenseCreateRequest>): Promise<Expense> => {
-    return apiClient.updateExpense(id, data);
-  },
-  deleteExpense: async (id: number): Promise<void> => {
-    return apiClient.deleteExpense(id);
-  },
-  getExpenseStats: async (filters: { month?: string; year?: string; category?: string } = {}): Promise<ExpenseStats> => {
-    return apiClient.getExpenseStats(filters);
+    try {
+      return await apiClient.getExpenses(filters);
+    } catch (error) {
+      console.error('Error fetching expenses:', error);
+      throw error;
+    }
   },
 
-  // Employee
+  getExpenseById: async (id: number): Promise<Expense> => {
+    try {
+      return await apiClient.getExpenseById(id);
+    } catch (error) {
+      console.error('Error fetching expense:', error);
+      throw error;
+    }
+  },
+
+  createExpense: async (data: ExpenseCreateRequest): Promise<Expense> => {
+    try {
+      return await apiClient.createExpense(data);
+    } catch (error) {
+      console.error('Error creating expense:', error);
+      throw error;
+    }
+  },
+
+  updateExpense: async (id: number, data: Partial<ExpenseCreateRequest>): Promise<Expense> => {
+    try {
+      return await apiClient.updateExpense(id, data);
+    } catch (error) {
+      console.error('Error updating expense:', error);
+      throw error;
+    }
+  },
+
+  deleteExpense: async (id: number): Promise<void> => {
+    try {
+      await apiClient.deleteExpense(id);
+    } catch (error) {
+      console.error('Error deleting expense:', error);
+      throw error;
+    }
+  },
+
+  getExpenseStats: async (filters: { month?: string; year?: string; category?: string } = {}): Promise<ExpenseStats> => {
+    try {
+      return await apiClient.getExpenseStats(filters);
+    } catch (error) {
+      console.error('Error fetching expense stats:', error);
+      throw error;
+    }
+  },
+
+  // Employee operations
   getEmployees: async (): Promise<Employee[]> => {
-    return apiClient.getEmployees();
+    try {
+      return await apiClient.getEmployees();
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+      throw error;
+    }
   },
+
   createEmployee: async (data: EmployeeCreateRequest): Promise<Employee> => {
-    return apiClient.createEmployee(data);
+    try {
+      return await apiClient.createEmployee(data);
+    } catch (error) {
+      console.error('Error creating employee:', error);
+      throw error;
+    }
   },
+
   updateEmployee: async (id: number, data: Partial<EmployeeCreateRequest>): Promise<Employee> => {
-    return apiClient.updateEmployee(id, data);
+    try {
+      return await apiClient.updateEmployee(id, data);
+    } catch (error) {
+      console.error('Error updating employee:', error);
+      throw error;
+    }
   },
+
   deleteEmployee: async (id: number): Promise<void> => {
-    return apiClient.deleteEmployee(id);
+    try {
+      await apiClient.deleteEmployee(id);
+    } catch (error) {
+      console.error('Error deleting employee:', error);
+      throw error;
+    }
   },
 };
 
@@ -294,57 +350,51 @@ export function useExpenseData(initialFilters: ExpenseFilters = {}) {
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<ExpenseFilters>(initialFilters);
 
-  const fetchExpenses = useCallback(
-    async (newFilters: ExpenseFilters = {}) => {
-      try {
-        setLoading(true);
-        setError(null);
-        const currentFilters = { ...filters, ...newFilters };
-        const response = await expenseApiService.getExpenses(currentFilters);
+  const fetchExpenses = useCallback(async (newFilters: ExpenseFilters = {}) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const currentFilters = { ...filters, ...newFilters };
+      const response = await expenseApiService.getExpenses(currentFilters);
 
-        setExpenses(response.data);
-        setPagination({
-          total: response.total,
-          page: response.page,
-          limit: response.limit,
-          totalPages: response.totalPages,
-        });
-        setFilters(currentFilters);
-      } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : 'Failed to fetch expenses';
-        setError(errorMessage);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [filters]
-  );
+      setExpenses(response.data);
+      setPagination({
+        total: response.total,
+        page: response.page,
+        limit: response.limit,
+        totalPages: response.totalPages,
+      });
+      setFilters(currentFilters);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch expenses';
+      setError(errorMessage);
+      console.error('Error in useExpenseData:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [filters]);
 
   const fetchEmployees = useCallback(async () => {
     try {
       const employeeData = await expenseApiService.getEmployees();
       setEmployees(employeeData);
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Failed to fetch employees';
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch employees';
       setError(errorMessage);
+      console.error('Error fetching employees:', err);
     }
   }, []);
 
-  const fetchStats = useCallback(
-    async (statsFilters: { month?: string; year?: string; category?: string } = {}) => {
-      try {
-        const statsData = await expenseApiService.getExpenseStats(statsFilters);
-        setStats(statsData);
-      } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : 'Failed to fetch expense stats';
-        setError(errorMessage);
-      }
-    },
-    []
-  );
+  const fetchStats = useCallback(async (statsFilters: { month?: string; year?: string; category?: string } = {}) => {
+    try {
+      const statsData = await expenseApiService.getExpenseStats(statsFilters);
+      setStats(statsData);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch expense stats';
+      setError(errorMessage);
+      console.error('Error fetching stats:', err);
+    }
+  }, []);
 
   const refreshData = useCallback(() => {
     fetchExpenses();
@@ -352,11 +402,12 @@ export function useExpenseData(initialFilters: ExpenseFilters = {}) {
     fetchStats();
   }, []);
 
+  // Auto-fetch on mount - ONLY ONCE
   useEffect(() => {
     fetchExpenses();
     fetchEmployees();
     fetchStats();
-  }, []);
+  }, []); // Empty dependency array to prevent infinite loops
 
   return {
     expenses,
