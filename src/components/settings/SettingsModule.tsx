@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Settings, User, Bell, Shield, Database, Palette, Globe, Save, UserPlus, Trash2, RefreshCw, Upload, Image as ImageIcon } from "lucide-react";
+import { Settings, User, Bell, Shield, Database, Palette, Globe, Save, UserPlus, Trash2, RefreshCw, Upload, Image as ImageIcon, X, Edit } from "lucide-react";
 import { resetToSampleData } from "@/utils/localStorage";
 import { BusinessInfo } from "@/types";
 import { businessInfoStorage } from "@/utils/localStorage";
@@ -31,6 +31,16 @@ const staffMembers: StaffMember[] = [
 
 export function SettingsModule() {
   const [staff, setStaff] = useState<StaffMember[]>(staffMembers);
+  const [showStaffForm, setShowStaffForm] = useState(false);
+  const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(null);
+  const [staffFormData, setStaffFormData] = useState({
+    name: "",
+    role: "",
+    email: "",
+    phone: "",
+    status: "active" as "active" | "inactive"
+  });
   const [notifications, setNotifications] = useState({
     emailAlerts: true,
     smsAlerts: false,
@@ -78,6 +88,81 @@ export function SettingsModule() {
   const saveBusinessInfo = () => {
     businessInfoStorage.save(businessInfo);
     alert("Business information saved successfully!");
+  };
+
+  // Staff Management Functions
+  const resetStaffForm = () => {
+    setStaffFormData({
+      name: "",
+      role: "",
+      email: "",
+      phone: "",
+      status: "active"
+    });
+    setShowStaffForm(false);
+    setEditingStaff(null);
+  };
+
+  const handleAddStaff = () => {
+    resetStaffForm();
+    setShowStaffForm(true);
+  };
+
+  const handleEditStaff = (staffMember: StaffMember) => {
+    setStaffFormData({
+      name: staffMember.name,
+      role: staffMember.role,
+      email: staffMember.email,
+      phone: staffMember.phone,
+      status: staffMember.status
+    });
+    setEditingStaff(staffMember);
+    setShowStaffForm(true);
+  };
+
+  const handleDeleteStaff = (id: number) => {
+    setShowDeleteConfirm(id);
+  };
+
+  const confirmDeleteStaff = () => {
+    if (showDeleteConfirm) {
+      setStaff(prev => prev.filter(member => member.id !== showDeleteConfirm));
+      setShowDeleteConfirm(null);
+    }
+  };
+
+  const handleStaffSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (editingStaff) {
+      // Update existing staff member
+      setStaff(prev => prev.map(member =>
+        member.id === editingStaff.id
+          ? { ...member, ...staffFormData }
+          : member
+      ));
+    } else {
+      // Add new staff member
+      const newStaff: StaffMember = {
+        id: Math.max(...staff.map(s => s.id)) + 1,
+        ...staffFormData
+      };
+      setStaff(prev => [...prev, newStaff]);
+    }
+
+    resetStaffForm();
+  };
+
+  const validateStaffForm = () => {
+    const errors = [];
+    if (!staffFormData.name.trim()) errors.push("Name is required");
+    if (!staffFormData.role.trim()) errors.push("Role is required");
+    if (!staffFormData.email.trim()) errors.push("Email is required");
+    if (!staffFormData.phone.trim()) errors.push("Phone is required");
+    if (staffFormData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(staffFormData.email)) {
+      errors.push("Please enter a valid email address");
+    }
+    return errors;
   };
 
   return (
@@ -252,8 +337,8 @@ export function SettingsModule() {
           <Card className="p-6 bg-gradient-card border-0 shadow-soft">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-foreground">Staff Management</h3>
-              <Button className="bg-gradient-primary hover:opacity-90">
-                <UserPlus className="h-4 w-4 mr-0" />
+              <Button onClick={handleAddStaff} className="bg-gradient-primary hover:opacity-90">
+                <UserPlus className="h-4 w-4 mr-2" />
                 Add Staff Member
               </Button>
             </div>
@@ -274,8 +359,20 @@ export function SettingsModule() {
                     <Badge variant={member.status === "active" ? "default" : "secondary"}>
                       {member.status}
                     </Badge>
-                    <Button size="sm" variant="outline">Edit</Button>
-                    <Button size="sm" variant="outline">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleEditStaff(member)}
+                    >
+                      <Edit className="h-3 w-3 mr-1" />
+                      Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDeleteStaff(member.id)}
+                      className="text-red-600 hover:bg-red-50"
+                    >
                       <Trash2 className="h-3 w-3" />
                     </Button>
                   </div>
@@ -328,6 +425,175 @@ export function SettingsModule() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Staff Form Modal */}
+      {showStaffForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-gray-900">
+                  {editingStaff ? "Edit Staff Member" : "Add New Staff Member"}
+                </h2>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={resetStaffForm}
+                >
+                  <X className="h-4 w-4 text-red-600" />
+                </Button>
+              </div>
+
+              <form onSubmit={handleStaffSubmit} className="space-y-4">
+                <div>
+                  <Label htmlFor="staffName" className="text-sm font-medium text-gray-700">
+                    Full Name <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="staffName"
+                    type="text"
+                    value={staffFormData.name}
+                    onChange={(e) => setStaffFormData({ ...staffFormData, name: e.target.value })}
+                    placeholder="Enter full name"
+                    required
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="staffRole" className="text-sm font-medium text-gray-700">
+                    Role/Position <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="staffRole"
+                    type="text"
+                    value={staffFormData.role}
+                    onChange={(e) => setStaffFormData({ ...staffFormData, role: e.target.value })}
+                    placeholder="e.g., Senior Technician, Pickup Staff"
+                    required
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="staffEmail" className="text-sm font-medium text-gray-700">
+                    Email Address <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="staffEmail"
+                    type="email"
+                    value={staffFormData.email}
+                    onChange={(e) => setStaffFormData({ ...staffFormData, email: e.target.value })}
+                    placeholder="Enter email address"
+                    required
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="staffPhone" className="text-sm font-medium text-gray-700">
+                    Phone Number <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="staffPhone"
+                    type="tel"
+                    value={staffFormData.phone}
+                    onChange={(e) => setStaffFormData({ ...staffFormData, phone: e.target.value })}
+                    placeholder="Enter phone number"
+                    required
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="staffStatus" className="text-sm font-medium text-gray-700">
+                    Status
+                  </Label>
+                  <Select
+                    value={staffFormData.status}
+                    onValueChange={(value: "active" | "inactive") =>
+                      setStaffFormData({ ...staffFormData, status: value })
+                    }
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="inactive">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex space-x-3 mt-6">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={resetStaffForm}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    {editingStaff ? "Update Staff" : "Add Staff"}
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <Card className="w-full max-w-md">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-gray-900">
+                  Confirm Delete
+                </h2>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowDeleteConfirm(null)}
+                >
+                  <X className="h-4 w-4 text-red-600" />
+                </Button>
+              </div>
+
+              <div className="mb-6">
+                <p className="text-gray-600">
+                  Are you sure you want to delete this staff member? This action cannot be undone.
+                </p>
+              </div>
+
+              <div className="flex space-x-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setShowDeleteConfirm(null)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                  onClick={confirmDeleteStaff}
+                >
+                  Delete
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

@@ -130,19 +130,16 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
         {
           ...defaultStats[0],
           value: dashboardData.totalEnquiries.toString(),
-          change: "+12%",
           changeType: "positive",
         },
         {
           ...defaultStats[1],
           value: dashboardData.pendingPickups.toString(),
-          change: "+2",
           changeType: "neutral",
         },
         {
           ...defaultStats[2],
           value: dashboardData.inService.toString(),
-          change: "3 urgent",
           changeType: "warning",
         },
         {
@@ -432,7 +429,6 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
                 onClick={() => onNavigate("crm", "add-enquiry")}
                 className="p-3 sm:p-4 text-left rounded-lg border border-border hover:bg-primary/5 hover:border-primary/20 transition-all group"
               >
-                <Users className="h-4 w-4 sm:h-5 sm:w-5 text-primary mb-2 group-hover:scale-105 transition-transform" />
                 <div className="text-xs sm:text-sm font-medium text-foreground">Add Enquiry</div>
                 <div className="text-xs text-muted-foreground">Create new lead</div>
               </button>
@@ -440,7 +436,6 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
                 onClick={() => onNavigate("pickup", "schedule-pickup")}
                 className="p-3 sm:p-4 text-left rounded-lg border border-border hover:bg-primary/5 hover:border-primary/20 transition-all group"
               >
-                <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-primary mb-2 group-hover:scale-105 transition-transform" />
                 <div className="text-xs sm:text-sm font-medium text-foreground">Schedule Pickup</div>
                 <div className="text-xs text-muted-foreground">Book collection</div>
               </button>
@@ -448,7 +443,6 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
                 onClick={() => onNavigate("inventory", "add-inventory")}
                 className="p-3 sm:p-4 text-left rounded-lg border border-border hover:bg-primary/5 hover:border-primary/20 transition-all group"
               >
-                <Package className="h-4 w-4 sm:h-5 sm:w-5 text-primary mb-2 group-hover:scale-105 transition-transform" />
                 <div className="text-xs sm:text-sm font-medium text-foreground">Add Inventory</div>
                 <div className="text-xs text-muted-foreground">Update stock</div>
               </button>
@@ -456,7 +450,6 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
                 onClick={() => onNavigate("expenses", "add-expense")}
                 className="p-3 sm:p-4 text-left rounded-lg border border-border hover:bg-primary/5 hover:border-primary/20 transition-all group"
               >
-                <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-primary mb-2 group-hover:scale-105 transition-transform" />
                 <div className="text-xs sm:text-sm font-medium text-foreground">Add Expense</div>
                 <div className="text-xs text-muted-foreground">Record cost</div>
               </button>

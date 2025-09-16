@@ -306,7 +306,6 @@ export default function ReportsModule() {
               <div className="text-2xl font-bold text-foreground">₹{metrics.totalRevenue.toLocaleString()}</div>
               <div className="text-sm text-muted-foreground">Total Revenue</div>
             </div>
-            <Wallet className="h-8 w-8 text-green-500" />
           </div>
         </Card>
         <Card className="p-4 bg-card border shadow-sm">
@@ -315,7 +314,6 @@ export default function ReportsModule() {
               <div className="text-2xl font-bold text-foreground">{metrics.totalOrders}</div>
               <div className="text-sm text-muted-foreground">Total Orders</div>
             </div>
-            <Package className="h-8 w-8 text-blue-500" />
           </div>
         </Card>
         <Card className="p-4 bg-card border shadow-sm">
@@ -324,7 +322,6 @@ export default function ReportsModule() {
               <div className="text-2xl font-bold text-foreground">₹{metrics.totalExpenditure.toLocaleString()}</div>
               <div className="text-sm text-muted-foreground">Total Expenditure</div>
             </div>
-            <TrendingDown className="h-8 w-8 text-red-500" />
           </div>
         </Card>
         <Card className="p-4 bg-card border shadow-sm">
@@ -335,7 +332,6 @@ export default function ReportsModule() {
               </div>
               <div className="text-sm text-muted-foreground">Net Profit</div>
             </div>
-            <BarChart3 className="h-8 w-8 text-purple-500" />
           </div>
         </Card>
       </div>

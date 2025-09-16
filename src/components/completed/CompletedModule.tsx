@@ -114,7 +114,7 @@ export function CompletedModule() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
           <div className="flex items-center justify-between">
             <div>
@@ -127,7 +127,6 @@ export function CompletedModule() {
               </div>
             </div>
             <div className="h-6 w-6 sm:h-8 sm:w-8 text-success flex items-center justify-center">
-              <span className="text-lg font-bold">✓</span>
             </div>
           </div>
         </Card>
@@ -142,7 +141,6 @@ export function CompletedModule() {
               </div>
             </div>
             <div className="h-6 w-6 sm:h-8 sm:w-8 text-blue-500 flex items-center justify-center">
-              <span className="text-lg font-bold">📅</span>
             </div>
           </div>
         </Card>
@@ -150,30 +148,15 @@ export function CompletedModule() {
           <div className="flex items-center justify-between">
             <div>
               <div className="text-lg sm:text-2xl font-bold text-foreground">
-                {statsLoading ? '...' : `₹${totalRevenue.toLocaleString()}`}
+                {statsLoading ? '...' : `${totalRevenue.toLocaleString()}`}
               </div>
               <div className="text-xs sm:text-sm text-muted-foreground">
                 Total Revenue
               </div>
             </div>
-            <span className="h-6 w-6 sm:h-8 sm:w-8 text-green-500 text-2xl font-bold flex items-center justify-center">₹</span>
           </div>
         </Card>
-        <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-lg sm:text-2xl font-bold text-foreground">
-                {statsLoading ? '...' : avgCompletionTime}
-              </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">
-                Avg Days
-              </div>
-            </div>
-            <div className="h-6 w-6 sm:h-8 sm:w-8 text-purple-500 flex items-center justify-center">
-              <span className="text-lg font-bold">📦</span>
-            </div>
-          </div>
-        </Card>
+
       </div>
 
       {/* REASON: Added error handling for API failures */}

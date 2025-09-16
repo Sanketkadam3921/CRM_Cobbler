@@ -1,16 +1,17 @@
-import { 
-  Home, 
-  Users, 
-  Package, 
-  Calendar, 
-  Receipt, 
+import {
+  Home,
+  Users,
+  Package,
+  Calendar,
+  Receipt,
   Settings,
   BarChart3,
   MapPin,
   Camera,
   Truck,
   CheckCircle,
-  Calculator
+  Calculator,
+  IndianRupee
 } from "lucide-react";
 import {
   Sidebar,
@@ -39,14 +40,14 @@ const navigation = [
   { name: "Delivery Management", icon: Truck, id: "delivery" },
   { name: "Completed Orders", icon: CheckCircle, id: "completed" },
   { name: "Inventory", icon: Package, id: "inventory" },
-  { name: "Expenses", icon: Receipt, id: "expenses" },
+  { name: "Expenses", icon: IndianRupee, id: "expenses" },
   { name: "Reports", icon: BarChart3, id: "reports" },
   { name: "Settings", icon: Settings, id: "settings" },
 ];
 
 export function AppSidebar({ currentView, onViewChange }: AppSidebarProps) {
   const { setOpenMobile } = useSidebar();
-  
+
   const handleNavigation = (view: string) => {
     onViewChange(view);
     // Auto-collapse sidebar on mobile/tablet after selection
@@ -66,7 +67,7 @@ export function AppSidebar({ currentView, onViewChange }: AppSidebarProps) {
           </div>
         </div>
       </SidebarHeader>
-      
+
       <SidebarContent className="px-4">
         <SidebarMenu>
           {navigation.map((item) => (
@@ -74,11 +75,10 @@ export function AppSidebar({ currentView, onViewChange }: AppSidebarProps) {
               <SidebarMenuButton
                 onClick={() => handleNavigation(item.id)}
                 isActive={currentView === item.id}
-                className={`w-full transition-all duration-200 hover:bg-primary/10 hover:text-primary ${
-                  currentView === item.id 
-                    ? "bg-primary text-primary-foreground shadow-soft" 
-                    : "text-muted-foreground"
-                }`}
+                className={`w-full transition-all duration-200 hover:bg-primary/10 hover:text-primary ${currentView === item.id
+                  ? "bg-primary text-primary-foreground shadow-soft"
+                  : "text-muted-foreground"
+                  }`}
                 tooltip={item.name}
               >
                 <item.icon className="h-5 w-5" />

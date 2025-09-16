@@ -521,7 +521,6 @@ export function ServiceModule() {
                 Pending Services
               </div>
             </div>
-            <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-warning" />
           </div>
         </Card>
         <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
@@ -534,7 +533,6 @@ export function ServiceModule() {
                 In Progress
               </div>
             </div>
-            <Wrench className="h-6 w-6 sm:h-8 sm:w-8 text-blue-500" />
           </div>
         </Card>
         <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
@@ -547,7 +545,6 @@ export function ServiceModule() {
                 Completed Services
               </div>
             </div>
-            <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-success" />
           </div>
         </Card>
         <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
@@ -560,7 +557,6 @@ export function ServiceModule() {
                 Total Services
               </div>
             </div>
-            <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-purple-500" />
           </div>
         </Card>
       </div>
@@ -717,8 +713,6 @@ export function ServiceModule() {
 
               {/* Action buttons - mobile optimized */}
               <div className="grid grid-cols-1 gap-2 mt-4">
-
-
                 {(!enquiry.serviceTypes || enquiry.serviceTypes.length === 0) && (
                   <Button
                     size="sm"
@@ -729,6 +723,23 @@ export function ServiceModule() {
                     Assign Services
                   </Button>
                 )}
+
+                {enquiry.serviceTypes && enquiry.serviceTypes.length > 0 &&
+                  !enquiry.overallPhotos?.afterPhoto && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-orange-300 text-orange-600 hover:bg-orange-50 text-xs sm:text-sm"
+                      onClick={() => {
+                        // Pre-populate with current services
+                        setSelectedServiceTypes(enquiry.serviceTypes?.map(s => s.type) || []);
+                        setShowServiceAssignment(enquiry.enquiryId);
+                      }}
+                    >
+                      <Wrench className="h-3 w-3 mr-1" />
+                      Reassign Services
+                    </Button>
+                  )}
 
                 {enquiry.serviceTypes && enquiry.serviceTypes.length > 0 &&
                   !enquiry.overallPhotos?.beforePhoto && (
@@ -776,11 +787,18 @@ export function ServiceModule() {
                 <Dialog open={showServiceAssignment === enquiry.enquiryId} onOpenChange={() => setShowServiceAssignment(null)}>
                   <DialogContent className="sm:max-w-md">
                     <DialogHeader>
-                      <DialogTitle>Assign Services</DialogTitle>
+                      <DialogTitle>
+                        {enquiry.serviceTypes && enquiry.serviceTypes.length > 0 ? 'Reassign Services' : 'Assign Services'}
+                      </DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4">
                       <div className="space-y-2">
                         <Label>Select Service Types (Multi-select)</Label>
+                        {enquiry.serviceTypes && enquiry.serviceTypes.length > 0 && (
+                          <div className="text-xs text-orange-600 bg-orange-50 p-2 rounded border border-orange-200">
+                            <strong>Note:</strong> Currently assigned services will be replaced with your new selection.
+                          </div>
+                        )}
                         <div className="space-y-2">
                           {["Sole Replacement", "Zipper Repair", "Cleaning & Polish", "Stitching", "Leather Treatment", "Hardware Repair"].map((serviceType) => (
                             <div key={serviceType} className="flex items-center space-x-2">
@@ -802,10 +820,13 @@ export function ServiceModule() {
                           className="flex-1 bg-blue-600 hover:bg-blue-700"
                           disabled={selectedServiceTypes.length === 0}
                         >
-                          Assign Services
+                          {enquiry.serviceTypes && enquiry.serviceTypes.length > 0 ? 'Reassign Services' : 'Assign Services'}
                         </Button>
                         <Button
-                          onClick={() => setShowServiceAssignment(null)}
+                          onClick={() => {
+                            setShowServiceAssignment(null);
+                            setSelectedServiceTypes([]);
+                          }}
                           className="w-24 h-10 bg-red-500 text-white hover:bg-red-600 hover:text-white font-medium"
                         >
                           Cancel

@@ -230,7 +230,7 @@ export function PickupModule() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
           <div className="flex items-center justify-between">
             <div>
@@ -241,7 +241,6 @@ export function PickupModule() {
                 Scheduled Pickups
               </div>
             </div>
-            <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-warning" />
           </div>
         </Card>
         <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
@@ -254,7 +253,6 @@ export function PickupModule() {
                 Assigned
               </div>
             </div>
-            <User className="h-6 w-6 sm:h-8 sm:w-8 text-blue-500" />
           </div>
         </Card>
         <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
@@ -267,22 +265,9 @@ export function PickupModule() {
                 Collected
               </div>
             </div>
-            <Package className="h-6 w-6 sm:h-8 sm:w-8 text-purple-500" />
           </div>
         </Card>
-        <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-lg sm:text-2xl font-bold text-foreground">
-                {statsLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : calculatedStats.receivedPickups}
-              </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">
-                Received
-              </div>
-            </div>
-            <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-success" />
-          </div>
-        </Card>
+
       </div>
 
       {/* Search */}
@@ -352,7 +337,6 @@ export function PickupModule() {
                   </Badge>
                 </div>
 
-
                 <div className="space-y-3">
                   <div className="flex items-center space-x-2">
                     <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
@@ -367,8 +351,6 @@ export function PickupModule() {
                     </span>
                   </div>
 
-
-
                   {enquiry.pickupDetails?.scheduledTime && (
                     <div className="flex items-center space-x-2">
                       <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
@@ -378,8 +360,6 @@ export function PickupModule() {
                     </div>
                   )}
 
-
-
                   <div className="flex items-center space-x-2">
                     <span className="text-sm font-semibold text-foreground">
                       Amount: ₹{enquiry.quotedAmount || 0}
@@ -388,8 +368,6 @@ export function PickupModule() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
-
-
                   {(!enquiry.pickupDetails || enquiry.pickupDetails?.status === "scheduled") && (
                     <Button
                       size="sm"
@@ -402,76 +380,6 @@ export function PickupModule() {
                   )}
 
                   {enquiry.pickupDetails?.status === "assigned" && (
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button
-                          size="sm"
-                          className="bg-purple-600 hover:bg-purple-700 text-xs sm:text-sm"
-                        >
-                          <Package className="h-3 w-3 mr-1" />
-                          Mark Collected
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="sm:max-w-md">
-                        <DialogHeader>
-                          <DialogTitle>Mark as Collected</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                          <div className="space-y-2">
-                            <Label>Collection Proof Photo</Label>
-                            <div className="flex flex-col sm:flex-row gap-2">
-                              <Input
-                                type="file"
-                                accept="image/*"
-                                onChange={handleImageUpload}
-                                className="hidden"
-                                id={`collect-photo-${enquiry.id}`}
-                              />
-                              <Label
-                                htmlFor={`collect-photo-${enquiry.id}`}
-                                className="cursor-pointer flex items-center justify-center space-x-2 border border-input bg-background px-3 py-2 text-sm ring-offset-background hover:bg-accent hover:text-accent-foreground rounded-md flex-1"
-                              >
-                                <Camera className="h-4 w-4" />
-                                <span>Take Photo</span>
-                              </Label>
-                            </div>
-                            {selectedImage && (
-                              <div className="mt-2">
-                                <img
-                                  src={selectedImage}
-                                  alt="Collection proof"
-                                  className="w-full max-h-48 object-contain rounded-md border bg-gray-50"
-                                  loading="eager"
-                                  decoding="sync"
-                                  style={{
-                                    imageRendering: 'crisp-edges',
-                                    transform: 'translateZ(0)',
-                                    backfaceVisibility: 'hidden',
-                                    WebkitBackfaceVisibility: 'hidden'
-                                  } as React.CSSProperties}
-                                />
-                              </div>
-                            )}
-                          </div>
-                          <Button
-                            onClick={() => handleMarkCollected(enquiry.id)}
-                            className="w-full bg-purple-600 hover:bg-purple-700"
-                            disabled={!selectedImage}
-                          >
-                            <Package className="h-4 w-4 mr-2" />
-                            Mark as Collected
-                          </Button>
-                          {!selectedImage && (
-                            <p className="text-xs text-muted-foreground text-center">
-                              Please upload a collection proof photo
-                            </p>
-                          )}
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                  )}
-
-                  {enquiry.pickupDetails?.status === "collected" && (
                     <Dialog>
                       <DialogTrigger asChild>
                         <Button
@@ -514,10 +422,10 @@ export function PickupModule() {
                                   loading="eager"
                                   decoding="sync"
                                   style={{
-                                    imageRendering: 'crisp-edges',
-                                    transform: 'translateZ(0)',
-                                    backfaceVisibility: 'hidden',
-                                    WebkitBackfaceVisibility: 'hidden'
+                                    imageRendering: "crisp-edges",
+                                    transform: "translateZ(0)",
+                                    backfaceVisibility: "hidden",
+                                    WebkitBackfaceVisibility: "hidden",
                                   } as React.CSSProperties}
                                 />
                               </div>
@@ -525,9 +433,7 @@ export function PickupModule() {
                           </div>
 
                           <div className="space-y-2">
-                            <Label htmlFor="notes">
-                              Notes / Remarks (Optional)
-                            </Label>
+                            <Label htmlFor="notes">Notes / Remarks (Optional)</Label>
                             <Textarea
                               id="notes"
                               placeholder="Add any notes about the received item"
@@ -557,6 +463,7 @@ export function PickupModule() {
                 </div>
               </Card>
             ))}
+
           </div>
         )}
       </div>

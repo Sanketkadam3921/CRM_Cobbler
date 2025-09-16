@@ -572,6 +572,7 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
 
       </div>
 
+
       {/* Add Enquiry Modal */}
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white border shadow-lg">
@@ -1243,11 +1244,14 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
           <DialogHeader>
             <DialogTitle>Convert Enquiry</DialogTitle>
           </DialogHeader>
+
           <div className="space-y-4">
             {convertingEnquiry && (
               <div className="space-y-3">
                 <div className="p-3 bg-gray-50 rounded-lg">
-                  <h4 className="font-medium text-gray-900">{convertingEnquiry.customerName}</h4>
+                  <h4 className="font-medium text-gray-900">
+                    {convertingEnquiry.customerName}
+                  </h4>
                   <p className="text-sm text-gray-600">{convertingEnquiry.message}</p>
                   <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
                     <span>{convertingEnquiry.product}</span>
@@ -1257,7 +1261,10 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="quotedAmount" className="text-sm font-medium text-gray-700">
+                  <Label
+                    htmlFor="quotedAmount"
+                    className="text-sm font-medium text-gray-700"
+                  >
                     Approx Amount (₹)
                   </Label>
                   <Input
@@ -1267,12 +1274,8 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                     value={quotedAmount}
                     onChange={(e) => {
                       let value = e.target.value;
-
-                      // Allow only numbers with up to 2 decimals
-                      if (value === '' || /^\d*\.?\d{0,2}$/.test(value)) {
-                        // Prevent leading zeros like 0, 01, 00, etc.
+                      if (value === "" || /^\d*\.?\d{0,2}$/.test(value)) {
                         if (/^0\d+/.test(value)) return;
-
                         setQuotedAmount(value);
                       }
                     }}
@@ -1286,7 +1289,7 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
             )}
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
             <Button
               size="sm"
               onClick={() => {
@@ -1294,7 +1297,7 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                 setConvertingEnquiry(null);
                 setQuotedAmount("");
               }}
-              className="w-24 h-10 bg-red-500 text-white hover:bg-red-600 font-medium"
+              className="w-full sm:w-24 h-10 bg-red-500 text-white hover:bg-red-600 font-medium"
             >
               Cancel
             </Button>
@@ -1304,11 +1307,11 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                 if (convertingEnquiry && quotedAmount.trim()) {
                   const amount = parseFloat(quotedAmount);
 
-                  // Block invalid or less than 1
                   if (isNaN(amount) || amount < 1) {
                     toast({
                       title: "Invalid Amount",
-                      description: "Please enter a valid quoted amount of 1 or greater.",
+                      description:
+                        "Please enter a valid quoted amount of 1 or greater.",
                       variant: "destructive",
                     });
                     return;
@@ -1325,7 +1328,10 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                     quotedAmount: amount,
                   };
 
-                  const result = await updateEnquiry(convertingEnquiry.id, updatedEnquiry);
+                  const result = await updateEnquiry(
+                    convertingEnquiry.id,
+                    updatedEnquiry
+                  );
                   if (result) {
                     toast({
                       title: "Enquiry Converted!",
@@ -1345,13 +1351,14 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                   });
                 }
               }}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white"
             >
               Convert Enquiry
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
     </div>
   );
 }

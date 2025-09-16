@@ -682,64 +682,55 @@ export function BillingModule() {
       </div>
 
       {/* Stats - UPDATED: Now using API stats instead of localStorage calculations */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-lg sm:text-2xl font-bold text-foreground">
-                {statsLoading ? '...' : stats.pendingBilling}
-              </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">
-                Pending Billing
-              </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="p-5 bg-gradient-card border-0 shadow-soft flex items-center justify-between h-28">
+          <div>
+            <div className="text-3xl font-extrabold text-black">
+              {statsLoading ? "..." : stats.pendingBilling}
             </div>
-            <ReceiptIndianRupee className="h-6 w-6 sm:h-8 sm:w-8 text-blue-500" />
+            <div className="text-base font-semibold text-black mt-2">
+              Pending Billing
+            </div>
           </div>
         </Card>
-        <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-lg sm:text-2xl font-bold text-foreground">
-                {statsLoading ? '...' : stats.invoicesGenerated}
-              </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">
-                Invoices Generated
-              </div>
-            </div>
-            <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-green-500" />
-          </div>
-        </Card>
-        <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-lg sm:text-2xl font-bold text-foreground">
-                ₹
-                {statsLoading
-                  ? "..."
-                  : Number(stats.totalBilled || 0).toLocaleString("en-IN")}
-              </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">
-                Total Billed
-              </div>
-            </div>
 
-            <IndianRupee className="h-6 w-6 sm:h-8 sm:w-8 text-purple-500" />
+        <Card className="p-5 bg-gradient-card border-0 shadow-soft flex items-center justify-between h-28">
+          <div>
+            <div className="text-3xl font-extrabold text-black">
+              {statsLoading ? "..." : stats.invoicesGenerated}
+            </div>
+            <div className="text-base font-semibold text-black mt-2">
+              Invoices Generated
+            </div>
           </div>
         </Card>
-        <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-lg sm:text-2xl font-bold text-foreground">
-                {statsLoading ? '...' : stats.invoicesSent}
-              </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">
-                Invoices Sent
-              </div>
+
+        <Card className="p-5 bg-gradient-card border-0 shadow-soft flex items-center justify-between h-28">
+          <div>
+            <div className="text-3xl font-extrabold text-black">
+
+              {statsLoading
+                ? "..."
+                : Number(stats.totalBilled || 0).toLocaleString("en-IN")}
             </div>
-            <Send className="h-6 w-6 sm:h-8 sm:w-8 text-orange-500" />
+            <div className="text-base font-semibold text-black mt-2">
+              Total Billed
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-5 bg-gradient-card border-0 shadow-soft flex items-center justify-between h-28">
+          <div>
+            <div className="text-3xl font-extrabold text-black">
+              {statsLoading ? "..." : stats.invoicesSent}
+            </div>
+            <div className="text-base font-semibold text-black mt-2">
+              Invoices Sent
+            </div>
           </div>
         </Card>
       </div>
+
 
       {/* Search */}
       <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">

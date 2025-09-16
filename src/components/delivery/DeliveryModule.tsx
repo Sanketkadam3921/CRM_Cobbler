@@ -436,7 +436,6 @@ export function DeliveryModule() {
                 flexShrink: '0',
                 color: '#3b82f6'
               }}>
-                <span className="text-lg font-bold">📦</span>
               </div>
             </div>
           </Card>
@@ -568,7 +567,6 @@ export function DeliveryModule() {
                 flexShrink: '0',
                 color: '#10b981'
               }}>
-                <span className="text-lg font-bold">✓</span>
               </div>
             </div>
           </Card>
@@ -835,7 +833,7 @@ export function DeliveryModule() {
                           size="sm"
                           className="bg-gradient-primary hover:opacity-90 text-xs sm:text-sm"
                         >
-                          <span className="mr-1">⏰</span>
+                          <span className="mr-1"></span>
                           Schedule Delivery
                         </Button>
                       </DialogTrigger>

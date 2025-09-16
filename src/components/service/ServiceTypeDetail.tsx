@@ -228,6 +228,7 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
       {/* Photos Section - Mobile Optimized */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Before Photo */}
+        {/* Before Photo */}
         <Card className="p-4 bg-gradient-card border-0 shadow-soft">
           <h3 className="text-sm font-semibold text-foreground mb-2">Before Photo</h3>
           {serviceTypeData?.photos?.beforePhoto ? (
@@ -239,16 +240,27 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
                 loading="lazy"
                 onClick={() => setModalImage(serviceTypeData.photos.beforePhoto)}
               />
-
               {serviceTypeData.photos.beforeNotes && (
-                <p className="text-xs text-muted-foreground break-words">{serviceTypeData.photos.beforeNotes}</p>
+                <p className="text-xs text-muted-foreground break-words">
+                  {serviceTypeData.photos.beforeNotes}
+                </p>
               )}
             </div>
           ) : (
-            <div className="text-center py-8 sm:py-6 text-muted-foreground">
-              <Camera className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p className="text-xs">No before photo</p>
-            </div>
+            <label
+              htmlFor="before-photo"
+              className="flex flex-col items-center justify-center text-center py-8 sm:py-6 text-muted-foreground border-2 border-dashed rounded-md cursor-pointer hover:bg-accent/30 transition"
+            >
+              <Camera className="h-8 w-8 mb-2 opacity-50" />
+              <p className="text-xs">Click to upload before photo</p>
+              <Input
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+                id="before-photo"
+              />
+            </label>
           )}
         </Card>
 
@@ -264,18 +276,30 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
                 loading="lazy"
                 onClick={() => setModalImage(serviceTypeData.photos.afterPhoto)}
               />
-
               {serviceTypeData.photos.afterNotes && (
-                <p className="text-xs text-muted-foreground break-words">{serviceTypeData.photos.afterNotes}</p>
+                <p className="text-xs text-muted-foreground break-words">
+                  {serviceTypeData.photos.afterNotes}
+                </p>
               )}
             </div>
           ) : (
-            <div className="text-center py-8 sm:py-6 text-muted-foreground">
-              <Camera className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p className="text-xs">No after photo</p>
-            </div>
+            <label
+              htmlFor="after-photo"
+              className="flex flex-col items-center justify-center text-center py-8 sm:py-6 text-muted-foreground border-2 border-dashed rounded-md cursor-pointer hover:bg-accent/30 transition"
+            >
+              <Camera className="h-8 w-8 mb-2 opacity-50" />
+              <p className="text-xs">Click to upload after photo</p>
+              <Input
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+                id="after-photo"
+              />
+            </label>
           )}
         </Card>
+
       </div>
 
       {/* Action Section - Mobile Optimized */}
@@ -285,29 +309,12 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
         {serviceTypeData?.status === "pending" && (
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-xs">Take Before Photo</Label>
-              <div className="flex gap-2">
-                <Input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                  id="before-photo"
-                />
-                <Label
-                  htmlFor="before-photo"
-                  className="cursor-pointer flex items-center justify-center space-x-2 border border-input bg-background px-3 py-2 text-xs ring-offset-background hover:bg-accent hover:text-accent-foreground rounded-md flex-1"
-                >
-                  <Camera className="h-3 w-3" />
-                  <span>Take Photo</span>
-                </Label>
-              </div>
               {previewImage && (
-                <div className="mt-2">
+                <div className="mt-2 flex items-center justify-center bg-gray-100 border rounded-md overflow-hidden">
                   <img
                     src={previewImage}
                     alt="Before photo preview"
-                    className="w-full h-32 sm:h-24 object-cover rounded-md border"
+                    className="max-h-48 sm:max-h-64 w-auto object-contain rounded-md"
                   />
                 </div>
               )}
@@ -338,29 +345,12 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
         {serviceTypeData?.status === "in-progress" && (
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-xs">Take After Photo</Label>
-              <div className="flex gap-2">
-                <Input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                  id="after-photo"
-                />
-                <Label
-                  htmlFor="after-photo"
-                  className="cursor-pointer flex items-center justify-center space-x-2 border border-input bg-background px-3 py-2 text-xs ring-offset-background hover:bg-accent hover:text-accent-foreground rounded-md flex-1"
-                >
-                  <Camera className="h-3 w-3" />
-                  <span>Take Photo</span>
-                </Label>
-              </div>
               {previewImage && (
-                <div className="mt-2">
+                <div className="mt-2 flex items-center justify-center bg-gray-100 border rounded-md overflow-hidden">
                   <img
                     src={previewImage}
                     alt="After photo preview"
-                    className="w-full h-32 sm:h-24 object-cover rounded-md border"
+                    className="max-h-48 sm:max-h-64 w-auto object-contain rounded-md"
                   />
                 </div>
               )}
@@ -376,10 +366,11 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
                 className="text-xs resize-none"
               />
             </div>
+
             <Button
               onClick={async () => {
-                await completeService();  // your existing API call
-                if (onBack) onBack();     // ✅ navigate back after completion
+                await completeService(); // your existing API call
+                if (onBack) onBack();    // ✅ navigate back after completion
               }}
               className="w-full bg-green-600 hover:bg-green-700 text-sm"
               disabled={!previewImage}
@@ -400,6 +391,7 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
           </div>
         )}
       </Card>
+
 
       {/* Photo Viewer Modal - Mobile Optimized */}
       {modalImage && (

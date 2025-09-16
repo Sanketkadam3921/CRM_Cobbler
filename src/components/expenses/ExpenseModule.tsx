@@ -501,9 +501,6 @@ export default function ExpenseManagementSystem() {
                   Monthly Total
                 </div>
               </div>
-              <div className="p-2 sm:p-3 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full">
-                <Wallet className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
-              </div>
             </div>
           </Card>
 
@@ -519,9 +516,6 @@ export default function ExpenseManagementSystem() {
                     `(of ${pagination.total})`}
                 </div>
               </div>
-              <div className="p-2 sm:p-3 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full">
-                <Filter className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
-              </div>
             </div>
           </Card>
 
@@ -529,17 +523,19 @@ export default function ExpenseManagementSystem() {
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900">
-                  ₹{averageExpense.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ₹
+                  {averageExpense
+                    ? Number(averageExpense).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                    : "0"}
                 </div>
                 <div className="text-xs sm:text-sm text-slate-600 font-medium">
                   Average Expense
                 </div>
               </div>
-              <div className="p-2 sm:p-3 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full">
-                <TrendingUp className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
-              </div>
             </div>
           </Card>
+
+
 
           <Card className="p-4 sm:p-6 bg-gradient-to-br from-white to-slate-50 border-0 shadow-lg hover:shadow-xl transition-all duration-300">
             <div className="flex items-center justify-between">
@@ -550,9 +546,6 @@ export default function ExpenseManagementSystem() {
                 <div className="text-xs sm:text-sm text-slate-600 font-medium">
                   Categories
                 </div>
-              </div>
-              <div className="p-2 sm:p-3 bg-gradient-to-br from-orange-500 to-red-500 rounded-full">
-                <Calendar className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
               </div>
             </div>
           </Card>
@@ -1109,7 +1102,6 @@ export default function ExpenseManagementSystem() {
         <div className="space-y-3 sm:space-y-4">
           {expenses.length === 0 ? (
             <Card className="p-8 sm:p-12 bg-gradient-to-br from-white to-slate-50 border-0 shadow-lg text-center">
-              <Receipt className="h-12 w-12 sm:h-16 sm:w-16 text-slate-300 mx-auto mb-3 sm:mb-4" />
               <h3 className="text-lg sm:text-xl font-semibold text-slate-600 mb-2">
                 {expenses.length === 0
                   ? "No expenses added yet"
