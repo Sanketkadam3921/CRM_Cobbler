@@ -491,6 +491,7 @@ export function ServiceModule() {
         onBack={() => setSelectedServiceDetail(null)}
         onServiceUpdated={() => refetch()}
       />
+
     );
   }
 
@@ -716,15 +717,7 @@ export function ServiceModule() {
 
               {/* Action buttons - mobile optimized */}
               <div className="grid grid-cols-1 gap-2 mt-4">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="text-xs sm:text-sm"
-                  onClick={() => sendInvoice(enquiry)}
-                >
-                  <Send className="h-3 w-3 mr-1" />
-                  Send Invoice
-                </Button>
+
 
                 {(!enquiry.serviceTypes || enquiry.serviceTypes.length === 0) && (
                   <Button

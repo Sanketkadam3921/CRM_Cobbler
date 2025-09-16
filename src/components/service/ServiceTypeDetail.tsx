@@ -376,9 +376,11 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
                 className="text-xs resize-none"
               />
             </div>
-
             <Button
-              onClick={completeService}
+              onClick={async () => {
+                await completeService();  // your existing API call
+                if (onBack) onBack();     // ✅ navigate back after completion
+              }}
               className="w-full bg-green-600 hover:bg-green-700 text-sm"
               disabled={!previewImage}
             >

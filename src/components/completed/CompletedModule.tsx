@@ -11,6 +11,7 @@ import {
   Calendar,
   DollarSign,
   User,
+  Phone,
 } from "lucide-react";
 // REASON: Replaced localStorage imports with backend API service
 // import { Enquiry } from "@/types";
@@ -251,9 +252,14 @@ export function CompletedModule() {
                   <h3 className="font-semibold text-foreground text-base sm:text-lg">
                     {enquiry.customerName}
                   </h3>
-                  <p className="text-sm text-muted-foreground">
-                    {enquiry.phone}
-                  </p>
+                  <div className="flex items-center space-x-1 text-gray-600">
+                    <Phone className="h-4 w-4" />
+                    <span className="text-sm">
+                      {enquiry.phone.startsWith("+91")
+                        ? enquiry.phone
+                        : `+91 ${enquiry.phone}`}
+                    </span>
+                  </div>
                 </div>
                 <Badge className="bg-green-100 text-green-800 border-green-200 text-xs px-2 py-1 rounded-full font-medium">
                   Completed
@@ -261,21 +267,26 @@ export function CompletedModule() {
               </div>
 
               <div className="space-y-3">
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm text-foreground break-words">{enquiry.address}</span>
+                <div className="flex items-center">
+                  <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                  <span className="ml-1">{enquiry.address || 'No address provided'}</span>
                 </div>
 
                 <div className="flex items-center space-x-2">
-                  <span className="text-sm text-foreground">
-                    {enquiry.product} ({enquiry.quantity} items)
-                  </span>
+                  <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                    Quantity: {enquiry.quantity}
+                  </div>
+                  <span className="text-gray-500 text-sm">{enquiry.product}</span>
                 </div>
 
                 <div className="flex items-center space-x-2">
                   <span className="text-sm font-semibold text-foreground">
-                    Final Amount: ₹{(Number(enquiry.subtotalAmount || 0) + Number(enquiry.gstAmount || 0)).toFixed(2)}
+                    Final Amount: ₹
+                    {(Number(enquiry.subtotalAmount || 0) + Number(enquiry.gstAmount || 0))
+                      .toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
+
 
                 <div className="flex items-center space-x-2">
                   <span className="text-sm text-foreground">

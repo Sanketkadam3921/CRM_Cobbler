@@ -30,6 +30,7 @@ import {
   Clock,
   User,
   DollarSign,
+  Phone,
 } from "lucide-react";
 import { Enquiry, DeliveryStatus, DeliveryMethod } from "@/types";
 import { stringUtils } from "@/utils";
@@ -676,14 +677,14 @@ export function DeliveryModule() {
                     }}>
                       {enquiry.customerName}
                     </h3>
-                    <p className="text-sm text-muted-foreground" style={{
-                      fontSize: 'clamp(0.875rem, 2.5vw, 1rem)',
-                      lineHeight: '1.4',
-                      color: 'hsl(220 15% 45%)',
-                      margin: '0'
-                    }}>
-                      {enquiry.phone}
-                    </p>
+                    <div className="flex items-center space-x-1 text-gray-600">
+                      <Phone className="h-4 w-4" />
+                      <span className="text-sm">
+                        {enquiry.phone.startsWith("+91")
+                          ? enquiry.phone
+                          : `+91 ${enquiry.phone}`}
+                      </span>
+                    </div>
                   </div>
                   <Badge
                     className={`${getStatusColor(
@@ -709,9 +710,10 @@ export function DeliveryModule() {
                   </div>
 
                   <div className="flex items-center space-x-2">
-                    <span className="text-sm text-foreground">
-                      {enquiry.product} ({enquiry.quantity} items)
-                    </span>
+                    <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                      Quantity: {enquiry.quantity}
+                    </div>
+                    <span className="text-gray-500 text-sm">{enquiry.product}</span>
                   </div>
 
                   {enquiry.deliveryDetails?.scheduledTime && (

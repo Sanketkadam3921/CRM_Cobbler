@@ -50,20 +50,33 @@ const formatDeliveryDate = (dateString: string) => {
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
 
-  if (date.toDateString() === today.toDateString()) {
-    return `Today, ${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
-  } else if (date.toDateString() === tomorrow.toDateString()) {
-    return `Tomorrow, ${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
-  } else {
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
+  const formatWithSlash = (d: Date) =>
+    d.toLocaleString("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true, // keep AM/PM
     });
+
+  if (date.toDateString() === today.toDateString()) {
+    return `Today, ${date.toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    })}`;
+  } else if (date.toDateString() === tomorrow.toDateString()) {
+    return `Tomorrow, ${date.toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    })}`;
+  } else {
+    return formatWithSlash(date);
   }
 };
+
 
 // Helper to convert "out-for-delivery" -> "Out For Delivery"
 const formatStatus = (status: string) => {
@@ -208,105 +221,6 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
         </div>
       )}
 
-      {/* Upcoming Deliveries Card */}
-      <Card className="p-4 sm:p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 shadow-soft">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base sm:text-lg font-semibold text-blue-900 flex items-center">
-            <Truck className="h-5 w-5 mr-2 text-blue-600" />
-            Upcoming Deliveries
-          </h3>
-          <button
-            onClick={() => onNavigate("delivery")}
-            className="text-xs px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-          >
-            View All
-          </button>
-        </div>
-
-        {deliveryLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-            <span className="ml-2 text-sm text-blue-600">Loading deliveries...</span>
-          </div>
-        ) : deliveryError ? (
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <AlertTriangle className="h-12 w-12 text-red-300 mb-3" />
-            <p className="text-sm text-red-600 font-medium">Unable to load delivery data</p>
-            <p className="text-xs text-red-500 mt-1">{deliveryError}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="text-xs text-red-700 underline hover:text-red-800 mt-2"
-            >
-              Refresh page
-            </button>
-          </div>
-        ) : upcomingDeliveries.length > 0 ? (
-          <div className="space-y-3">
-            {upcomingDeliveries.map((enquiry) => (
-              <div
-                key={enquiry.id}
-                className="flex items-center justify-between p-3 bg-white rounded-lg border border-blue-100 hover:shadow-sm transition-shadow"
-              >
-                <div className="flex items-center space-x-3 flex-1 min-w-0">
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                      <Package className="h-4 w-4 text-blue-600" />
-                    </div>
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center space-x-2">
-                      <p className="text-sm font-medium text-gray-900 truncate">
-                        {enquiry.customerName}
-                      </p>
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getDeliveryStatusColor(enquiry.deliveryDetails?.status || '')}`}>
-                        {formatStatus(enquiry.deliveryDetails?.status || 'Pending')}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center space-x-4 mt-1">
-                      {enquiry.deliveryDetails?.scheduledTime && (
-                        <div className="flex items-center text-xs text-gray-500">
-                          <Clock className="h-3 w-3 mr-1" />
-                          {formatDeliveryDate(enquiry.deliveryDetails.scheduledTime)}
-                        </div>
-                      )}
-
-                      {enquiry.deliveryDetails?.deliveryMethod && (
-                        <div className="flex items-center text-xs text-gray-500">
-                          <MapPin className="h-3 w-3 mr-1" />
-                          {enquiry.deliveryDetails.deliveryMethod === 'home-delivery' ? 'Home' : 'Pickup'}
-                        </div>
-                      )}
-
-                      {enquiry.deliveryDetails?.assignedTo && (
-                        <div className="text-xs text-gray-500">
-                          Assigned: {enquiry.deliveryDetails.assignedTo}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex-shrink-0 ml-2">
-                  <div className="text-right">
-                    <p className="text-xs text-gray-500">
-                      #{enquiry.id}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <Truck className="h-12 w-12 text-blue-300 mb-3" />
-            <p className="text-sm text-blue-600 font-medium">No upcoming deliveries</p>
-            <p className="text-xs text-blue-500 mt-1">All deliveries are completed or not yet scheduled</p>
-          </div>
-        )}
-      </Card>
-
       {/* Stats Grid - Only show when we have data */}
       {dashboardData && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
@@ -341,6 +255,150 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
           ))}
         </div>
       )}
+
+      {/* Upcoming Deliveries Card */}
+      {/* Upcoming Deliveries Card */}
+      <Card className="p-4 sm:p-6 bg-white border border-gray-200 shadow-md rounded-2xl">
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+            Upcoming Deliveries (Next 3 Days)
+          </h3>
+          <button
+            onClick={() => onNavigate("delivery")}
+            className="text-xs px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+          >
+            View All
+          </button>
+        </div>
+
+        {deliveryLoading ? (
+          <div className="flex items-center justify-center py-10">
+            <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+            <span className="ml-3 text-sm text-gray-600">Loading upcoming deliveries...</span>
+          </div>
+        ) : deliveryError ? (
+          <div className="flex flex-col items-center justify-center py-10 text-center">
+            <AlertTriangle className="h-12 w-12 text-red-300 mb-3" />
+            <p className="text-sm text-red-600 font-medium">Unable to load deliveries</p>
+            <p className="text-xs text-red-500 mt-1">{deliveryError}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="text-xs text-red-700 underline hover:text-red-800 mt-3"
+            >
+              Refresh
+            </button>
+          </div>
+        ) : (() => {
+          // Filter for next 3 days
+          const isWithinNext3Days = (dateString: string) => {
+            const now = new Date();
+            const deliveryDate = new Date(dateString);
+            const diffInMs = deliveryDate.getTime() - now.getTime();
+            const diffInDays = diffInMs / (1000 * 60 * 60 * 24);
+            return diffInDays >= 0 && diffInDays <= 3;
+          };
+
+          const next3DaysDeliveries = upcomingDeliveries
+            .filter(
+              (enquiry) =>
+                enquiry.deliveryDetails?.scheduledTime &&
+                isWithinNext3Days(enquiry.deliveryDetails.scheduledTime)
+            )
+            .sort(
+              (a, b) =>
+                new Date(a.deliveryDetails.scheduledTime).getTime() -
+                new Date(b.deliveryDetails.scheduledTime).getTime()
+            );
+
+          // Group deliveries by date in DD/MM/YYYY format
+          const groupedDeliveries: Record<string, typeof next3DaysDeliveries> = {};
+          next3DaysDeliveries.forEach((enquiry) => {
+            const date = new Date(enquiry.deliveryDetails!.scheduledTime).toLocaleDateString("en-GB");
+            if (!groupedDeliveries[date]) groupedDeliveries[date] = [];
+            groupedDeliveries[date].push(enquiry);
+          });
+
+          return Object.keys(groupedDeliveries).length > 0 ? (
+            <div className="space-y-5">
+              {Object.entries(groupedDeliveries).map(([date, deliveries]) => (
+                <div key={date}>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-2 border-b border-gray-100 pb-1">
+                    {date} {/* Shows as 15/09/2025 */}
+                  </h4>
+                  <div className="space-y-3">
+                    {deliveries.map((enquiry) => (
+                      <div
+                        key={enquiry.id}
+                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 hover:shadow transition"
+                      >
+                        <div className="flex items-center space-x-3 flex-1 min-w-0">
+                          <div className="flex-shrink-0">
+                            <div className="w-9 h-9 bg-blue-100 rounded-full flex items-center justify-center">
+                              <Package className="h-4 w-4 text-blue-600" />
+                            </div>
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center space-x-2">
+                              <p className="text-sm font-medium text-gray-900 truncate">
+                                {enquiry.customerName}
+                              </p>
+                              <span
+                                className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${getDeliveryStatusColor(
+                                  enquiry.deliveryDetails?.status || ""
+                                )}`}
+                              >
+                                {formatStatus(enquiry.deliveryDetails?.status || "Pending")}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center space-x-4 mt-1 text-xs text-gray-500">
+                              {enquiry.deliveryDetails?.scheduledTime && (
+                                <div className="flex items-center">
+                                  <Clock className="h-3 w-3 mr-1" />
+                                  {formatDeliveryDate(enquiry.deliveryDetails.scheduledTime)}
+                                </div>
+                              )}
+
+                              {enquiry.deliveryDetails?.deliveryMethod && (
+                                <div className="flex items-center">
+                                  <MapPin className="h-3 w-3 mr-1" />
+                                  {enquiry.deliveryDetails.deliveryMethod === "home-delivery"
+                                    ? "Home Delivery"
+                                    : "Pickup"}
+                                </div>
+                              )}
+
+                              {enquiry.deliveryDetails?.assignedTo && (
+                                <div>Assigned: {enquiry.deliveryDetails.assignedTo}</div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex-shrink-0 ml-2 text-right">
+                          <p className="text-xs text-gray-500 font-mono">#{enquiry.id}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-10 text-center">
+              <Truck className="h-12 w-12 text-blue-300 mb-3" />
+              <p className="text-sm text-gray-700 font-medium">No deliveries in the next 3 days</p>
+              <p className="text-xs text-gray-500 mt-1">
+                All deliveries are either completed or scheduled later
+              </p>
+            </div>
+          );
+        })()}
+      </Card>
+
+
+
 
       {/* Recent Activity and Quick Actions - Only show when we have data */}
       {dashboardData ? (

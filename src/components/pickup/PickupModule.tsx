@@ -334,13 +334,14 @@ export function PickupModule() {
                     <h3 className="font-semibold text-foreground text-base sm:text-lg">
                       {enquiry.customerName}
                     </h3>
-                    <div className="flex items-center space-x-1 text-gray-600 text-sm">
-                      <Phone className="h-4 w-4 flex-shrink-0" />
-                      <span>
-                        {enquiry.phone.startsWith("+91") ? enquiry.phone : `+91 ${enquiry.phone}`}
+                    <div className="flex items-center space-x-1 text-gray-600">
+                      <Phone className="h-4 w-4" />
+                      <span className="text-sm">
+                        {enquiry.phone.startsWith("+91")
+                          ? enquiry.phone
+                          : `+91 ${enquiry.phone}`}
                       </span>
                     </div>
-
                   </div>
                   <Badge
                     className={`${getStatusColor(
@@ -377,13 +378,7 @@ export function PickupModule() {
                     </div>
                   )}
 
-                  {enquiry.pickupDetails?.assignedTo && (
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm text-foreground">
-                        Assigned: {enquiry.pickupDetails.assignedTo}
-                      </span>
-                    </div>
-                  )}
+
 
                   <div className="flex items-center space-x-2">
                     <span className="text-sm font-semibold text-foreground">
@@ -393,15 +388,7 @@ export function PickupModule() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-xs sm:text-sm"
-                    onClick={() => sendInvoice(enquiry)}
-                  >
-                    <Send className="h-3 w-3 mr-1" />
-                    Send Invoice
-                  </Button>
+
 
                   {(!enquiry.pickupDetails || enquiry.pickupDetails?.status === "scheduled") && (
                     <Button
