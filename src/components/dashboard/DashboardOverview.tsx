@@ -3,6 +3,11 @@ import { Card } from "@/components/ui/card";
 import { Users, Calendar, Package, TrendingUp, ClipboardCheck, AlertTriangle, Truck, Clock, MapPin, RefreshCw } from "lucide-react";
 import { useDashboardData, DashboardData } from "@/services/dashboardApiService";
 import { useDeliveryEnquiries, DeliveryEnquiry } from "@/services/deliveryApiService";
+import { useInventoryItems } from "@/services/inventoryApiService";
+import { AllEnquiriesView } from './AllEnquiriesView';
+import { PendingPickupsView } from './PendingPickupsView';
+import { InServiceView } from './InServiceView';
+import { CompletedServicesView } from './CompletedServiceView';
 
 const defaultStats = [
   {
@@ -40,7 +45,7 @@ const defaultStats = [
 ];
 
 interface DashboardOverviewProps {
-  onNavigate: (view: string, action?: string) => void;
+  onNavigate: (view: string, action?: string, id?: number) => void;
 }
 
 // Helper function to format date for display
@@ -77,7 +82,6 @@ const formatDeliveryDate = (dateString: string) => {
   }
 };
 
-
 // Helper to convert "out-for-delivery" -> "Out For Delivery"
 const formatStatus = (status: string) => {
   return status
@@ -102,12 +106,16 @@ const getDeliveryStatusColor = (status: string) => {
 
 export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
   const [dynamicStats, setDynamicStats] = useState(defaultStats);
+  const [currentView, setCurrentView] = useState<'dashboard' | 'all-enquiries' | 'pending-pickups' | 'in-service' | 'service-completion'>('dashboard');
 
   // Only use API data - no localStorage fallback
   const { data: dashboardData, loading, error, refreshData } = useDashboardData();
 
   // Get delivery enquiries for upcoming deliveries
   const { enquiries: deliveryEnquiries, loading: deliveryLoading, error: deliveryError } = useDeliveryEnquiries();
+
+  // Get inventory items for low stock alerts
+  const { items: inventoryItems, loading: inventoryLoading } = useInventoryItems();
 
   // Get upcoming deliveries (next 5 scheduled or ready for delivery)
   const upcomingDeliveries = deliveryEnquiries
@@ -122,6 +130,11 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
       return new Date(aTime).getTime() - new Date(bTime).getTime();
     })
     .slice(0, 5);
+
+  // Get low stock items from inventory (items with quantity <= 5 or quantity <= minStock)
+  const lowStockItems = inventoryItems.filter(item =>
+    item.quantity <= (item.minStock || 5)
+  );
 
   useEffect(() => {
     if (dashboardData) {
@@ -151,6 +164,63 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
       ]);
     }
   }, [dashboardData]);
+
+  // Handle navigation internally
+  const handleNavigate = (view: string, action?: string, id?: number) => {
+    if (view === 'all-enquiries') {
+      setCurrentView('all-enquiries');
+    } else if (view === 'pending-pickups') {
+      setCurrentView('pending-pickups');
+    } else if (view === 'in-service') {
+      setCurrentView('in-service');
+    } else if (view === 'service-completion') {
+      setCurrentView('service-completion');
+    } else {
+      // Pass through to parent for other views
+      onNavigate(view, action, id);
+    }
+  };
+
+  // Handle back to dashboard
+  const handleBackToDashboard = () => {
+    setCurrentView('dashboard');
+  };
+
+  if (currentView === 'all-enquiries') {
+    return (
+      <AllEnquiriesView
+        onNavigate={handleNavigate}
+        onBack={handleBackToDashboard}
+      />
+    );
+  }
+
+  if (currentView === 'pending-pickups') {
+    return (
+      <PendingPickupsView
+        onNavigate={handleNavigate}
+        onBack={handleBackToDashboard}
+      />
+    );
+  }
+
+  if (currentView === 'in-service') {
+    return (
+      <InServiceView
+        onNavigate={handleNavigate}
+        onBack={handleBackToDashboard}
+      />
+    );
+  }
+
+  if (currentView === 'service-completion') {
+    return (
+      <CompletedServicesView
+        onNavigate={handleNavigate}
+        onBack={handleBackToDashboard}
+      />
+    );
+  }
 
   return (
     <div className="space-y-4 sm:space-y-6 animate-fade-in p-2 sm:p-0">
@@ -225,7 +295,7 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
             <Card
               key={stat.name}
               className="p-4 sm:p-6 bg-gradient-card border-0 shadow-soft hover:shadow-medium transition-all duration-300 cursor-pointer group"
-              onClick={() => onNavigate(stat.redirectTo)}
+              onClick={() => handleNavigate(stat.redirectTo)}
             >
               <div className="flex items-center justify-between">
                 <div className="min-w-0 flex-1">
@@ -254,14 +324,13 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
       )}
 
       {/* Upcoming Deliveries Card */}
-      {/* Upcoming Deliveries Card */}
       <Card className="p-4 sm:p-6 bg-white border border-gray-200 shadow-md rounded-2xl">
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-lg font-semibold text-gray-900 flex items-center">
             Upcoming Deliveries (Next 3 Days)
           </h3>
           <button
-            onClick={() => onNavigate("delivery")}
+            onClick={() => handleNavigate("delivery")}
             className="text-xs px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
           >
             View All
@@ -320,7 +389,7 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
               {Object.entries(groupedDeliveries).map(([date, deliveries]) => (
                 <div key={date}>
                   <h4 className="text-sm font-semibold text-gray-700 mb-2 border-b border-gray-100 pb-1">
-                    {date} {/* Shows as 15/09/2025 */}
+                    {date}
                   </h4>
                   <div className="space-y-3">
                     {deliveries.map((enquiry) => (
@@ -394,9 +463,6 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
         })()}
       </Card>
 
-
-
-
       {/* Recent Activity and Quick Actions - Only show when we have data */}
       {dashboardData ? (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
@@ -426,28 +492,28 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
             <h3 className="text-base sm:text-lg font-semibold text-foreground mb-4">Quick Actions</h3>
             <div className="grid grid-cols-2 gap-2 sm:gap-3">
               <button
-                onClick={() => onNavigate("crm", "add-enquiry")}
+                onClick={() => handleNavigate("crm", "add-enquiry")}
                 className="p-3 sm:p-4 text-left rounded-lg border border-border hover:bg-primary/5 hover:border-primary/20 transition-all group"
               >
                 <div className="text-xs sm:text-sm font-medium text-foreground">Add Enquiry</div>
                 <div className="text-xs text-muted-foreground">Create new lead</div>
               </button>
               <button
-                onClick={() => onNavigate("pickup", "schedule-pickup")}
+                onClick={() => handleNavigate("pickup", "schedule-pickup")}
                 className="p-3 sm:p-4 text-left rounded-lg border border-border hover:bg-primary/5 hover:border-primary/20 transition-all group"
               >
                 <div className="text-xs sm:text-sm font-medium text-foreground">Schedule Pickup</div>
                 <div className="text-xs text-muted-foreground">Book collection</div>
               </button>
               <button
-                onClick={() => onNavigate("inventory", "add-inventory")}
+                onClick={() => handleNavigate("inventory", "add-inventory")}
                 className="p-3 sm:p-4 text-left rounded-lg border border-border hover:bg-primary/5 hover:border-primary/20 transition-all group"
               >
                 <div className="text-xs sm:text-sm font-medium text-foreground">Add Inventory</div>
                 <div className="text-xs text-muted-foreground">Update stock</div>
               </button>
               <button
-                onClick={() => onNavigate("expenses", "add-expense")}
+                onClick={() => handleNavigate("expenses", "add-expense")}
                 className="p-3 sm:p-4 text-left rounded-lg border border-border hover:bg-primary/5 hover:border-primary/20 transition-all group"
               >
                 <div className="text-xs sm:text-sm font-medium text-foreground">Add Expense</div>
@@ -456,26 +522,49 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
             </div>
           </Card>
 
-          {/* Low Stock Alerts - Only show when we have data */}
-          {dashboardData.lowStockAlerts && dashboardData.lowStockAlerts.length > 0 && (
-            <Card className="p-4 sm:p-6 bg-gradient-card border-0 shadow-soft">
+          {/* Low Stock Alerts - Show when we have inventory data with low stock items */}
+          {lowStockItems.length > 0 && (
+            <Card className="p-4 sm:p-6 bg-gradient-card border-0 shadow-soft xl:col-span-2">
               <h3 className="text-base sm:text-lg font-semibold text-foreground mb-4 flex items-center">
                 <AlertTriangle className="h-5 w-5 mr-2 text-amber-500" />
-                Low Stock Alerts
+                Low Stock Alerts ({lowStockItems.length})
               </h3>
-              <div className="space-y-3 sm:space-y-4">
-                {dashboardData.lowStockAlerts.map((alert, index) => (
-                  <div key={index} className="flex items-center justify-between p-2 sm:p-3 rounded-lg bg-amber-50 border border-amber-200">
-                    <div className="flex items-center space-x-3">
-                      <Package className="h-4 w-4 text-amber-600" />
-                      <span className="text-sm font-medium text-amber-800">{alert.item}</span>
+              {inventoryLoading ? (
+                <div className="flex items-center justify-center py-4">
+                  <div className="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mr-2"></div>
+                  <span className="text-sm text-muted-foreground">Loading inventory...</span>
+                </div>
+              ) : (
+                <div className="space-y-3 sm:space-y-4">
+                  {lowStockItems.slice(0, 5).map((item) => (
+                    <div key={item.id} className="flex items-center justify-between p-2 sm:p-3 rounded-lg bg-amber-50 border border-amber-200">
+                      <div className="flex items-center space-x-3">
+                        <Package className="h-4 w-4 text-amber-600 flex-shrink-0" />
+                        <div className="min-w-0">
+                          <span className="text-sm font-medium text-amber-800 block">{item.name}</span>
+                          <span className="text-xs text-amber-600">{item.category} • {item.unit}</span>
+                        </div>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <span className="text-sm font-bold text-amber-700 block">
+                          {item.quantity} left
+                        </span>
+                        <span className="text-xs text-amber-600">
+                          Min: {item.minStock || 5}
+                        </span>
+                      </div>
                     </div>
-                    <span className="text-sm font-bold text-amber-700">
-                      {alert.stock} left
-                    </span>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                  {lowStockItems.length > 5 && (
+                    <button
+                      onClick={() => handleNavigate("inventory")}
+                      className="w-full text-center text-sm text-amber-700 hover:text-amber-800 font-medium py-2 border border-amber-200 rounded-lg hover:bg-amber-50 transition-colors"
+                    >
+                      View all {lowStockItems.length} low stock items
+                    </button>
+                  )}
+                </div>
+              )}
             </Card>
           )}
         </div>
