@@ -123,8 +123,9 @@ export interface WorkflowCompleteRequest {
   workNotes?: string;
 }
 
-// Business information types
+// Business information types - UPDATED to match backend types
 export interface BusinessInfo {
+  id?: number;
   businessName: string;
   ownerName: string;
   phone: string;
@@ -136,6 +137,8 @@ export interface BusinessInfo {
   logo?: string; // Base64 encoded logo
   website?: string;
   tagline?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // Billing and invoice types
@@ -360,15 +363,29 @@ export interface Expense {
   createdAt: string;
 }
 
+// Staff Member interface - UPDATED to match backend types
 export interface StaffMember {
-  id: number;
+  id?: number;
   name: string;
   email: string;
   phone: string;
-  role: StaffRole;
-  department?: string;
+  role: string; // Changed from StaffRole to string to match backend
   status: "active" | "inactive";
-  createdAt: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// Notification Settings interface - ADDED to match backend types (not used in frontend)
+export interface NotificationSettings {
+  id?: number;
+  userId?: number;
+  emailAlerts: boolean;
+  smsAlerts: boolean;
+  lowStockAlerts: boolean;
+  orderUpdates: boolean;
+  customerApprovals: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // Enums and union types

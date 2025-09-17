@@ -10,7 +10,7 @@ import fs from 'fs';
 
 
 // Import configurations and utilities
-import { initializeDatabase, createTables } from './config/database';
+import { initializeDatabase, createTables, insertSettingsInitialData } from './config/database';
 import { logApi, logDatabase } from './utils/logger';
 import enquiriesRouter from './routes/enquiries';
 import pickupRouter from './routes/pickup';
@@ -22,6 +22,7 @@ import expensesRouter from './routes/expenses';
 import inventoryRouter from './routes/inventory';
 import dashboardRouter from './routes/dashboard';
 import reportRoutes from './routes/report';
+import settingsRouter from './routes/settings';
 
 // Load environment variables
 dotenv.config();
@@ -135,6 +136,7 @@ app.use('/api/expense', expensesRouter);
 app.use('/api/inventory', inventoryRouter);
 app.use('/api/dashboard', dashboardRouter);
 app.use('/api/reports', reportRoutes);
+app.use('/api/settings', settingsRouter);
 
 
 // ALWAYS serve uploaded files
@@ -199,6 +201,10 @@ const startServer = async (): Promise<void> => {
     // Create database tables
     await createTables();
     logDatabase.success('Database tables created/verified successfully');
+
+    // Insert initial settings data
+    await insertSettingsInitialData();
+    logDatabase.success('Settings initial data inserted successfully');
 
     // Start the server
     const server = app.listen(PORT, () => {

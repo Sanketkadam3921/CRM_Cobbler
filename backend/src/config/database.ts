@@ -421,8 +421,83 @@ export const createTables = async (): Promise<void> => {
         INDEX idx_date (date),
         INDEX idx_amount (amount),
         INDEX idx_employee_id (employee_id)
+      )`,
+
+
+      // Add these 4 tables right after your expenses table in the tables array:
+
+      // Settings Module Tables - ADDED for Settings functionality
+      
+      // Business Information Table
+      `CREATE TABLE IF NOT EXISTS business_info (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        business_name VARCHAR(255) NOT NULL,
+        owner_name VARCHAR(255) NOT NULL,
+        phone VARCHAR(20) NOT NULL,
+        email VARCHAR(255) NOT NULL,
+        address TEXT NOT NULL,
+        gst_number VARCHAR(50),
+        timezone VARCHAR(100) DEFAULT 'Asia/Kolkata',
+        currency VARCHAR(10) DEFAULT 'INR',
+        logo LONGTEXT,
+        website VARCHAR(255),
+        tagline VARCHAR(500),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_business_name (business_name),
+        INDEX idx_email (email)
+      )`,
+
+      // Staff Members Table  
+      `CREATE TABLE IF NOT EXISTS staff_members (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        name VARCHAR(255) NOT NULL,
+        role VARCHAR(255) NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        phone VARCHAR(20) NOT NULL,
+        status ENUM('active', 'inactive') DEFAULT 'active',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_name (name),
+        INDEX idx_role (role),
+        INDEX idx_email (email),
+        INDEX idx_status (status)
+      )`,
+
+      // Security Settings Table
+      `CREATE TABLE IF NOT EXISTS security_settings (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        user_id INT NULL,
+        two_factor_enabled BOOLEAN DEFAULT FALSE,
+        password_last_changed DATETIME NULL,
+        session_timeout INT DEFAULT 30,
+        max_login_attempts INT DEFAULT 5,
+        account_lockout_duration INT DEFAULT 15,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_user_id (user_id),
+        INDEX idx_two_factor (two_factor_enabled)
+      )`,
+
+      // Notification Settings Table
+      `CREATE TABLE IF NOT EXISTS notification_settings (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        user_id INT NULL,
+        email_alerts BOOLEAN DEFAULT TRUE,
+        sms_alerts BOOLEAN DEFAULT FALSE,
+        low_stock_alerts BOOLEAN DEFAULT TRUE,
+        order_updates BOOLEAN DEFAULT TRUE,
+        customer_approvals BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_user_id (user_id),
+        INDEX idx_email_alerts (email_alerts),
+        INDEX idx_low_stock_alerts (low_stock_alerts)
       )`
     ];
+
+
+    
     
     for (const tableQuery of tables) {
       await executeQuery(tableQuery);
@@ -436,11 +511,83 @@ export const createTables = async (): Promise<void> => {
   }
 };
 
+// Add this function after your createTables function
+export const insertSettingsInitialData = async (): Promise<void> => {
+  try {
+    logDatabase.connection('Inserting initial data for Settings module...');
+    
+    // Insert default business info (only if none exists)
+    await executeQuery(`
+      INSERT INTO business_info (
+        business_name, owner_name, phone, email, address, 
+        gst_number, timezone, currency, website, tagline
+      ) 
+      SELECT * FROM (SELECT
+        'Ranjit\\'s Shoe & Bag Repair' as business_name,
+        'Ranjit Kumar' as owner_name,
+        '+91 98765 43210' as phone,
+        'ranjit@example.com' as email,
+        '123 MG Road, Pune, Maharashtra' as address,
+        '27XXXXX1234X1Z5' as gst_number,
+        'Asia/Kolkata' as timezone,
+        'INR' as currency,
+        'www.ranjitsrepair.com' as website,
+        'Quality Repair Services' as tagline
+      ) as tmp
+      WHERE NOT EXISTS (
+        SELECT id FROM business_info LIMIT 1
+      )
+    `);
+
+    // Insert sample staff data (only if none exists)
+    await executeQuery(`
+      INSERT INTO staff_members (name, role, email, phone, status) 
+      SELECT * FROM (SELECT
+        'Ramesh Kumar' as name, 'Senior Technician' as role, 'ramesh@example.com' as email, '+91 98765 43210' as phone, 'active' as status
+        UNION ALL SELECT 'Suresh Patel', 'Pickup Staff', 'suresh@example.com', '+91 87654 32109', 'active'
+        UNION ALL SELECT 'Mahesh Singh', 'Junior Technician', 'mahesh@example.com', '+91 76543 21098', 'inactive'
+      ) as tmp
+      WHERE NOT EXISTS (
+        SELECT id FROM staff_members LIMIT 1
+      )
+    `);
+
+    // Insert default security settings
+    await executeQuery(`
+      INSERT INTO security_settings (
+        user_id, two_factor_enabled, session_timeout, max_login_attempts, account_lockout_duration
+      ) 
+      SELECT * FROM (SELECT
+        NULL as user_id, FALSE as two_factor_enabled, 30 as session_timeout, 5 as max_login_attempts, 15 as account_lockout_duration
+      ) as tmp
+      WHERE NOT EXISTS (SELECT id FROM security_settings WHERE user_id IS NULL LIMIT 1)
+    `);
+
+    // Insert default notification settings
+    await executeQuery(`
+      INSERT INTO notification_settings (
+        user_id, email_alerts, sms_alerts, low_stock_alerts, order_updates, customer_approvals
+      ) 
+      SELECT * FROM (SELECT
+        NULL as user_id, TRUE as email_alerts, FALSE as sms_alerts, TRUE as low_stock_alerts, TRUE as order_updates, TRUE as customer_approvals
+      ) as tmp
+      WHERE NOT EXISTS (SELECT id FROM notification_settings WHERE user_id IS NULL LIMIT 1)
+    `);
+    
+    logDatabase.success('Settings module initial data inserted successfully');
+    
+  } catch (error) {
+    logDatabase.error('Failed to insert Settings initial data', error);
+    // Don't throw - initial data insertion is non-critical
+  }
+};
+
 export default {
   initializeDatabase,
   getConnection,
   executeQuery,
   executeTransaction,
   closeDatabase,
-  createTables
+  createTables,
+  insertSettingsInitialData  // Add this line
 };
