@@ -461,10 +461,12 @@ export default function InventoryManager() {
                     </label>
                     <Input
                       type="number"
+                      step="1"
                       value={formData.quantity}
                       onChange={(e) => {
                         const value = e.target.value;
-                        if (value === "" || (parseFloat(value) >= 0)) {
+                        // Allow empty string, "0", or positive integers starting from 1 (no leading zeros)
+                        if (value === "" || value === "0" || /^[1-9]\d*$/.test(value)) {
                           handleFormChange("quantity", value);
                         }
                       }}
@@ -481,15 +483,16 @@ export default function InventoryManager() {
                     </label>
                     <Input
                       type="number"
-                      // step="0.01"
+                      step="0.01"
                       value={formData.purchasePrice}
                       onChange={(e) => {
                         const value = e.target.value;
-                        if (value === "" || (parseFloat(value) >= 0)) {
+                        // Allow empty string, "0", or numbers starting from 1 (no leading zeros)
+                        if (value === "" || value === "0" || /^[1-9]\d*(\.\d{1,2})?$/.test(value)) {
                           handleFormChange("purchasePrice", value);
                         }
                       }}
-                      placeholder="0"
+                      placeholder="0.00"
                       min="0"
                       required
                       className="no-spinner"
@@ -504,15 +507,16 @@ export default function InventoryManager() {
                     </label>
                     <Input
                       type="number"
-                      // step="0.01"
+                      step="0.01"
                       value={formData.sellingPrice}
                       onChange={(e) => {
                         const value = e.target.value;
-                        if (value === "" || (parseFloat(value) >= 0)) {
+                        // Allow empty string, "0", or numbers starting from 1 (no leading zeros)
+                        if (value === "" || value === "0" || /^[1-9]\d*(\.\d{1,2})?$/.test(value)) {
                           handleFormChange("sellingPrice", value);
                         }
                       }}
-                      placeholder="0"
+                      placeholder="0.00"
                       min="0"
                       required
                       className="no-spinner"
@@ -579,10 +583,12 @@ export default function InventoryManager() {
                   </label>
                   <Input
                     type="number"
+                    step="1"
                     value={updateQuantity}
                     onChange={(e) => {
                       const value = e.target.value;
-                      if (value === "" || (parseFloat(value) >= 0)) {
+                      // Allow empty string, "0", or positive integers starting from 1 (no leading zeros)
+                      if (value === "" || value === "0" || /^[1-9]\d*$/.test(value)) {
                         setUpdateQuantity(value);
                       }
                     }}

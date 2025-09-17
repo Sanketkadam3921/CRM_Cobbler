@@ -324,10 +324,28 @@ export interface InventoryItem {
   quantity: number;
   minStock: number;
   unit: string;
-  cost: number;
+  purchasePrice: number;
+  sellingPrice: number;
   supplier?: string;
   lastUpdated: string;
+  lastUpdatedBy?: string;
   location?: string;
+  history?: UpdateHistory[];
+}
+
+export interface UpdateHistory {
+  date: string;
+  updatedBy: string;
+  action: string;
+  quantityChange: number;
+  newQuantity: number;
+}
+
+export interface InventoryStats {
+  totalItems: number;
+  totalQuantity: number;
+  lowStockItems: number;
+  wellStockedItems: number;
 }
 
 export interface Expense {

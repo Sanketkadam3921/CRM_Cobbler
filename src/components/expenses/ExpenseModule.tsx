@@ -46,7 +46,6 @@ import {
   Trash2,
   Check,
   AlertTriangle,
-  Eye,
   Menu,
   FileText,
   FileUp,
@@ -115,7 +114,6 @@ export default function ExpenseManagementSystem() {
   const [selectedMonth, setSelectedMonth] = useState("all");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(null);
-  const [showImageModal, setShowImageModal] = useState<Expense | null>(null);
   const [billFile, setBillFile] = useState<File | null>(null);
 
   const [showMobileFilters, setShowMobileFilters] = useState(false);
@@ -280,30 +278,36 @@ export default function ExpenseManagementSystem() {
         dateAdded: salaryFormData.dateAdded,
       };
 
-      // Create employee via API
-      const newEmployee = await expenseApiService.createEmployee(employeeData);
+      if (editingEmployee) {
+        // Update existing employee
+        const updatedEmployee = await expenseApiService.updateEmployee(editingEmployee.id, employeeData);
+        toast.success("Employee updated successfully");
+        setEditingEmployee(null);
+      } else {
+        // Create new employee
+        const newEmployee = await expenseApiService.createEmployee(employeeData);
 
-      // Create corresponding salary expense
-      const salaryExpenseData: ExpenseCreateRequest = {
-        title: `Salary - ${newEmployee.name} (${newEmployee.role})`,
-        amount: newEmployee.monthlySalary,
-        category: "Staff Salaries",
-        date: new Date(newEmployee.dateAdded).toISOString().split('T')[0], // Convert to YYYY-MM-DD format
-        description: `Monthly salary payment for ${newEmployee.name}`,
-        notes: `Employee ID: ${newEmployee.id}, Role: ${newEmployee.role}`,
-      };
+        // Create corresponding salary expense
+        const salaryExpenseData: ExpenseCreateRequest = {
+          title: `Salary - ${newEmployee.name} (${newEmployee.role})`,
+          amount: newEmployee.monthlySalary,
+          category: "Staff Salaries",
+          date: new Date(newEmployee.dateAdded).toISOString().split('T')[0], // Convert to YYYY-MM-DD format
+          description: `Monthly salary payment for ${newEmployee.name}`,
+          notes: `Employee ID: ${newEmployee.id}, Role: ${newEmployee.role}`,
+        };
 
-      await expenseApiService.createExpense(salaryExpenseData);
-
-      toast.success("Employee added and salary expense recorded");
+        await expenseApiService.createExpense(salaryExpenseData);
+        toast.success("Employee added and salary expense recorded");
+      }
 
       // Refresh data
       refreshData();
       resetSalaryForm();
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to add employee";
+      const errorMessage = error instanceof Error ? error.message : "Failed to save employee";
       toast.error(errorMessage);
-      console.error("Error adding employee:", error);
+      console.error("Error saving employee:", error);
     }
   };
 
@@ -331,6 +335,7 @@ export default function ExpenseManagementSystem() {
       dateAdded: getTodayDate(),
     });
     setShowSalaryForm(false);
+    setEditingEmployee(null);
   };
 
   const handleEdit = (expense: Expense) => {
@@ -346,6 +351,17 @@ export default function ExpenseManagementSystem() {
     });
     setEditingExpense(expense);
     setShowExpenseForm(true);
+  };
+
+  const handleEditEmployee = (employee: Employee) => {
+    setSalaryFormData({
+      name: employee.name,
+      role: employee.role,
+      monthlySalary: employee.monthlySalary.toString(),
+      dateAdded: employee.dateAdded,
+    });
+    setEditingEmployee(employee);
+    setShowSalaryForm(true);
   };
 
   const handleDelete = async (id: number) => {
@@ -490,69 +506,57 @@ export default function ExpenseManagementSystem() {
         </div>
 
         {/* Stats Dashboard */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-          <Card className="p-4 sm:p-6 bg-gradient-to-br from-white to-slate-50 border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <Card className="p-3 sm:p-4 bg-white border border-gray-200 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900">
-                  ₹{monthlyTotal.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                <div className="text-lg sm:text-2xl font-bold text-gray-900">
+                  ₹{Math.round(monthlyTotal).toLocaleString("en-IN")}
                 </div>
-                <div className="text-xs sm:text-sm text-slate-600 font-medium">
+                <div className="text-xs sm:text-sm text-gray-600">
                   Monthly Total
                 </div>
-              </div>
-              <div className="p-2 sm:p-3 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full">
-                <Wallet className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
               </div>
             </div>
           </Card>
 
-          <Card className="p-4 sm:p-6 bg-gradient-to-br from-white to-slate-50 border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+          <Card className="p-3 sm:p-4 bg-white border border-gray-200 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900">
+                <div className="text-lg sm:text-2xl font-bold text-gray-900">
                   {filteredEntries}
                 </div>
-                <div className="text-xs sm:text-sm text-slate-600 font-medium">
+                <div className="text-xs sm:text-sm text-gray-600">
                   Filtered Entries{" "}
                   {pagination.total !== filteredEntries &&
                     `(of ${pagination.total})`}
                 </div>
               </div>
-              <div className="p-2 sm:p-3 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full">
-                <Filter className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
-              </div>
             </div>
           </Card>
 
-          <Card className="p-4 sm:p-6 bg-gradient-to-br from-white to-slate-50 border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+          <Card className="p-3 sm:p-4 bg-white border border-gray-200 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900">
-                  ₹{averageExpense.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                <div className="text-lg sm:text-2xl font-bold text-gray-900">
+                  ₹{Math.round(averageExpense).toLocaleString("en-IN")}
                 </div>
-                <div className="text-xs sm:text-sm text-slate-600 font-medium">
+                <div className="text-xs sm:text-sm text-gray-600">
                   Average Expense
                 </div>
               </div>
-              <div className="p-2 sm:p-3 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full">
-                <TrendingUp className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
-              </div>
             </div>
           </Card>
 
-          <Card className="p-4 sm:p-6 bg-gradient-to-br from-white to-slate-50 border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+          <Card className="p-3 sm:p-4 bg-white border border-gray-200 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900">
+                <div className="text-lg sm:text-2xl font-bold text-gray-900">
                   {categoryTotals.length}
                 </div>
-                <div className="text-xs sm:text-sm text-slate-600 font-medium">
+                <div className="text-xs sm:text-sm text-gray-600">
                   Categories
                 </div>
-              </div>
-              <div className="p-2 sm:p-3 bg-gradient-to-br from-orange-500 to-red-500 rounded-full">
-                <Calendar className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
               </div>
             </div>
           </Card>
@@ -560,15 +564,15 @@ export default function ExpenseManagementSystem() {
 
         {/* Category Breakdown */}
         {categoryTotals.length > 0 && (
-          <Card className="p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-white to-slate-50 border-0 shadow-lg">
-            <h3 className="text-xl sm:text-2xl font-bold text-slate-900 mb-4 sm:mb-6">
+          <Card className="p-4 sm:p-6 bg-white border border-gray-200 shadow-sm">
+            <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6">
               Category Breakdown
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               {(categoryTotals.length > 0 ? categoryTotals : fallbackCategoryTotals).map((item) => (
                 <div
                   key={item.category}
-                  className="bg-gradient-to-br from-slate-50 to-white p-3 sm:p-4 rounded-xl border border-slate-200"
+                  className="bg-gray-50 p-3 sm:p-4 rounded-lg border border-gray-200"
                 >
                   <div className="flex items-center space-x-2 sm:space-x-3 mb-2 sm:mb-3">
                     <div
@@ -576,15 +580,15 @@ export default function ExpenseManagementSystem() {
                         item.category
                       )}`}
                     />
-                    <span className="font-semibold text-slate-700 text-sm sm:text-base">
+                    <span className="font-semibold text-gray-700 text-sm sm:text-base">
                       {item.category}
                     </span>
                   </div>
                   <div className="space-y-1">
-                    <div className="text-lg sm:text-xl lg:text-2xl font-bold text-slate-900">
-                      ₹{(item.totalAmount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    <div className="text-lg sm:text-xl font-bold text-gray-900">
+                      ₹{Math.round(item.totalAmount || 0).toLocaleString("en-IN")}
                     </div>
-                    <div className="text-xs sm:text-sm text-slate-600">
+                    <div className="text-xs sm:text-sm text-gray-600">
                       {(item.entryCount || 0)} entries ({typeof item.percentage === "number" ? item.percentage.toFixed(2) : "0.00"}%)
                     </div>
                   </div>
@@ -841,7 +845,7 @@ export default function ExpenseManagementSystem() {
                     type="button"
                     variant="outline"
                     onClick={resetExpenseForm}
-                    className="border-slate-300 hover:bg-slate-50 text-xs sm:text-sm"
+                    className="border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400 text-xs sm:text-sm"
                     size="sm"
                   >
                     Cancel
@@ -858,7 +862,7 @@ export default function ExpenseManagementSystem() {
             <Card className="p-4 sm:p-6 bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200 shadow-lg">
               <h3 className="text-lg sm:text-xl font-bold text-slate-900 mb-4 flex items-center">
                 <Plus className="h-5 w-5 mr-2 text-indigo-600" />
-                Add New Employee
+                {editingEmployee ? "Update Employee" : "Add New Employee"}
               </h3>
               <form onSubmit={handleSalarySubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -968,13 +972,13 @@ export default function ExpenseManagementSystem() {
                     size="sm"
                   >
                     <Check className="h-4 w-4 mr-2" />
-                    Add Employee & Record Salary
+                    {editingEmployee ? "Update Employee" : "Add Employee & Record Salary"}
                   </Button>
                   <Button
                     type="button"
                     variant="outline"
                     onClick={resetSalaryForm}
-                    className="border-slate-300 hover:bg-slate-50 text-xs sm:text-sm"
+                    className="border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400 text-xs sm:text-sm"
                     size="sm"
                   >
                     Cancel
@@ -1044,66 +1048,6 @@ export default function ExpenseManagementSystem() {
           </div>
         </Card>
 
-        {/* Image Modal */}
-        {showImageModal && (
-          <AlertDialog
-            open={!!showImageModal}
-            onOpenChange={(open) => !open && setShowImageModal(null)}
-          >
-            <AlertDialogContent className="max-w-3xl">
-              <AlertDialogHeader>
-                <AlertDialogTitle>
-                  Bill for: {showImageModal?.title}
-                </AlertDialogTitle>
-                <AlertDialogDescription>
-                  Date: {showImageModal?.date} | Amount: ₹
-                  {showImageModal?.amount.toLocaleString("en-IN")}
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <div className="mt-4 max-h-[70vh] overflow-auto flex justify-center items-center bg-slate-100 rounded-md p-4">
-                {showImageModal?.billImage &&
-                  showImageModal.billImage.startsWith("data:image") ? (
-                  <img
-                    src={showImageModal.billImage}
-                    alt="Bill Preview"
-                    className="max-w-full h-auto rounded-md"
-                  />
-                ) : showImageModal?.billImage &&
-                  showImageModal.billImage.startsWith("data:application/pdf") ? (
-                  <div className="text-center p-10">
-                    <FileText className="h-24 w-24 mx-auto text-slate-500" />
-                    <p className="mt-4 font-semibold text-slate-800">
-                      PDF File: {showImageModal.billFileName}
-                    </p>
-                    <p className="text-sm text-slate-600">
-                      PDF preview is not available. You can download the file to
-                      view it.
-                    </p>
-                    <a
-                      href={showImageModal.billImage}
-                      download={showImageModal.billFileName}
-                      className="mt-6 inline-block bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
-                    >
-                      Download PDF
-                    </a>
-                  </div>
-                ) : (
-                  <div className="text-center p-10">
-                    <AlertTriangle className="h-24 w-24 mx-auto text-yellow-500" />
-                    <p className="mt-4 font-semibold text-slate-800">
-                      No bill image available or format not supported.
-                    </p>
-                  </div>
-                )}
-              </div>
-              <AlertDialogFooter>
-                <AlertDialogCancel onClick={() => setShowImageModal(null)}>
-                  Close
-                </AlertDialogCancel>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        )}
 
         {/* Main Content */}
         <div className="space-y-3 sm:space-y-4">
@@ -1142,9 +1086,6 @@ export default function ExpenseManagementSystem() {
                         >
                           {expense.category}
                         </Badge>
-                        <span className="text-xs sm:text-sm text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
-                          {new Date(expense.date).toLocaleDateString("en-IN")}
-                        </span>
                       </div>
                     </div>
                     {expense.description && (
@@ -1157,26 +1098,7 @@ export default function ExpenseManagementSystem() {
                         <strong>Notes:</strong> {expense.notes}
                       </p>
                     )}
-                    {expense.billUrl && (
-                      <div className="mb-3">
-                        <div className="flex items-center gap-2 text-sm text-slate-600">
-                          <Upload className="h-4 w-4" />
-                          <span>Bill image attached</span>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() =>
-                              setShowImageModal(expense)
-                            }
-                            className="ml-2 h-6 px-2 text-xs"
-                          >
-                            <Eye className="h-3 w-3 mr-1" />
-                            View
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                    <div className="text-xs text-slate-400">
+                    <div className="text-xs text-slate-600">
                       Created:{" "}
                       {new Date(expense.createdAt).toLocaleString("en-IN")}
                       {expense.updatedAt !== expense.createdAt && (
@@ -1190,7 +1112,7 @@ export default function ExpenseManagementSystem() {
                   </div>
                   <div className="lg:text-right lg:ml-6 flex flex-row lg:flex-col items-center lg:items-end justify-between lg:justify-start gap-4">
                     <div className="text-2xl sm:text-3xl font-bold text-slate-900">
-                      ₹{expense.amount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      ₹{Math.round(expense.amount).toLocaleString("en-IN")}
                     </div>
                     <div className="flex gap-2">
                       <Button
@@ -1249,26 +1171,62 @@ export default function ExpenseManagementSystem() {
             <h3 className="text-xl sm:text-2xl font-bold text-slate-900 mb-4 sm:mb-6">
               Employee Salary Records
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {employees.map((employee) => (
-                <div
+                <Card
                   key={employee.id}
-                  className="bg-gradient-to-br from-indigo-50 to-purple-50 p-3 sm:p-4 rounded-xl border border-indigo-200"
+                  className="p-4 sm:p-5 bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200 shadow-sm hover:shadow-md transition-shadow duration-200"
                 >
-                  <h4 className="font-semibold text-slate-900 mb-1 text-sm sm:text-base">
-                    {employee.name}
-                  </h4>
-                  <p className="text-xs sm:text-sm text-slate-600 mb-2">
-                    {employee.role}
-                  </p>
-                  <p className="text-base sm:text-lg font-bold text-indigo-600">
-                    ₹{employee.monthlySalary.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/month
-                  </p>
-                  <p className="text-xs text-slate-500 mt-2">
-                    Added:{" "}
-                    {new Date(employee.dateAdded).toLocaleDateString("en-IN")}
-                  </p>
-                </div>
+                  {/* Header with name and edit button */}
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-slate-900 text-base sm:text-lg truncate">
+                        {employee.name}
+                      </h4>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleEditEmployee(employee)}
+                      className="border-indigo-300 text-indigo-600 hover:bg-indigo-50 text-xs h-7 px-2 ml-2 flex-shrink-0"
+                    >
+                      <Edit className="h-3 w-3 mr-1" />
+                      Edit
+                    </Button>
+                  </div>
+
+                  {/* Role */}
+                  <div className="mb-3">
+                    <p className="text-sm sm:text-base text-slate-600 font-medium">
+                      {employee.role}
+                    </p>
+                  </div>
+
+                  {/* Salary */}
+                  <div className="mb-4">
+                    <p className="text-lg sm:text-xl font-bold text-indigo-600">
+                      ₹{Math.round(employee.monthlySalary).toLocaleString("en-IN")}/month
+                    </p>
+                  </div>
+
+                  {/* Date Information */}
+                  <div className="space-y-2 pt-3 border-t border-indigo-100">
+                    <div className="text-xs sm:text-sm text-slate-500">
+                      <span className="font-medium">Added:</span>{" "}
+                      {new Date(employee.dateAdded).toLocaleDateString("en-IN")}
+                    </div>
+                    {employee.updatedAt && employee.updatedAt !== employee.createdAt && (
+                      <div className="text-xs sm:text-sm font-bold text-green-600">
+                        <span className="font-medium">Updated:</span>{" "}
+                        {new Date(employee.updatedAt).toLocaleDateString("en-IN")} at{" "}
+                        {new Date(employee.updatedAt).toLocaleTimeString("en-IN", {
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </Card>
               ))}
             </div>
           </Card>
@@ -1287,7 +1245,7 @@ export default function ExpenseManagementSystem() {
               </span>{" "}
               expenses worth{" "}
               <span className="font-bold mr-2 text-white">
-                ₹{monthlyTotal.toLocaleString("en-IN")}
+                ₹{Math.round(monthlyTotal).toLocaleString("en-IN")}
               </span>
               across{" "}
               <span className="font-bold text-white">
