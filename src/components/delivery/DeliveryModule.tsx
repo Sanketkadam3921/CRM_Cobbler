@@ -31,9 +31,11 @@ import {
   User,
   DollarSign,
   Phone,
+  Loader2,
 } from "lucide-react";
 import { Enquiry, DeliveryStatus, DeliveryMethod } from "@/types";
 import { stringUtils } from "@/utils";
+import { useToast } from "@/components/ui/use-toast";
 
 // ADDED: Backend API integration hooks and services - replaces localStorage usage
 import {
@@ -68,6 +70,11 @@ const imageUploadHelper = {
 
 export function DeliveryModule() {
   // ADDED: Backend API hooks - replaces manual state management and localStorage
+  const { toast } = useToast();
+  const {
+    loading: statsLoading,
+    error: statsError
+  } = useDeliveryStats();
   const {
     enquiries,
     loading,
@@ -219,9 +226,11 @@ export function DeliveryModule() {
         console.log(
           "📱 DELIVERY UI: Showing WhatsApp notification for scheduled delivery"
         );
-        alert(
-          `WhatsApp sent to ${enquiry.customerName}!\n"Your ${enquiry.product} delivery has been scheduled for ${scheduledTime}."`
-        );
+        toast({
+          title: `WhatsApp message sent to ${enquiry.customerName}!`,
+          description: `Your ${enquiry.product} delivery has been scheduled for ${scheduledTime}.`,
+        });
+
       }
 
       console.log(
@@ -229,7 +238,11 @@ export function DeliveryModule() {
       );
     } catch (error) {
       console.error("❌ DELIVERY UI: Failed to schedule delivery:", error);
-      alert("Failed to schedule delivery. Please try again.");
+      toast({
+        variant: "destructive",
+        title: "Failed to schedule delivery",
+        description: "Please try again.",
+      });
     }
   };
 
@@ -250,9 +263,11 @@ export function DeliveryModule() {
         console.log(
           "📱 DELIVERY UI: Showing WhatsApp notification for out-for-delivery"
         );
-        alert(
-          `WhatsApp sent to ${enquiry.customerName}!\n"Your ${enquiry.product} is out for delivery. Expected delivery: ${enquiry.deliveryDetails?.scheduledTime}"`
-        );
+        toast({
+          title: `WhatsApp message sent to ${enquiry.customerName}!`,
+          description: `Your ${enquiry.product} is out for delivery. Expected delivery: ${enquiry.deliveryDetails?.scheduledTime}`,
+        });
+
       }
 
       console.log(
@@ -296,9 +311,11 @@ export function DeliveryModule() {
         console.log(
           "📱 DELIVERY UI: Showing WhatsApp notification for delivery completion"
         );
-        alert(
-          `WhatsApp sent to ${enquiry.customerName}!\n"Your ${enquiry.product} has been delivered successfully. Thank you for choosing our service!"`
-        );
+        toast({
+          title: `WhatsApp message sent to ${enquiry.customerName}!`,
+          description: `Your ${enquiry.product} has been delivered successfully. Thank you for choosing our service!`,
+        });
+
       }
 
       console.log(
@@ -306,7 +323,11 @@ export function DeliveryModule() {
       );
     } catch (error) {
       console.error("❌ DELIVERY UI: Failed to complete delivery:", error);
-      alert("Failed to complete delivery. Please try again.");
+      toast({
+        variant: "destructive",
+        title: "Failed to complete delivery",
+        description: "Please try again.",
+      });
     }
   };
 
@@ -390,187 +411,51 @@ export function DeliveryModule() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 stats-grid" style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(2, 1fr)',
-          gap: 'clamp(0.75rem, 2vw, 1rem)',
-          width: '100%'
-        }}>
-          <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft" style={{
-            padding: 'clamp(0.75rem, 2vw, 1rem)',
-            background: 'linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(220 15% 98%) 100%)',
-            border: 'none',
-            boxShadow: '0 2px 8px hsl(220 25% 15% / 0.08)',
-            borderRadius: '0.75rem',
-            minHeight: '80px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center'
-          }}>
-            <div className="flex items-center justify-between" style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              width: '100%',
-              minHeight: '48px'
-            }}>
-              <div style={{ flex: '1 1 auto', minWidth: '0' }}>
-                <div className="text-lg sm:text-2xl font-bold text-foreground" style={{
-                  fontSize: 'clamp(1.125rem, 3vw, 1.5rem)',
-                  fontWeight: '700',
-                  lineHeight: '1.2'
-                }}>
-                  {readyForDelivery}
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+          {/* Ready for Delivery */}
+          <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-lg sm:text-2xl font-bold text-foreground">
+                  {statsLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : readyForDelivery}
                 </div>
-                <div className="text-xs sm:text-sm text-muted-foreground" style={{
-                  fontSize: 'clamp(0.75rem, 2vw, 0.875rem)',
-                  lineHeight: '1.3',
-                  marginTop: '0.25rem'
-                }}>
+                <div className="text-xs sm:text-sm text-muted-foreground">
                   Ready for Delivery
                 </div>
               </div>
-              <div className="h-6 w-6 sm:h-8 sm:w-8 text-blue-500 flex items-center justify-center" style={{
-                width: 'clamp(1.5rem, 4vw, 2rem)',
-                height: 'clamp(1.5rem, 4vw, 2rem)',
-                flexShrink: '0',
-                color: '#3b82f6'
-              }}>
-              </div>
             </div>
           </Card>
-          <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft" style={{
-            padding: 'clamp(0.75rem, 2vw, 1rem)',
-            background: 'linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(220 15% 98%) 100%)',
-            border: 'none',
-            boxShadow: '0 2px 8px hsl(220 25% 15% / 0.08)',
-            borderRadius: '0.75rem',
-            minHeight: '80px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center'
-          }}>
-            <div className="flex items-center justify-between" style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              width: '100%',
-              minHeight: '48px'
-            }}>
-              <div style={{ flex: '1 1 auto', minWidth: '0' }}>
-                <div className="text-lg sm:text-2xl font-bold text-foreground" style={{
-                  fontSize: 'clamp(1.125rem, 3vw, 1.5rem)',
-                  fontWeight: '700',
-                  lineHeight: '1.2'
-                }}>
-                  {scheduledDeliveries}
+
+          {/* Scheduled Deliveries */}
+          <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-lg sm:text-2xl font-bold text-foreground">
+                  {statsLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : scheduledDeliveries}
                 </div>
-                <div className="text-xs sm:text-sm text-muted-foreground" style={{
-                  fontSize: 'clamp(0.75rem, 2vw, 0.875rem)',
-                  lineHeight: '1.3',
-                  marginTop: '0.25rem'
-                }}>
+                <div className="text-xs sm:text-sm text-muted-foreground">
                   Scheduled
                 </div>
               </div>
-              <div className="h-6 w-6 sm:h-8 sm:w-8 text-warning flex items-center justify-center" style={{
-                width: 'clamp(1.5rem, 4vw, 2rem)',
-                height: 'clamp(1.5rem, 4vw, 2rem)',
-                flexShrink: '0',
-                color: '#f59e0b'
-              }}>
-                {/* <span className="text-lg font-bold">⏰</span> */}
-              </div>
             </div>
           </Card>
-          <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft" style={{
-            padding: 'clamp(0.75rem, 2vw, 1rem)',
-            background: 'linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(220 15% 98%) 100%)',
-            border: 'none',
-            boxShadow: '0 2px 8px hsl(220 25% 15% / 0.08)',
-            borderRadius: '0.75rem',
-            minHeight: '80px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center'
-          }}>
-            <div className="flex items-center justify-between" style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              width: '100%',
-              minHeight: '48px'
-            }}>
-              <div style={{ flex: '1 1 auto', minWidth: '0' }}>
-                <div className="text-lg sm:text-2xl font-bold text-foreground" style={{
-                  fontSize: 'clamp(1.125rem, 3vw, 1.5rem)',
-                  fontWeight: '700',
-                  lineHeight: '1.2'
-                }}>
-                  {outForDelivery}
+
+          {/* Out for Delivery */}
+          <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-lg sm:text-2xl font-bold text-foreground">
+                  {statsLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : outForDelivery}
                 </div>
-                <div className="text-xs sm:text-sm text-muted-foreground" style={{
-                  fontSize: 'clamp(0.75rem, 2vw, 0.875rem)',
-                  lineHeight: '1.3',
-                  marginTop: '0.25rem'
-                }}>
+                <div className="text-xs sm:text-sm text-muted-foreground">
                   Out for Delivery
                 </div>
-              </div>
-              <div className="h-6 w-6 sm:h-8 sm:w-8 text-purple-500 flex items-center justify-center" style={{
-                width: 'clamp(1.5rem, 4vw, 2rem)',
-                height: 'clamp(1.5rem, 4vw, 2rem)',
-                flexShrink: '0',
-                color: '#8b5cf6'
-              }}>
-                {/* <span className="text-lg font-bold">🚚</span> */}
-              </div>
-            </div>
-          </Card>
-          <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft" style={{
-            padding: 'clamp(0.75rem, 2vw, 1rem)',
-            background: 'linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(220 15% 98%) 100%)',
-            border: 'none',
-            boxShadow: '0 2px 8px hsl(220 25% 15% / 0.08)',
-            borderRadius: '0.75rem',
-            minHeight: '80px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center'
-          }}>
-            <div className="flex items-center justify-between" style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              width: '100%',
-              minHeight: '48px'
-            }}>
-              <div style={{ flex: '1 1 auto', minWidth: '0' }}>
-                <div className="text-lg sm:text-2xl font-bold text-foreground" style={{
-                  fontSize: 'clamp(1.125rem, 3vw, 1.5rem)',
-                  fontWeight: '700',
-                  lineHeight: '1.2'
-                }}>
-                  {deliveredToday}
-                </div>
-                <div className="text-xs sm:text-sm text-muted-foreground" style={{
-                  fontSize: 'clamp(0.75rem, 2vw, 0.875rem)',
-                  lineHeight: '1.3',
-                  marginTop: '0.25rem'
-                }}>
-                  Delivered Today
-                </div>
-              </div>
-              <div className="h-6 w-6 sm:h-8 sm:w-8 text-success flex items-center justify-center" style={{
-                width: 'clamp(1.5rem, 4vw, 2rem)',
-                height: 'clamp(1.5rem, 4vw, 2rem)',
-                flexShrink: '0',
-                color: '#10b981'
-              }}>
               </div>
             </div>
           </Card>
         </div>
+
+
 
         {/* Search */}
         <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft" style={{
@@ -882,8 +767,13 @@ export function DeliveryModule() {
                                   scheduledDateTime
                                 );
                               } else {
-                                alert("Please select a scheduled time");
+                                toast({
+                                  variant: "destructive", // red styling
+                                  title: "Missing Scheduled Time",
+                                  description: "Please select a scheduled time before proceeding.",
+                                });
                               }
+
                             }}
                             className="w-full bg-gradient-primary hover:opacity-90"
                             disabled={!scheduledDateTime}

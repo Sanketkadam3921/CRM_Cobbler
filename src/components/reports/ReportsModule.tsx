@@ -164,8 +164,17 @@ export default function ReportsModule() {
       doc.text("Business Report", 14, 22);
       doc.setFontSize(10);
       doc.setTextColor(150);
+      // Make text bold
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+
       doc.text(`Period: ${selectedPeriod.charAt(0).toUpperCase() + selectedPeriod.slice(1)}`, 14, 28);
       doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 33);
+
+      // Reset to normal after
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+
 
       // Key Metrics Section - using backend data
       doc.setFontSize(14);

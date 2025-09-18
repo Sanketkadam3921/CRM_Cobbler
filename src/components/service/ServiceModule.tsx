@@ -202,7 +202,7 @@ export function ServiceModule() {
       if (enquiry) {
         toast({
           title: "WhatsApp Notification",
-          description: `WhatsApp sent to ${enquiry.customerName}: "Your ${serviceType} work on ${enquiry.product} has been completed."`,
+          description: `WhatsApp message sent to ${enquiry.customerName}: "Your ${serviceType} work on ${enquiry.product} has been completed."`,
           className: "bg-blue-50 border-blue-200 text-blue-800",
         });
       }
@@ -283,7 +283,7 @@ export function ServiceModule() {
       if (enquiry) {
         toast({
           title: "WhatsApp Notification",
-          description: `WhatsApp sent to ${enquiry.customerName}: "All services completed and ready for billing!"`,
+          description: `WhatsApp message sent to ${enquiry.customerName}: "All services completed and ready for billing!"`,
           className: "bg-blue-50 border-blue-200 text-blue-800",
         });
       }
@@ -345,7 +345,7 @@ export function ServiceModule() {
       if (enquiry) {
         toast({
           title: "WhatsApp Notification",
-          description: `WhatsApp sent to ${enquiry.customerName}: "Services have been assigned for your ${enquiry.product}."`,
+          description: `WhatsApp message sent to ${enquiry.customerName}: "Services have been assigned for your ${enquiry.product}."`,
           className: "bg-blue-50 border-blue-200 text-blue-800",
         });
       }

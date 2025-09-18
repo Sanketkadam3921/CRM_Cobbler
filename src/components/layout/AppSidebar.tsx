@@ -2,16 +2,13 @@ import {
   Home,
   Users,
   Package,
-  Calendar,
-  Receipt,
   Settings,
   BarChart3,
   MapPin,
-  Camera,
   Truck,
   CheckCircle,
   Calculator,
-  IndianRupee
+  IndianRupee,
 } from "lucide-react";
 import {
   Sidebar,
@@ -20,23 +17,28 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarProvider,
-  SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { useState } from "react";
 import { useSidebar } from "@/components/ui/sidebar";
-
+import BuildIcon from "@mui/icons-material/Build";
+import { LucideIcon } from "lucide-react";
+import ReceiptIcon from '@mui/icons-material/Receipt';
 interface AppSidebarProps {
   currentView: string;
   onViewChange: (view: string, action?: string) => void;
 }
 
-const navigation = [
+interface NavigationItem {
+  name: string;
+  icon: LucideIcon | typeof BuildIcon;
+  id: string;
+}
+
+const navigation: NavigationItem[] = [
   { name: "Dashboard", icon: Home, id: "dashboard" },
   { name: "CRM", icon: Users, id: "crm" },
   { name: "Pickup Management", icon: MapPin, id: "pickup" },
-  { name: "Service Workflow", icon: Camera, id: "service" },
-  { name: "Billing & Invoice", icon: Calculator, id: "billing" },
+  { name: "Service Workflow", icon: BuildIcon, id: "service" },
+  { name: "Billing & Invoice", icon: ReceiptIcon, id: "billing" },
   { name: "Delivery Management", icon: Truck, id: "delivery" },
   { name: "Completed Orders", icon: CheckCircle, id: "completed" },
   { name: "Inventory", icon: Package, id: "inventory" },
@@ -55,7 +57,10 @@ export function AppSidebar({ currentView, onViewChange }: AppSidebarProps) {
   };
 
   return (
-    <Sidebar className="border-r border-border bg-gradient-card" collapsible="icon">
+    <Sidebar
+      className="border-r border-border bg-gradient-card"
+      collapsible="icon"
+    >
       <SidebarHeader className="p-6">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
@@ -70,22 +75,26 @@ export function AppSidebar({ currentView, onViewChange }: AppSidebarProps) {
 
       <SidebarContent className="px-4">
         <SidebarMenu>
-          {navigation.map((item) => (
-            <SidebarMenuItem key={item.id}>
-              <SidebarMenuButton
-                onClick={() => handleNavigation(item.id)}
-                isActive={currentView === item.id}
-                className={`w-full transition-all duration-200 hover:bg-primary/10 hover:text-primary ${currentView === item.id
-                  ? "bg-primary text-primary-foreground shadow-soft"
-                  : "text-muted-foreground"
-                  }`}
-                tooltip={item.name}
-              >
-                <item.icon className="h-5 w-5" />
-                <span className="font-medium">{item.name}</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
+          {navigation.map((item) => {
+            const Icon = item.icon;
+            return (
+              <SidebarMenuItem key={item.id} className="my-1">
+                <SidebarMenuButton
+                  onClick={() => handleNavigation(item.id)}
+                  isActive={currentView === item.id}
+                  className={`w-full py-3 px-3 gap-3 text-[15px] transition-all duration-200 hover:bg-primary/10 hover:text-primary ${currentView === item.id
+                    ? "bg-primary text-primary-foreground shadow-soft"
+                    : "text-muted-foreground"
+                    }`}
+                  tooltip={item.name}
+                >
+                  <Icon className="h-6 w-6" />
+                  <span className="font-medium">{item.name}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+            );
+          })}
         </SidebarMenu>
       </SidebarContent>
     </Sidebar>

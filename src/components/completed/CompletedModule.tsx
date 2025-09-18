@@ -244,9 +244,11 @@ export function CompletedModule() {
                     </span>
                   </div>
                 </div>
-                <Badge className="bg-green-100 text-green-800 border-green-200 text-xs px-2 py-1 rounded-full font-medium">
+                <Badge className="w-fit inline-block bg-green-100 text-green-800 border-green-200 text-xs px-2 py-1 sm:px-3 sm:py-1.5 rounded-full font-medium">
                   Completed
                 </Badge>
+
+
               </div>
 
               <div className="space-y-3">
@@ -273,17 +275,18 @@ export function CompletedModule() {
 
                 <div className="flex items-center space-x-2">
                   <span className="text-sm text-foreground">
-                    Ordered: {formatDate(enquiry.date)}
+                    <span className="font-bold">Ordered:</span> {formatDate(enquiry.date)}
                   </span>
                 </div>
 
                 {enquiry.deliveredAt && (
                   <div className="flex items-center space-x-2">
                     <span className="text-sm text-foreground">
-                      Delivered: {formatDateTime(enquiry.deliveredAt)}
+                      <span className="font-bold">Delivered:</span> {formatDateTime(enquiry.deliveredAt)}
                     </span>
                   </div>
                 )}
+
 
                 {enquiry.deliveryMethod && (
                   <div className="flex items-center space-x-2">

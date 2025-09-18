@@ -170,7 +170,7 @@ export default function InventoryManager() {
   };
 
   // Updated to use backend API for updating stock instead of localStorage
-  const handleUpdateStock = async (item: InventoryItem, newQuantity: number, updaterName: string, p0: number) => {
+  const handleUpdateStock = async (item: InventoryItem, newQuantity: number) => {
     if (!updaterName.trim()) {
       alert("Please provide the name of the person updating the stock.");
       return;
@@ -281,51 +281,55 @@ export default function InventoryManager() {
 
       {/* Stats - Added loading and error states for backend API integration */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <Card className="p-3 sm:p-4 bg-white border border-gray-200 shadow-sm rounded-xl">
+        <Card className="p-3 sm:p-4 bg-white border border-gray-200 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-lg sm:text-2xl font-bold text-gray-900">
                 {statsLoading ? "..." : totalItems}
               </div>
-              <div className="text-xs sm:text-sm text-gray-600">Total Items</div>
+              <div className="text-xs sm:text-sm text-gray-600">
+                Total Items
+              </div>
             </div>
           </div>
         </Card>
-
-        <Card className="p-3 sm:p-4 bg-white border border-gray-200 shadow-sm rounded-xl">
+        <Card className="p-3 sm:p-4 bg-white border border-gray-200 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-lg sm:text-2xl font-bold text-gray-900">
                 {statsLoading ? "..." : totalQuantity}
               </div>
-              <div className="text-xs sm:text-sm text-gray-600">Total Quantity</div>
+              <div className="text-xs sm:text-sm text-gray-600">
+                Total Quantity
+              </div>
             </div>
           </div>
         </Card>
-
-        <Card className="p-3 sm:p-4 bg-white border border-gray-200 shadow-sm rounded-xl">
+        <Card className="p-3 sm:p-4 bg-white border border-gray-200 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-lg sm:text-2xl font-bold text-gray-900">
+              <div className="text-lg sm:text-2xl font-bold text-red-600">
                 {statsLoading ? "..." : lowStockItems.length}
               </div>
-              <div className="text-xs sm:text-sm text-gray-600">Low Stock Alerts</div>
+              <div className="text-xs sm:text-sm text-gray-600">
+                Low Stock Alerts
+              </div>
             </div>
           </div>
         </Card>
-
-        <Card className="p-3 sm:p-4 bg-white border border-gray-200 shadow-sm rounded-xl">
+        <Card className="p-3 sm:p-4 bg-white border border-gray-200 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-lg sm:text-2xl font-bold text-gray-900">
+              <div className="text-lg sm:text-2xl font-bold text-green-600">
                 {statsLoading ? "..." : wellStockedItems}
               </div>
-              <div className="text-xs sm:text-sm text-gray-600">Well Stocked</div>
+              <div className="text-xs sm:text-sm text-gray-600">
+                Well Stocked
+              </div>
             </div>
           </div>
         </Card>
       </div>
-
 
       {/* Low Stock Alerts */}
       {lowStockItems.length > 0 && (
@@ -548,7 +552,9 @@ export default function InventoryManager() {
           <Card className="w-full max-w-md">
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-gray-900">Update Stock</h2>
+                <h2 className="text-xl font-bold text-gray-900">
+                  Update Stock
+                </h2>
                 <Button
                   variant="outline"
                   size="sm"
@@ -558,7 +564,6 @@ export default function InventoryManager() {
                 </Button>
               </div>
 
-              {/* Item info (not editable) */}
               <div className="mb-4">
                 <p className="text-sm text-gray-600">
                   Item: <span className="font-medium">{editingItem.name}</span>
@@ -571,47 +576,41 @@ export default function InventoryManager() {
                 </p>
               </div>
 
-              {/* Take Quantity + Worker */}
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Quantity Taken <span className="text-red-500">*</span>
+                    New Quantity
                   </label>
                   <Input
                     type="number"
                     step="1"
-                    value={updateQuantity || ""}   // always controlled
+                    value={updateQuantity}
                     onChange={(e) => {
                       const value = e.target.value;
-                      if (
-                        value === "" ||
-                        value === "0" ||
-                        (/^[1-9]\d*$/.test(value) &&
-                          parseInt(value) <= editingItem.quantity)
-                      ) {
+                      // Allow empty string, "0", or positive integers starting from 1 (no leading zeros)
+                      if (value === "" || value === "0" || /^[1-9]\d*$/.test(value)) {
                         setUpdateQuantity(value);
                       }
                     }}
-                    placeholder="Enter quantity taken"
+                    placeholder="Enter new quantity"
                     min="0"
                     className="no-spinner"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Worker Name <span className="text-red-500">*</span>
+                    Updated By <span className="text-red-500">*</span>
                   </label>
                   <Input
                     type="text"
                     value={updaterName}
                     onChange={(e) => setUpdaterName(e.target.value)}
-                    placeholder="Enter worker name"
+                    placeholder="Enter your name"
                     required
                   />
                 </div>
               </div>
 
-              {/* Buttons */}
               <div className="flex space-x-3 mt-6">
                 <Button
                   variant="outline"
@@ -621,17 +620,9 @@ export default function InventoryManager() {
                   Cancel
                 </Button>
                 <Button
-                  onClick={() => {
-                    if (!updateQuantity || !updaterName) return;
-                    handleUpdateStock(
-                      editingItem,
-                      editingItem.quantity - parseInt(updateQuantity), // reduce stock
-                      updaterName,
-                      parseInt(updateQuantity) // log taken amount
-                    );
-                    setUpdateQuantity(""); // reset back to 0 after update
-                    setUpdaterName("");
-                  }}
+                  onClick={() =>
+                    handleUpdateStock(editingItem, parseInt(updateQuantity))
+                  }
                   className="flex-1 bg-green-600 hover:bg-green-700 text-white"
                 >
                   Update Stock
@@ -641,8 +632,6 @@ export default function InventoryManager() {
           </Card>
         </div>
       )}
-
-
 
       {/* History Modal */}
       {showHistoryModal && (
@@ -754,15 +743,14 @@ export default function InventoryManager() {
             >
               <div>
                 <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-bold text-lg text-gray-800">
+                  <h3 className="font-bold text-lg text-gray-800 truncate max-w-full">
                     {item.name}
                   </h3>
                   <Badge className={getStockStatus(item).color}>
                     {getStockStatus(item).status}
                   </Badge>
                 </div>
-                <p className="text-sm text-gray-500 mb-3">{item.category}</p>
-
+                <p className="text-sm text-gray-500 mb-3 truncate max-w-full">{item.category}</p>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm mb-4">
                   <div className="font-medium text-gray-700">Stock</div>
                   <div>

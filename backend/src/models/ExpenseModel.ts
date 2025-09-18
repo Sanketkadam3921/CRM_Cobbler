@@ -56,8 +56,16 @@ export class ExpenseModel {
       const params: any[] = [];
 
       if (filters.month && filters.month !== 'all') {
-        whereConditions.push('MONTH(date) = ?');
-        params.push(filters.month);
+        // Handle YYYY-MM format from frontend
+        if (filters.month.includes('-')) {
+          const [year, month] = filters.month.split('-');
+          whereConditions.push('YEAR(date) = ? AND MONTH(date) = ?');
+          params.push(year, month);
+        } else {
+          // Fallback for month-only format
+          whereConditions.push('MONTH(date) = ?');
+          params.push(filters.month);
+        }
       }
 
       if (filters.year && filters.year !== 'all') {
@@ -328,8 +336,16 @@ export class ExpenseModel {
       const params: any[] = [];
 
       if (filters.month && filters.month !== 'all') {
-        whereConditions.push('MONTH(date) = ?');
-        params.push(filters.month);
+        // Handle YYYY-MM format from frontend
+        if (filters.month.includes('-')) {
+          const [year, month] = filters.month.split('-');
+          whereConditions.push('YEAR(date) = ? AND MONTH(date) = ?');
+          params.push(year, month);
+        } else {
+          // Fallback for month-only format
+          whereConditions.push('MONTH(date) = ?');
+          params.push(filters.month);
+        }
       }
 
       if (filters.year && filters.year !== 'all') {

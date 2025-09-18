@@ -19,6 +19,14 @@ export function InvoiceUI({ billingDetails, onDownload, onSend, onPrint }: Invoi
       day: 'numeric'
     });
   };
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -37,9 +45,9 @@ export function InvoiceUI({ billingDetails, onDownload, onSend, onPrint }: Invoi
           <div className="flex items-start space-x-4">
             {businessInfo?.logo && (
               <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
-                <img 
-                  src={businessInfo.logo} 
-                  alt="Business Logo" 
+                <img
+                  src={businessInfo.logo}
+                  alt="Business Logo"
                   className="w-full h-full object-contain"
                 />
               </div>
@@ -61,14 +69,21 @@ export function InvoiceUI({ billingDetails, onDownload, onSend, onPrint }: Invoi
           </div>
 
           {/* Invoice Details */}
-          <div className="text-right">
-            <h2 className="text-3xl font-bold text-blue-600 mb-2">INVOICE</h2>
-            <div className="space-y-1 text-sm">
-              <p><span className="font-medium">Invoice #:</span> {billingDetails.invoiceNumber}</p>
-              <p><span className="font-medium">Date:</span> {formatDate(billingDetails.invoiceDate || '')}</p>
-              <p><span className="font-medium">Due Date:</span> {formatDate(billingDetails.invoiceDate || '')}</p>
+          <div className="text-sm space-y-1">
+            <div className="flex justify-between gap-6">
+              <span className="font-medium">Invoice #:</span>
+              <span>{billingDetails.invoiceNumber}</span>
+            </div>
+            <div className="flex justify-between gap-6">
+              <span className="font-medium">Date:</span>
+              <span>{formatDate(billingDetails.invoiceDate || "")}</span>
+            </div>
+            <div className="flex justify-between gap-6">
+              <span className="font-medium">Due Date:</span>
+              <span>{formatDate(billingDetails.invoiceDate || "")}</span>
             </div>
           </div>
+
         </div>
       </div>
 
@@ -133,28 +148,28 @@ export function InvoiceUI({ billingDetails, onDownload, onSend, onPrint }: Invoi
               <span className="text-gray-600">Original Amount:</span>
               <span className="font-medium">{formatCurrency(billingDetails.finalAmount)}</span>
             </div>
-            
-                          {billingDetails.items.some(item => (item.discountAmount || 0) > 0) && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">
-                    Service Discounts:
-                  </span>
-                  <span className="font-medium text-green-600">-{formatCurrency(billingDetails.items.reduce((sum, item) => sum + (item.discountAmount || 0), 0))}</span>
-                </div>
-              )}
-            
+
+            {billingDetails.items.some(item => (item.discountAmount || 0) > 0) && (
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">
+                  Service Discounts:
+                </span>
+                <span className="font-medium text-green-600">-{formatCurrency(billingDetails.items.reduce((sum, item) => sum + (item.discountAmount || 0), 0))}</span>
+              </div>
+            )}
+
             <div className="flex justify-between text-sm border-t border-gray-200 pt-2">
               <span className="font-medium text-gray-900">Subtotal:</span>
               <span className="font-medium text-gray-900">{formatCurrency(billingDetails.subtotal)}</span>
             </div>
-            
+
             {billingDetails.gstIncluded && billingDetails.gstAmount > 0 && (
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">GST ({billingDetails.gstRate}%):</span>
                 <span className="font-medium text-blue-600">+{formatCurrency(billingDetails.gstAmount)}</span>
               </div>
             )}
-            
+
             <div className="flex justify-between text-lg font-bold border-t border-gray-300 pt-2">
               <span>Total Amount:</span>
               <span className="text-blue-600">{formatCurrency(billingDetails.totalAmount)}</span>
