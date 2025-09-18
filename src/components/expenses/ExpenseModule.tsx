@@ -1053,7 +1053,6 @@ export default function ExpenseManagementSystem() {
         <div className="space-y-3 sm:space-y-4">
           {expenses.length === 0 ? (
             <Card className="p-8 sm:p-12 bg-gradient-to-br from-white to-slate-50 border-0 shadow-lg text-center">
-              <Receipt className="h-12 w-12 sm:h-16 sm:w-16 text-slate-300 mx-auto mb-3 sm:mb-4" />
               <h3 className="text-lg sm:text-xl font-semibold text-slate-600 mb-2">
                 {expenses.length === 0
                   ? "No expenses added yet"
