@@ -34,6 +34,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import React from "react"; // Added missing import for React
 import { PendingPickupsTable } from "../pickup/PendingPickupsTable";
+import { toast, useToast } from "@/hooks/use-toast";
 
 // Helper function to safely format currency values
 const safeToFixed = (value: any, decimals: number = 2): string => {
@@ -44,6 +45,7 @@ const safeToFixed = (value: any, decimals: number = 2): string => {
 
 export function BillingModule() {
   console.log('🚀 BillingModule rendering');
+  const { toast } = useToast();
 
   // COMMENTED OUT: localStorage state management - replaced with API hooks
   // const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
@@ -379,7 +381,11 @@ export function BillingModule() {
 
     if (!selectedEnquiry) {
       console.log('❌ No selected enquiry');
-      alert("Please select an enquiry");
+      toast({
+        title: "Please select an enquiry",
+        description: "You must select an enquiry before proceeding.",
+        className: "max-w-md bg-red-50 border-red-200 text-red-800",
+      });
       return;
     }
 
@@ -387,7 +393,10 @@ export function BillingModule() {
     const hasValidationErrors = Object.values(validationErrors).some(error => error !== "");
     if (hasValidationErrors) {
       console.log('❌ Validation errors present:', validationErrors);
-      alert("Please fix all validation errors before saving");
+      toast({
+        title: "Please fix all validation errors before saving",
+        className: "max-w-md bg-red-50 border-red-200 text-red-800",
+      });
       return;
     }
 
@@ -407,13 +416,19 @@ export function BillingModule() {
 
     if (hasEmptyRequiredFields) {
       console.log('❌ Empty required fields detected');
-      alert("Please fill in all required fields (Price and GST Rate) for each service");
+      toast({
+        title: "Please fill in all required fields (Price and GST Rate) for each service",
+        className: "max-w-md bg-red-50 border-red-200 text-red-800",
+      });
       return;
     }
 
     if (!hasRequiredFields) {
       console.log('❌ Invalid required fields');
-      alert("Please ensure all fields have valid values before saving");
+      toast({
+        title: "Please ensure all fields have valid values before saving",
+        className: "max-w-md bg-red-50 border-red-200 text-red-800",
+      });
       return;
     }
 
@@ -456,10 +471,17 @@ export function BillingModule() {
       setShowBillingDialog(null);
       setSelectedEnquiry(null);
 
-      alert("Billing details saved successfully!");
+      toast({
+        title: "Billing details saved successfully!",
+        description: "You can now proceed to the next step.",
+        className: "max-w-md bg-green-50 border-green-200 text-green-800",
+      });
     } catch (error) {
       console.error('❌ Failed to save billing details:', error);
-      alert("Failed to save billing details. Please try again.");
+      toast({
+        title: "Failed to save billing details. Please try again.",
+        className: "max-w-md bg-red-50 border-red-200 text-red-800",
+      });
     }
   };
 
@@ -511,7 +533,10 @@ export function BillingModule() {
   const generateInvoicePDF = async (enquiryId: number) => {
     const enquiry = enquiries.find(e => e.id === enquiryId);
     if (!enquiry?.serviceDetails?.billingDetails) {
-      alert("No billing details found. Please create billing first.");
+      toast({
+        title: "No billing details found. Please create billing first.",
+        className: "max-w-md bg-red-50 border-red-200 text-red-800",
+      });
       return;
     }
 
@@ -572,11 +597,19 @@ export function BillingModule() {
       // Save the PDF
       pdf.save(`Invoice-${enquiry.serviceDetails.billingDetails.invoiceNumber}.pdf`);
 
-      alert(`Invoice PDF generated successfully!\nFilename: Invoice-${enquiry.serviceDetails.billingDetails.invoiceNumber}.pdf`);
+      toast({
+        title: "Invoice PDF generated successfully!",
+        description: `Filename: Invoice-${enquiry.serviceDetails.billingDetails.invoiceNumber}.pdf`,
+        className: "max-w-md bg-green-50 border-green-200 text-green-800",
+      });
+
 
     } catch (error) {
       console.error('Error generating PDF:', error);
-      alert('Error generating PDF. Please try again.');
+      toast({
+        title: "Error generating PDF. Please try again.",
+        className: "max-w-md bg-red-50 border-red-200 text-red-800",
+      });
     }
   };
 
@@ -584,11 +617,19 @@ export function BillingModule() {
   const sendInvoice = (enquiryId: number) => {
     const enquiry = enquiries.find(e => e.id === enquiryId);
     if (!enquiry?.serviceDetails?.billingDetails) {
-      alert("No billing details found. Please create billing first.");
+      toast({
+        title: "No billing details found. Please create billing first.",
+        className: "max-w-md bg-red-50 border-red-200 text-red-800",
+      });
       return;
     }
 
-    alert(`Invoice sent to ${enquiry.customerName} via WhatsApp!\nAmount: ₹${enquiry.serviceDetails.billingDetails.totalAmount}`);
+    toast({
+      title: `Invoice sent to ${enquiry.customerName} via WhatsApp!`,
+      description: `Amount: ₹${enquiry.serviceDetails.billingDetails.totalAmount}`,
+      className: "max-w-md bg-green-50 border-green-200 text-green-800",
+    });
+
   };
 
   // Move to delivery - UPDATED: Now uses API instead of localStorage
@@ -603,11 +644,17 @@ export function BillingModule() {
 
       const enquiry = enquiries.find(e => e.id === enquiryId);
       if (enquiry) {
-        alert(`Moved ${enquiry.customerName}'s ${enquiry.product} to delivery stage!`);
+        toast({
+          title: `Moved ${enquiry.customerName}'s ${enquiry.product} to delivery stage!`,
+          className: "max-w-md bg-green-50 border-green-200 text-green-800",
+        });
       }
     } catch (error) {
       console.error('❌ Failed to move enquiry to delivery stage:', error);
-      alert("Failed to move to delivery stage. Please try again.");
+      toast({
+        title: "Failed to move to delivery stage. Please try again.",
+        className: "max-w-md bg-red-50 border-red-200 text-red-800",
+      });
     }
   };
 
@@ -650,13 +697,19 @@ export function BillingModule() {
 
     if (!enquiry) {
       console.error('❌ No enquiry found with ID:', enquiryId);
-      alert("Enquiry not found!");
+      toast({
+        title: "Enquiry not found!",
+        className: "max-w-md bg-red-50 border-red-200 text-red-800",
+      });
       return;
     }
 
     if (!enquiry.serviceDetails?.billingDetails) {
       console.error('❌ No billing details found for enquiry:', enquiryId);
-      alert("No billing details found. Please create billing first.");
+      toast({
+        title: "No billing details found. Please create billing first.",
+        className: "max-w-md bg-red-50 border-red-200 text-red-800",
+      });
       return;
     }
 
