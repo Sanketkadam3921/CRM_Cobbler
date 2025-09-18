@@ -558,13 +558,13 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
           <div className="text-xs sm:text-sm text-gray-500">This Month</div>
         </Card>
         <Card className="p-3 sm:p-4 bg-white border shadow-sm">
-          <div className="text-lg sm:text-2xl font-bold text-blue-600">
+          <div className="text-lg sm:text-2xl font-bold text-black-600">
             {statsLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : calculatedStats.newThisWeek}
           </div>
           <div className="text-xs sm:text-sm text-gray-500">This Week Pending</div>
         </Card>
         <Card className="p-3 sm:p-4 bg-white border shadow-sm">
-          <div className="text-lg sm:text-2xl font-bold text-green-600">
+          <div className="text-lg sm:text-2xl font-bold text-black-600">
             {statsLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : calculatedStats.converted}
           </div>
           <div className="text-xs sm:text-sm text-gray-500">Converted</div>
@@ -1254,9 +1254,11 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                   </h4>
                   <p className="text-sm text-gray-600">{convertingEnquiry.message}</p>
                   <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
-                    <span>{convertingEnquiry.product}</span>
-                    <span>•</span>
                     <span>Quantity: {convertingEnquiry.quantity}</span>
+
+                    <span>•</span>
+                    <span>{convertingEnquiry.product}</span>
+
                   </div>
                 </div>
 

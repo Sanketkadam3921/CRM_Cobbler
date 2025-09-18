@@ -685,10 +685,10 @@ export function BillingModule() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="p-5 bg-gradient-card border-0 shadow-soft flex items-center justify-between h-28">
           <div>
-            <div className="text-3xl font-extrabold text-black">
+            <div className="text-lg sm:text-2xl font-bold text-foreground">
               {statsLoading ? "..." : stats.pendingBilling}
             </div>
-            <div className="text-base font-semibold text-black mt-2">
+            <div className="text-xs sm:text-sm text-muted-foreground">
               Pending Billing
             </div>
           </div>
@@ -696,10 +696,10 @@ export function BillingModule() {
 
         <Card className="p-5 bg-gradient-card border-0 shadow-soft flex items-center justify-between h-28">
           <div>
-            <div className="text-3xl font-extrabold text-black">
+            <div className="text-lg sm:text-2xl font-bold text-foreground">
               {statsLoading ? "..." : stats.invoicesGenerated}
             </div>
-            <div className="text-base font-semibold text-black mt-2">
+            <div className="text-xs sm:text-sm text-muted-foreground">
               Invoices Generated
             </div>
           </div>
@@ -707,13 +707,13 @@ export function BillingModule() {
 
         <Card className="p-5 bg-gradient-card border-0 shadow-soft flex items-center justify-between h-28">
           <div>
-            <div className="text-3xl font-extrabold text-black">
+            <div className="text-lg sm:text-2xl font-bold text-foreground">
 
               {statsLoading
                 ? "..."
                 : Number(stats.totalBilled || 0).toLocaleString("en-IN")}
             </div>
-            <div className="text-base font-semibold text-black mt-2">
+            <div className="text-xs sm:text-sm text-muted-foreground">
               Total Billed
             </div>
           </div>
@@ -721,10 +721,10 @@ export function BillingModule() {
 
         <Card className="p-5 bg-gradient-card border-0 shadow-soft flex items-center justify-between h-28">
           <div>
-            <div className="text-3xl font-extrabold text-black">
+            <div className="text-lg sm:text-2xl font-bold text-foreground">
               {statsLoading ? "..." : stats.invoicesSent}
             </div>
-            <div className="text-base font-semibold text-black mt-2">
+            <div className="text-xs sm:text-sm text-muted-foreground">
               Invoices Sent
             </div>
           </div>
@@ -1147,11 +1147,12 @@ export function BillingModule() {
                   Save Billing Details
                 </Button>
                 <Button
-                  variant="outline"
                   onClick={() => setShowBillingDialog(null)}
+                  className="w-24 h-10 bg-red-500 text-white hover:bg-red-600 font-medium"
                 >
                   Cancel
                 </Button>
+
               </div>
             </div>
           </DialogContent>

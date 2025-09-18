@@ -64,7 +64,7 @@ export interface ReportExportData extends ReportData {
     generatedAt: string;
 }
 
-export type ReportPeriod = 'week' | 'month' | 'quarter' | 'year';
+export type ReportPeriod = "week" | "month" | "quarter" | "year" | "all";
 
 // HTTP Client for Report API calls
 class ReportApiClient {

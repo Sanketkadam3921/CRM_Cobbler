@@ -25,7 +25,7 @@ import {
   TopCustomerData,
   ProfitLossData
 } from "@/services/reportApiService";
-
+import NotoSans from "../../../public/NotoSans-Black.ttf"; // <-- correct import
 interface jsPDFWithAutoTable extends jsPDF {
   autoTable: (options: UserOptions) => jsPDF;
   lastAutoTable: { finalY: number };
@@ -159,13 +159,24 @@ export default function ReportsModule() {
       const doc = new jsPDF() as jsPDFWithAutoTable;
       const tableHeaderColor: [number, number, number] = [22, 160, 133];
 
+
       // Title
       doc.setFontSize(20);
       doc.text("Business Report", 14, 22);
       doc.setFontSize(10);
       doc.setTextColor(150);
+      // Make text bold
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.setTextColor(40);
+
       doc.text(`Period: ${selectedPeriod.charAt(0).toUpperCase() + selectedPeriod.slice(1)}`, 14, 28);
       doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 33);
+
+      // Reset to normal after
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+
 
       // Key Metrics Section - using backend data
       doc.setFontSize(14);
@@ -291,6 +302,7 @@ export default function ReportsModule() {
               <SelectItem value="year">This Year</SelectItem>
             </SelectContent>
           </Select>
+
           <Button variant="outline" onClick={exportReport}>
             <Download className="h-4 w-4 mr-2" />
             Export PDF

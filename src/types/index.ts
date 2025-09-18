@@ -125,6 +125,9 @@ export interface WorkflowCompleteRequest {
 
 // Business information types
 export interface BusinessInfo {
+  id?: number;
+
+
   businessName: string;
   ownerName: string;
   phone: string;
@@ -136,6 +139,9 @@ export interface BusinessInfo {
   logo?: string; // Base64 encoded logo
   website?: string;
   tagline?: string;
+
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // Billing and invoice types
@@ -324,10 +330,28 @@ export interface InventoryItem {
   quantity: number;
   minStock: number;
   unit: string;
-  cost: number;
+  purchasePrice: number;
+  sellingPrice: number;
   supplier?: string;
   lastUpdated: string;
+  lastUpdatedBy?: string;
   location?: string;
+  history?: UpdateHistory[];
+}
+
+export interface UpdateHistory {
+  date: string;
+  updatedBy: string;
+  action: string;
+  quantityChange: number;
+  newQuantity: number;
+}
+
+export interface InventoryStats {
+  totalItems: number;
+  totalQuantity: number;
+  lowStockItems: number;
+  wellStockedItems: number;
 }
 
 export interface Expense {
@@ -343,16 +367,27 @@ export interface Expense {
 }
 
 export interface StaffMember {
-  id: number;
+  id?: number;
   name: string;
   email: string;
   phone: string;
-  role: StaffRole;
-  department?: string;
+  role: string; // Changed from StaffRole to string to match backend
   status: "active" | "inactive";
-  createdAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
+export interface NotificationSettings {
+  id?: number;
+  userId?: number;
+  emailAlerts: boolean;
+  smsAlerts: boolean;
+  lowStockAlerts: boolean;
+  orderUpdates: boolean;
+  customerApprovals: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
 // Enums and union types
 export type InquiryType = "Instagram" | "Facebook" | "WhatsApp" | "Phone" | "Walk-in" | "Website";
 export type ProductType = "Bag" | "Shoe" | "Wallet" | "Belt" | "All type furniture";
