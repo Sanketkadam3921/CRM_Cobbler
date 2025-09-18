@@ -88,6 +88,26 @@ const fileToBase64 = (file: File): Promise<string> => {
   });
 };
 
+// Utility function to format date to dd/mm/yyyy format
+const formatDate = (dateString: string): string => {
+  const date = new Date(dateString);
+  const day = date.getDate().toString().padStart(2, '0');
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+};
+
+// Utility function to format date and time to dd/mm/yyyy, hh:mm format
+const formatDateTime = (dateString: string): string => {
+  const date = new Date(dateString);
+  const day = date.getDate().toString().padStart(2, '0');
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const year = date.getFullYear();
+  const hours = date.getHours().toString().padStart(2, '0');
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+  return `${day}/${month}/${year}, ${hours}:${minutes}`;
+};
+
 export default function ExpenseManagementSystem() {
   // API integration
   const {
@@ -294,7 +314,7 @@ export default function ExpenseManagementSystem() {
           category: "Staff Salaries",
           date: new Date(newEmployee.dateAdded).toISOString().split('T')[0], // Convert to YYYY-MM-DD format
           description: `Monthly salary payment for ${newEmployee.name}`,
-          notes: `Employee ID: ${newEmployee.id}, Role: ${newEmployee.role}`,
+          notes: `Role: ${newEmployee.role}`,
         };
 
         await expenseApiService.createExpense(salaryExpenseData);
@@ -589,7 +609,7 @@ export default function ExpenseManagementSystem() {
                       ₹{Math.round(item.totalAmount || 0).toLocaleString("en-IN")}
                     </div>
                     <div className="text-xs sm:text-sm text-gray-600">
-                      {(item.entryCount || 0)} entries ({typeof item.percentage === "number" ? item.percentage.toFixed(2) : "0.00"}%)
+                      {(item.entryCount || 0)} entries
                     </div>
                   </div>
                 </div>
@@ -1008,7 +1028,7 @@ export default function ExpenseManagementSystem() {
               <div className="relative flex-1 w-full">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4 sm:h-5 sm:w-5" />
                 <Input
-                  placeholder="Search expenses..."
+                  placeholder="Search Expenses"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-8 sm:pl-10 border-slate-300 focus:border-blue-500 text-sm sm:text-base"
@@ -1094,19 +1114,25 @@ export default function ExpenseManagementSystem() {
                       </p>
                     )}
                     {expense.notes && (
-                      <p className="text-slate-600 mb-3 bg-slate-50 p-3 rounded-lg border-l-4 border-slate-200 text-sm sm:text-base">
-                        <strong>Notes:</strong> {expense.notes}
-                      </p>
+                      <div className="mb-3 bg-slate-50 p-3 rounded-lg border-l-4 border-slate-200">
+                        <div className="text-slate-600 text-sm sm:text-base">
+                          <span className="font-semibold text-slate-700">Notes:</span>
+                          <div className="mt-1 text-slate-600">
+                            {expense.notes}
+                          </div>
+                        </div>
+                      </div>
                     )}
-                    <div className="text-xs text-slate-600 font-bold">
-                      Created:{" "}
-                      {new Date(expense.createdAt).toLocaleString("en-IN")}
+                    <div className="text-xs text-slate-600 font-bold space-y-1">
+                      <div>
+                        Created:{" "}
+                        {formatDateTime(expense.createdAt)}
+                      </div>
                       {expense.updatedAt !== expense.createdAt && (
-                        <span>
-                          {" "}
-                          • Updated:{" "}
-                          {new Date(expense.updatedAt).toLocaleString("en-IN")}
-                        </span>
+                        <div>
+                          Updated:{" "}
+                          {formatDateTime(expense.updatedAt)}
+                        </div>
                       )}
                     </div>
                   </div>
@@ -1213,16 +1239,12 @@ export default function ExpenseManagementSystem() {
                   <div className="space-y-2 pt-3 border-t border-indigo-100">
                     <div className="text-xs sm:text-sm text-slate-500">
                       <span className="font-medium">Added:</span>{" "}
-                      {new Date(employee.dateAdded).toLocaleDateString("en-IN")}
+                      {formatDate(employee.dateAdded)}
                     </div>
                     {employee.updatedAt && employee.updatedAt !== employee.createdAt && (
                       <div className="text-xs sm:text-sm font-bold text-green-600">
                         <span className="font-medium">Updated:</span>{" "}
-                        {new Date(employee.updatedAt).toLocaleDateString("en-IN")} at{" "}
-                        {new Date(employee.updatedAt).toLocaleTimeString("en-IN", {
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
+                        {formatDateTime(employee.updatedAt)}
                       </div>
                     )}
                   </div>

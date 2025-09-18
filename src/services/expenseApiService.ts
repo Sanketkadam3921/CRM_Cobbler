@@ -354,33 +354,25 @@ export function useExpenseData(initialFilters: ExpenseFilters = {}) {
     try {
       setLoading(true);
       setError(null);
-      setFilters(prevFilters => {
-        const currentFilters = { ...prevFilters, ...newFilters };
-        // Make the API call with the current filters
-        expenseApiService.getExpenses(currentFilters).then(response => {
-          setExpenses(response.data);
-          setPagination({
-            total: response.total,
-            page: response.page,
-            limit: response.limit,
-            totalPages: response.totalPages,
-          });
-        }).catch(err => {
-          const errorMessage = err instanceof Error ? err.message : 'Failed to fetch expenses';
-          setError(errorMessage);
-          console.error('Error in useExpenseData:', err);
-        }).finally(() => {
-          setLoading(false);
-        });
-        return currentFilters;
+      const currentFilters = { ...filters, ...newFilters };
+      const response = await expenseApiService.getExpenses(currentFilters);
+
+      setExpenses(response.data);
+      setPagination({
+        total: response.total,
+        page: response.page,
+        limit: response.limit,
+        totalPages: response.totalPages,
       });
+      setFilters(currentFilters);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch expenses';
       setError(errorMessage);
       console.error('Error in useExpenseData:', err);
+    } finally {
       setLoading(false);
     }
-  }, []);
+  }, [filters]);
 
   const fetchEmployees = useCallback(async () => {
     try {
