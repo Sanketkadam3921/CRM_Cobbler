@@ -13,7 +13,7 @@ const defaultStats = [
   {
     name: "Total Enquiries",
     value: "0",
-    change: "--",
+
     changeType: "neutral" as const,
     icon: Users,
     redirectTo: "all-enquiries"
@@ -21,7 +21,7 @@ const defaultStats = [
   {
     name: "Pending Pickups",
     value: "0",
-    change: "--",
+
     changeType: "neutral" as const,
     icon: Calendar,
     redirectTo: "pending-pickups",
@@ -29,7 +29,7 @@ const defaultStats = [
   {
     name: "In Service",
     value: "0",
-    change: "--",
+
     changeType: "neutral" as const,
     icon: Package,
     redirectTo: "in-service",
@@ -37,7 +37,7 @@ const defaultStats = [
   {
     name: "Service Completion Rate",
     value: "0/0",
-    change: "--",
+
     changeType: "neutral" as const,
     icon: ClipboardCheck,
     redirectTo: "service-completion",

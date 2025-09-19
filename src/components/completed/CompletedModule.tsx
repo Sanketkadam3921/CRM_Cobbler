@@ -72,7 +72,11 @@ export function CompletedModule() {
   // Use backend API stats instead of client-side calculations
   const totalCompleted = stats.totalCompleted;
   const completedThisWeek = stats.completedThisWeek;
-  const totalRevenue = stats.totalRevenue;
+  const totalRevenue = stats.totalRevenue
+    ? Number(stats.totalRevenue).toLocaleString("en-IN")
+    : "0";
+
+
   const avgCompletionTime = stats.avgCompletionTime;
 
   // REASON: Updated filter to use backend API data structure
@@ -148,7 +152,7 @@ export function CompletedModule() {
           <div className="flex items-center justify-between">
             <div>
               <div className="text-lg sm:text-2xl font-bold text-foreground">
-                {statsLoading ? '...' : `${totalRevenue.toLocaleString()}`}
+                {statsLoading ? '...' : totalRevenue}
               </div>
               <div className="text-xs sm:text-sm text-muted-foreground">
                 Total Revenue
@@ -156,6 +160,7 @@ export function CompletedModule() {
             </div>
           </div>
         </Card>
+
 
       </div>
 

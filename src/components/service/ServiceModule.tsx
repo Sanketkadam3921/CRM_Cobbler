@@ -38,7 +38,8 @@ export function ServiceModule() {
   const [overallPhotoNotes, setOverallPhotoNotes] = useState("");
   const [finalPhotoNotes, setFinalPhotoNotes] = useState("");
   const [isProcessingPhoto, setIsProcessingPhoto] = useState(false);
-
+  // Add this alongside your other state declarations
+  const [originalServices, setOriginalServices] = useState<ServiceType[]>([]);
   // API hooks handle data loading and stats automatically
   // No need for manual useEffect or stats calculation
   console.log('🔍 ServiceModule - beforeenquiries:', enquiries);
@@ -308,8 +309,12 @@ export function ServiceModule() {
     });
   };
 
+  // Assumes you have this state in your component:
+  // const [originalServices, setOriginalServices] = useState<ServiceType[]>([]);
+
   const assignServices = async (enquiryId: number) => {
     try {
+      // This check is always necessary. Nothing can be assigned if nothing is selected.
       if (selectedServiceTypes.length === 0) {
         toast({
           title: "No Services Selected",
@@ -319,13 +324,38 @@ export function ServiceModule() {
         return;
       }
 
-      console.log('🔄 Assigning services:', { enquiryId, serviceTypes: selectedServiceTypes });
+      // Determine if this is a re-assignment (i.e., there were original services)
+      const isReassigning = originalServices.length > 0;
+      let servicesToAssign = selectedServiceTypes;
 
-      await serviceApiService.assignServices(enquiryId, selectedServiceTypes);
+      if (isReassigning) {
+        // If re-assigning, calculate only the newly added services
+        const newlyAddedServices = selectedServiceTypes.filter(
+          (service) => !originalServices.includes(service)
+        );
+
+        // If no new services were added, inform the user and exit without an API call.
+        if (newlyAddedServices.length === 0) {
+          toast({
+            title: "No New Services Added",
+            description: "You haven't selected any new services to add.",
+          });
+          setShowServiceAssignment(null); // Close the dialog
+          return;
+        }
+        // Set the list for the API call to be only the new services
+        servicesToAssign = newlyAddedServices;
+      }
+
+      console.log('🔄 Assigning services:', { enquiryId, serviceTypes: servicesToAssign });
+
+      // This now correctly sends either the full list (initial) or just the new ones (re-assign)
+      await serviceApiService.assignServices(enquiryId, servicesToAssign);
       console.log('✅ Services assigned successfully');
 
       // Reset form
       setSelectedServiceTypes([]);
+      setOriginalServices([]); // Also reset the original services state
       setShowServiceAssignment(null);
 
       // Refetch data to show updated service types immediately
@@ -335,8 +365,8 @@ export function ServiceModule() {
 
       // Show success notification
       toast({
-        title: "Services Assigned!",
-        description: `Services have been assigned for enquiry #${enquiryId}`,
+        title: "Services Updated!",
+        description: `Services have been successfully updated for enquiry #${enquiryId}`,
         className: "bg-green-50 border-green-200 text-green-800",
       });
 
@@ -358,7 +388,6 @@ export function ServiceModule() {
       });
     }
   };
-
   const updateOverallBeforePhoto = async (enquiryId: number) => {
     try {
       if (!overallBeforePhoto) {
@@ -731,13 +760,16 @@ export function ServiceModule() {
                       variant="outline"
                       className="border-orange-300 text-orange-600 hover:bg-orange-50 text-xs sm:text-sm"
                       onClick={() => {
-                        // Pre-populate with current services
-                        setSelectedServiceTypes(enquiry.serviceTypes?.map(s => s.type) || []);
+                        const assignedTypes = enquiry.serviceTypes?.map(s => s.type) || [];
+                        // Pre-populate checkboxes with current services
+                        setSelectedServiceTypes(assignedTypes);
+                        // Store the original state for later comparison
+                        setOriginalServices(assignedTypes);
                         setShowServiceAssignment(enquiry.enquiryId);
                       }}
                     >
                       <Wrench className="h-3 w-3 mr-1" />
-                      Reassign Services
+                      Add New Services
                     </Button>
                   )}
 
@@ -782,57 +814,71 @@ export function ServiceModule() {
                   )}
               </div>
 
-              {/* Service Assignment Dialog */}
+              {/* Service Assignment Dialog -- MODIFIED SECTION */}
               {showServiceAssignment === enquiry.enquiryId && (
                 <Dialog open={showServiceAssignment === enquiry.enquiryId} onOpenChange={() => setShowServiceAssignment(null)}>
                   <DialogContent className="sm:max-w-md">
                     <DialogHeader>
                       <DialogTitle>
-                        {enquiry.serviceTypes && enquiry.serviceTypes.length > 0 ? 'Reassign Services' : 'Assign Services'}
+                        {enquiry.serviceTypes && enquiry.serviceTypes.length > 0 ? 'Add / Modify Services' : 'Assign Services'}
                       </DialogTitle>
                     </DialogHeader>
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label>Select Service Types (Multi-select)</Label>
-                        {enquiry.serviceTypes && enquiry.serviceTypes.length > 0 && (
-                          <div className="text-xs text-orange-600 bg-orange-50 p-2 rounded border border-orange-200">
-                            <strong>Note:</strong> Currently assigned services will be replaced with your new selection.
-                          </div>
-                        )}
-                        <div className="space-y-2">
-                          {["Sole Replacement", "Zipper Repair", "Cleaning & Polish", "Stitching", "Leather Treatment", "Hardware Repair"].map((serviceType) => (
-                            <div key={serviceType} className="flex items-center space-x-2">
-                              <Checkbox
-                                id={`service-${serviceType}`}
-                                checked={selectedServiceTypes.includes(serviceType as ServiceType)}
-                                onCheckedChange={() => handleServiceTypeToggle(serviceType as ServiceType)}
-                              />
-                              <Label htmlFor={`service-${serviceType}`} className="text-sm">
-                                {serviceType}
-                              </Label>
+                    {(() => {
+                      const alreadyAssignedTypes = enquiry.serviceTypes?.map(s => s.type) || [];
+                      const isReassigning = alreadyAssignedTypes.length > 0;
+
+                      return (
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label>Select Service Types</Label>
+                            {isReassigning && (
+                              <div className="text-xs text-blue-700 bg-blue-50 p-2 rounded border border-blue-200">
+                                <strong>Note:</strong> Assigned services are locked. You can add new services to this enquiry.
+                              </div>
+                            )}
+                            <div className="space-y-2 pt-2">
+                              {["Sole Replacement", "Zipper Repair", "Cleaning & Polish", "Stitching", "Leather Treatment", "Hardware Repair"].map((serviceType) => {
+                                const isAlreadyAssigned = alreadyAssignedTypes.includes(serviceType as ServiceType);
+                                return (
+                                  <div key={serviceType} className="flex items-center space-x-2">
+                                    <Checkbox
+                                      id={`service-${enquiry.enquiryId}-${serviceType}`}
+                                      checked={isAlreadyAssigned || selectedServiceTypes.includes(serviceType as ServiceType)}
+                                      disabled={isAlreadyAssigned}
+                                      onCheckedChange={() => handleServiceTypeToggle(serviceType as ServiceType)}
+                                    />
+                                    <Label
+                                      htmlFor={`service-${enquiry.enquiryId}-${serviceType}`}
+                                      className={`text-sm ${isAlreadyAssigned ? 'text-muted-foreground cursor-not-allowed' : 'cursor-pointer'}`}
+                                    >
+                                      {serviceType}
+                                    </Label>
+                                  </div>
+                                );
+                              })}
                             </div>
-                          ))}
+                          </div>
+                          <div className="flex space-x-2">
+                            <Button
+                              onClick={() => assignServices(enquiry.enquiryId)}
+                              className="flex-1 bg-blue-600 hover:bg-blue-700"
+                              disabled={selectedServiceTypes.length === 0}
+                            >
+                              {isReassigning ? 'Update Services' : 'Assign Services'}
+                            </Button>
+                            <Button
+                              onClick={() => {
+                                setShowServiceAssignment(null);
+                                setSelectedServiceTypes([]);
+                              }}
+                              className="w-24 h-10 bg-red-500 text-white hover:bg-red-600 hover:text-white font-medium"
+                            >
+                              Cancel
+                            </Button>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex space-x-2">
-                        <Button
-                          onClick={() => assignServices(enquiry.enquiryId)}
-                          className="flex-1 bg-blue-600 hover:bg-blue-700"
-                          disabled={selectedServiceTypes.length === 0}
-                        >
-                          {enquiry.serviceTypes && enquiry.serviceTypes.length > 0 ? 'Reassign Services' : 'Assign Services'}
-                        </Button>
-                        <Button
-                          onClick={() => {
-                            setShowServiceAssignment(null);
-                            setSelectedServiceTypes([]);
-                          }}
-                          className="w-24 h-10 bg-red-500 text-white hover:bg-red-600 hover:text-white font-medium"
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
+                      );
+                    })()}
                   </DialogContent>
                 </Dialog>
               )}

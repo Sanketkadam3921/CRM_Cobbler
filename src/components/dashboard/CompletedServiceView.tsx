@@ -140,12 +140,10 @@ export function CompletedServicesView({ onNavigate, onBack }: CompletedServicesV
                         className="flex items-center space-x-2 text-muted-foreground hover:text-foreground transition-colors"
                     >
                         <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
-                        <span className="text-sm sm:text-base">Back to Dashboard</span>
                     </button>
                     <div className="h-4 sm:h-6 w-px bg-border"></div>
                     <div>
                         <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground flex items-center">
-                            <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 mr-2 sm:mr-3 text-primary" />
                             Completed Services
                         </h1>
                         <p className="text-xs sm:text-sm lg:text-base text-muted-foreground">
@@ -173,40 +171,10 @@ export function CompletedServicesView({ onNavigate, onBack }: CompletedServicesV
 
             {/* Statistics Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-                <Card className="p-3 sm:p-4 bg-gradient-to-r from-green-50 to-green-100 border-green-200">
-                    <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-green-500 rounded-lg">
-                        </div>
-                        <div>
-                            <p className="text-xs sm:text-sm font-medium text-green-800">Total Completed</p>
-                            <p className="text-lg sm:text-2xl font-bold text-green-900">{filteredServices.length}</p>
-                        </div>
-                    </div>
-                </Card>
 
-                <Card className="p-3 sm:p-4 bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
-                    <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-blue-500 rounded-lg">
-                        </div>
-                        <div>
-                            <p className="text-xs sm:text-sm font-medium text-blue-800">Total Revenue</p>
-                            <p className="text-lg sm:text-2xl font-bold text-blue-900">₹{totalRevenue.toLocaleString()}</p>
-                        </div>
-                    </div>
-                </Card>
 
-                <Card className="p-3 sm:p-4 bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200">
-                    <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-purple-500 rounded-lg">
-                        </div>
-                        <div>
-                            <p className="text-xs sm:text-sm font-medium text-purple-800">Avg. Revenue</p>
-                            <p className="text-lg sm:text-2xl font-bold text-purple-900">
-                                ₹{filteredServices.length > 0 ? Math.round(totalRevenue / filteredServices.length).toLocaleString() : '0'}
-                            </p>
-                        </div>
-                    </div>
-                </Card>
+
+
             </div>
 
             {/* Error State */}
