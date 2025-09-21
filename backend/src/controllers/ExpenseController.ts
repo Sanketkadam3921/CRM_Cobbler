@@ -508,6 +508,52 @@ export class ExpenseController {
       });
     }
   }
+
+  // GET /api/expense/bill/:filename - Serve bill file
+  static async getBillFile(req: Request, res: Response): Promise<void> {
+    try {
+      const filename = req.params.filename;
+      if (!filename) {
+        res.status(400).json({ success: false, error: 'Filename is required' });
+        return;
+      }
+
+      const path = require('path');
+      const fs = require('fs');
+      const filePath = path.join(process.cwd(), 'public/bills', filename);
+
+      // Check if file exists
+      if (!fs.existsSync(filePath)) {
+        res.status(404).json({ success: false, error: 'File not found' });
+        return;
+      }
+
+      // Set appropriate headers
+      const ext = path.extname(filename).toLowerCase();
+      const mimeTypes: { [key: string]: string } = {
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.png': 'image/png',
+        '.pdf': 'application/pdf'
+      };
+
+      const mimeType = mimeTypes[ext] || 'application/octet-stream';
+      res.setHeader('Content-Type', mimeType);
+      res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+
+      // Stream the file
+      const fileStream = fs.createReadStream(filePath);
+      fileStream.pipe(res);
+
+    } catch (error) {
+      logApi.error(req.method, req.url, error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to serve file',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }
 }
 
 // {

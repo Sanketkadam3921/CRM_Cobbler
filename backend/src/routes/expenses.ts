@@ -4,6 +4,11 @@ import { authenticateToken } from '../middleware/auth';
 import { upload } from '../middleware/upload';
 
 const router = Router();
+
+/* ---------- BILL FILES (No authentication required for viewing) ---------- */
+router.get('/bill/:filename', ExpenseController.getBillFile);
+
+/* ---------- PROTECTED ROUTES ---------- */
 router.use(authenticateToken);
 
 /* ---------- EXPENSES ---------- */

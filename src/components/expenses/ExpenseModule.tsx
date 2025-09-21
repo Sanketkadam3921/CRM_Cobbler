@@ -51,6 +51,9 @@ import {
   FileUp,
   Wallet,
   Filter,
+  Eye,
+  Download,
+  Image as ImageIcon,
 } from "lucide-react";
 
 
@@ -86,6 +89,150 @@ const fileToBase64 = (file: File): Promise<string> => {
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
+};
+
+// Utility function to get file type from URL or filename
+const getFileType = (url: string): 'image' | 'pdf' => {
+  const extension = url.split('.').pop()?.toLowerCase();
+  return extension === 'pdf' ? 'pdf' : 'image';
+};
+
+// Utility function to get filename from URL
+const getFilenameFromUrl = (url: string): string => {
+  return url.split('/').pop() || 'bill';
+};
+
+// Utility function to construct proper bill URL
+const getBillUrl = (billUrl: string): string => {
+  if (!billUrl) return '';
+  
+  // Extract filename from the URL
+  const filename = billUrl.split('/').pop();
+  if (!filename) return '';
+  
+  // Use the API endpoint to serve bill files
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (
+    typeof window !== 'undefined' && window.location.origin !== 'http://localhost:5173'
+      ? `${window.location.origin}/api`
+      : 'http://localhost:3001/api'
+  );
+  
+  // Use the API endpoint for serving bill files
+  const constructedUrl = `${API_BASE_URL}/expense/bill/${filename}`;
+  
+  // Debug logging
+  console.log('Bill URL Debug:', {
+    original: billUrl,
+    filename,
+    constructed: constructedUrl
+  });
+  
+  return constructedUrl;
+};
+
+// Utility function to download file
+const downloadFile = async (url: string, filename: string) => {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error('Failed to fetch file');
+    }
+    
+    const blob = await response.blob();
+    const downloadUrl = window.URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    
+    // Cleanup
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(downloadUrl);
+  } catch (error) {
+    console.error('Download failed:', error);
+    // Fallback to opening in new tab
+    window.open(url, '_blank');
+  }
+};
+
+// Bill Preview Component
+const BillPreview = ({ 
+  url, 
+  filename, 
+  type, 
+  onClose 
+}: { 
+  url: string; 
+  filename: string; 
+  type: 'image' | 'pdf'; 
+  onClose: () => void; 
+}) => {
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg max-w-4xl max-h-[90vh] w-full overflow-hidden">
+        <div className="flex items-center justify-between p-4 border-b">
+          <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            {filename}
+          </h3>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => downloadFile(url, filename)}
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Download
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClose}
+              className="text-slate-600 hover:text-slate-900"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+        <div className="p-4 overflow-auto max-h-[calc(90vh-80px)]">
+          {type === 'image' ? (
+            <img
+              src={url}
+              alt={filename}
+              className="max-w-full h-auto rounded-lg shadow-lg"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                target.nextElementSibling?.classList.remove('hidden');
+              }}
+            />
+          ) : (
+            <iframe
+              src={url}
+              className="w-full h-[600px] border-0 rounded-lg"
+              title={filename}
+            />
+          )}
+          <div className="hidden text-center text-slate-500 mt-8">
+            <ImageIcon className="h-12 w-12 mx-auto mb-2 text-slate-400" />
+            <p>Unable to load preview</p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => downloadFile(url, filename)}
+              className="mt-2"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Download to view
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 // Utility function to format date to dd/mm/yyyy format
@@ -135,6 +282,7 @@ export default function ExpenseManagementSystem() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(null);
   const [billFile, setBillFile] = useState<File | null>(null);
+  const [showBillPreview, setShowBillPreview] = useState<{ url: string; filename: string; type: 'image' | 'pdf' } | null>(null);
 
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
@@ -191,6 +339,13 @@ export default function ExpenseManagementSystem() {
         month: selectedMonth !== "all" ? selectedMonth : undefined,
         category: selectedCategory !== "all" ? selectedCategory : undefined,
       };
+
+      // Debug logging for filters
+      console.log('Filter Debug:', {
+        selectedMonth,
+        newFilters,
+        currentFilters: filters
+      });
 
       // Only update if filters actually changed
       const currentFilterString = JSON.stringify(filters);
@@ -419,6 +574,12 @@ export default function ExpenseManagementSystem() {
     }
   };
 
+  const handleBillPreview = (billUrl: string, filename: string) => {
+    const properUrl = getBillUrl(billUrl);
+    const type = getFileType(properUrl);
+    setShowBillPreview({ url: properUrl, filename, type });
+  };
+
   // Use API-provided stats or calculate from filtered data
   const monthlyTotal = stats?.monthlyTotal || 0;
   const filteredEntries = stats?.filteredEntries || expenses.length;
@@ -633,7 +794,7 @@ export default function ExpenseManagementSystem() {
                       htmlFor="expenseTitle"
                       className="text-slate-700 font-medium text-sm"
                     >
-                      Expense Title <span className="text-red-500">*</span>
+                      Expense Title <span className="text-gray-600">*</span>
                     </Label>
                     <Input
                       id="expenseTitle"
@@ -658,7 +819,7 @@ export default function ExpenseManagementSystem() {
                       htmlFor="expenseAmount"
                       className="text-slate-700 font-medium text-sm"
                     >
-                      Amount (₹) <span className="text-red-500">*</span>
+                      Amount (₹) <span className="text-gray-600">*</span>
                     </Label>
                     <Input
                       id="expenseAmount"
@@ -692,7 +853,7 @@ export default function ExpenseManagementSystem() {
                       htmlFor="expenseCategory"
                       className="text-slate-700 font-medium text-sm"
                     >
-                      Category <span className="text-red-500">*</span>
+                      Category <span className="text-gray-600">*</span>
                     </Label>
                     <Select
                       value={expenseFormData.category}
@@ -720,7 +881,7 @@ export default function ExpenseManagementSystem() {
                       htmlFor="expenseDate"
                       className="text-slate-700 font-medium text-sm"
                     >
-                      Date <span className="text-red-500">*</span>
+                      Date <span className="text-gray-600">*</span>
                     </Label>
                     <Input
                       id="expenseDate"
@@ -781,28 +942,43 @@ export default function ExpenseManagementSystem() {
                     />
                   </div>
                   {expenseFormData.billFileName && (
-                    <div className="mt-2 flex items-center justify-between bg-slate-100 p-2 rounded-md">
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-5 w-5 text-slate-600" />
-                        <span className="text-sm text-slate-800 font-medium truncate">
-                          {expenseFormData.billFileName}
-                        </span>
+                    <div className="mt-2 space-y-2">
+                      <div className="flex items-center justify-between bg-slate-100 p-2 rounded-md">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-5 w-5 text-slate-600" />
+                          <span className="text-sm text-slate-800 font-medium truncate">
+                            {expenseFormData.billFileName}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleBillPreview(expenseFormData.billImage, expenseFormData.billFileName)}
+                            className="text-blue-600 hover:bg-blue-100 h-7 w-7"
+                            title="Preview"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() =>
+                              setExpenseFormData({
+                                ...expenseFormData,
+                                billImage: "",
+                                billFileName: "",
+                              })
+                            }
+                            className="text-red-600 hover:bg-red-100 h-7 w-7"
+                            title="Remove"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() =>
-                          setExpenseFormData({
-                            ...expenseFormData,
-                            billImage: "",
-                            billFileName: "",
-                          })
-                        }
-                        className="text-red-600 hover:bg-red-100 h-7 w-7"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
                     </div>
                   )}
                 </div>
@@ -812,7 +988,7 @@ export default function ExpenseManagementSystem() {
                     htmlFor="expenseDescription"
                     className="text-slate-700 font-medium text-sm"
                   >
-                    Description <span className="text-red-500">*</span>
+                    Description <span className="text-gray-600">*</span>
                   </Label>
                   <Textarea
                     id="expenseDescription"
@@ -891,7 +1067,7 @@ export default function ExpenseManagementSystem() {
                       htmlFor="employeeName"
                       className="text-slate-700 font-medium text-sm"
                     >
-                      Employee Name <span className="text-red-500">*</span>
+                      Employee Name <span className="text-gray-600">*</span>
                     </Label>
                     <Input
                       id="employeeName"
@@ -913,7 +1089,7 @@ export default function ExpenseManagementSystem() {
                       htmlFor="employeeRole"
                       className="text-slate-700 font-medium text-sm"
                     >
-                      Role <span className="text-red-500">*</span>
+                      Role <span className="text-gray-600">*</span>
                     </Label>
                     <Input
                       id="employeeRole"
@@ -939,7 +1115,7 @@ export default function ExpenseManagementSystem() {
                       htmlFor="monthlySalary"
                       className="text-slate-700 font-medium text-sm"
                     >
-                      Monthly Salary (₹) <span className="text-red-500">*</span>
+                      Monthly Salary (₹) <span className="text-gray-600">*</span>
                     </Label>
                     <Input
                       id="monthlySalary"
@@ -966,7 +1142,7 @@ export default function ExpenseManagementSystem() {
                       htmlFor="dateAdded"
                       className="text-slate-700 font-medium text-sm"
                     >
-                      Date Added <span className="text-red-500">*</span>
+                      Date Added <span className="text-gray-600">*</span>
                     </Label>
                     <Input
                       id="dateAdded"
@@ -1107,21 +1283,57 @@ export default function ExpenseManagementSystem() {
                         </Badge>
                       </div>
                     </div>
-                    {expense.description && (
-                      <p className="text-slate-600 mb-3 bg-blue-50 p-3 rounded-lg border-l-4 border-blue-200 text-sm sm:text-base">
-                        <strong>Description:</strong> {expense.description}
-                      </p>
-                    )}
-                    {expense.notes && (
-                      <div className="mb-3 bg-slate-50 p-3 rounded-lg border-l-4 border-slate-200">
+                    <div className="space-y-3">
+                      {expense.description && (
+                        <div className="text-slate-600 text-sm sm:text-base">
+                          <span className="font-semibold text-slate-700">Description:</span>
+                          <div className="mt-1 text-slate-600">
+                            {expense.description}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {expense.notes && (
                         <div className="text-slate-600 text-sm sm:text-base">
                           <span className="font-semibold text-slate-700">Notes:</span>
                           <div className="mt-1 text-slate-600">
                             {expense.notes}
                           </div>
                         </div>
-                      </div>
-                    )}
+                      )}
+                      
+                      {expense.billUrl && (
+                        <div className="text-slate-600 text-sm sm:text-base">
+                          <span className="font-semibold text-slate-700 flex items-center gap-2">
+                            <FileText className="h-4 w-4" />
+                            Bill Attachment:
+                          </span>
+                          <div className="mt-2 flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleBillPreview(expense.billUrl!, getFilenameFromUrl(expense.billUrl!))}
+                              className="flex items-center gap-2 text-blue-600 border-blue-200 hover:bg-blue-100"
+                            >
+                              <Eye className="h-4 w-4" />
+                              View Bill
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => downloadFile(getBillUrl(expense.billUrl!), getFilenameFromUrl(expense.billUrl!))}
+                              className="flex items-center gap-2 text-slate-600 hover:bg-slate-100"
+                            >
+                              <Download className="h-4 w-4" />
+                              Download
+                            </Button>
+                            <span className="text-xs text-slate-500">
+                              {getFilenameFromUrl(expense.billUrl!)}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                     <div className="text-xs text-slate-600 font-bold space-y-1">
                       <div>
                         Created:{" "}
@@ -1292,6 +1504,16 @@ export default function ExpenseManagementSystem() {
           </div>
         </Card>
       </div>
+
+      {/* Bill Preview Modal */}
+      {showBillPreview && (
+        <BillPreview
+          url={showBillPreview.url}
+          filename={showBillPreview.filename}
+          type={showBillPreview.type}
+          onClose={() => setShowBillPreview(null)}
+        />
+      )}
     </div>
   );
 }

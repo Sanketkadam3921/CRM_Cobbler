@@ -56,8 +56,19 @@ export class ExpenseModel {
       const params: any[] = [];
 
       if (filters.month && filters.month !== 'all') {
-        whereConditions.push('MONTH(date) = ?');
-        params.push(filters.month);
+        // Handle both "YYYY-MM" format and month number
+        if (filters.month.includes('-')) {
+          // Format: "YYYY-MM" - use date range filtering
+          const [year, month] = filters.month.split('-');
+          const startDate = `${year}-${month.padStart(2, '0')}-01`;
+          const endDate = `${year}-${month.padStart(2, '0')}-31`;
+          whereConditions.push('date >= ? AND date <= ?');
+          params.push(startDate, endDate);
+        } else {
+          // Format: month number (1-12) - legacy support
+          whereConditions.push('MONTH(date) = ?');
+          params.push(filters.month);
+        }
       }
 
       if (filters.year && filters.year !== 'all') {
@@ -328,8 +339,19 @@ export class ExpenseModel {
       const params: any[] = [];
 
       if (filters.month && filters.month !== 'all') {
-        whereConditions.push('MONTH(date) = ?');
-        params.push(filters.month);
+        // Handle both "YYYY-MM" format and month number
+        if (filters.month.includes('-')) {
+          // Format: "YYYY-MM" - use date range filtering
+          const [year, month] = filters.month.split('-');
+          const startDate = `${year}-${month.padStart(2, '0')}-01`;
+          const endDate = `${year}-${month.padStart(2, '0')}-31`;
+          whereConditions.push('date >= ? AND date <= ?');
+          params.push(startDate, endDate);
+        } else {
+          // Format: month number (1-12) - legacy support
+          whereConditions.push('MONTH(date) = ?');
+          params.push(filters.month);
+        }
       }
 
       if (filters.year && filters.year !== 'all') {
