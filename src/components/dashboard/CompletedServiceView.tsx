@@ -258,7 +258,7 @@ export function CompletedServicesView({ onNavigate, onBack }: CompletedServicesV
                             <Card key={service.id} className="p-4 hover:shadow-md transition-shadow">
                                 <div className="flex items-start justify-between mb-3">
                                     <div className="flex items-center space-x-2">
-                                        <span className="font-mono text-sm font-medium">#{service.id}</span>
+                                        <span className="font-mono text-sm font-medium">{service.id}</span>
                                         {service.deliveredAt ? (
                                             <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor('delivered')}`}>
                                                 Delivered
@@ -367,7 +367,7 @@ export function CompletedServicesView({ onNavigate, onBack }: CompletedServicesV
                                     {paginatedServices.map((service) => (
                                         <tr key={service.id} className="border-b border-border hover:bg-muted/30 transition-colors">
                                             <td className="p-4">
-                                                <span className="font-mono text-sm">#{service.id}</span>
+                                                <span className="font-mono text-sm">{service.id}</span>
                                                 {service.invoiceNumber && (
                                                     <div className="text-xs text-muted-foreground">
                                                         INV: {service.invoiceNumber}
@@ -514,7 +514,7 @@ export function CompletedServicesView({ onNavigate, onBack }: CompletedServicesV
                                     </div>
                                     <div>
                                         <label className="text-sm font-medium text-muted-foreground">Service ID</label>
-                                        <div className="text-foreground font-mono">#{selectedService.id}</div>
+                                        <div className="text-foreground font-mono">{selectedService.id}</div>
                                     </div>
                                 </div>
 

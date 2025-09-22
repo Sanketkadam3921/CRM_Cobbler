@@ -461,7 +461,7 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
                         </div>
 
                         <div className="flex-shrink-0 ml-2 text-right">
-                          <p className="text-xs text-gray-500 font-mono">#{enquiry.id}</p>
+                          <p className="text-xs text-gray-500 font-mono">{enquiry.id}</p>
                         </div>
                       </div>
                     ))}

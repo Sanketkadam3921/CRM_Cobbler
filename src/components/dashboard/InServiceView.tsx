@@ -279,7 +279,7 @@ export function InServiceView({ onNavigate, onBack }: InServiceViewProps) {
                                 <Card key={service.enquiryId} className="p-4 hover:shadow-md transition-shadow">
                                     <div className="flex items-start justify-between mb-3">
                                         <div className="flex items-center space-x-2">
-                                            <span className="font-mono text-sm font-medium">#{service.enquiryId}</span>
+                                            <span className="font-mono text-sm font-medium">{service.enquiryId}</span>
                                             <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getServiceStatusColor(overallStatus.toLowerCase())}`}>
                                                 {overallStatus}
                                             </span>
@@ -399,7 +399,7 @@ export function InServiceView({ onNavigate, onBack }: InServiceViewProps) {
                                         return (
                                             <tr key={service.enquiryId} className="border-b border-border hover:bg-muted/30 transition-colors">
                                                 <td className="p-4">
-                                                    <span className="font-mono text-sm">#{service.enquiryId}</span>
+                                                    <span className="font-mono text-sm">{service.enquiryId}</span>
                                                 </td>
                                                 <td className="p-4">
                                                     <div>
@@ -552,7 +552,7 @@ export function InServiceView({ onNavigate, onBack }: InServiceViewProps) {
                                     </div>
                                     <div>
                                         <label className="text-sm font-medium text-muted-foreground">Service ID</label>
-                                        <div className="text-foreground font-mono">#{selectedService.enquiryId}</div>
+                                        <div className="text-foreground font-mono">{selectedService.enquiryId}</div>
                                     </div>
                                 </div>
 

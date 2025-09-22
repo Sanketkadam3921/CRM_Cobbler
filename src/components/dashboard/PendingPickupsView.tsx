@@ -263,7 +263,7 @@ export function PendingPickupsView({ onNavigate, onBack }: PendingPickupsViewPro
                             <Card key={enquiry.id} className="p-4 hover:shadow-md transition-shadow">
                                 <div className="flex items-start justify-between mb-3">
                                     <div className="flex items-center space-x-2">
-                                        <span className="font-mono text-sm font-medium">#{enquiry.id}</span>
+                                        <span className="font-mono text-sm font-medium">{enquiry.id}</span>
                                         <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getPickupStatusColor(enquiry.pickupDetails?.status || 'scheduled')}`}>
                                             {capitalizeStatus(enquiry.pickupDetails?.status || 'Scheduled')}
                                         </span>
@@ -370,7 +370,7 @@ export function PendingPickupsView({ onNavigate, onBack }: PendingPickupsViewPro
                                     {paginatedPickups.map((enquiry) => (
                                         <tr key={enquiry.id} className="border-b border-border hover:bg-muted/30 transition-colors">
                                             <td className="p-4">
-                                                <span className="font-mono text-sm">#{enquiry.id}</span>
+                                                <span className="font-mono text-sm">{enquiry.id}</span>
                                             </td>
                                             <td className="p-4">
                                                 <div>

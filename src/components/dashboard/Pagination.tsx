@@ -1,16 +1,24 @@
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import {
+    Users,
     Search,
+    Plus,
     Eye,
     Edit,
     Trash2,
     Phone,
-    ArrowLeft,
+    Calendar,
     ChevronLeft,
     ChevronRight,
+    RefreshCw,
+    AlertTriangle,
+    CheckCircle,
+    Clock,
+    UserCheck,
+    ArrowLeft,
 } from "lucide-react";
-import { useEnquiriesWithPolling } from "@/services/enquiryApiService";
+import { useEnquiriesWithPolling, EnquiryApiService } from "@/services/enquiryApiService";
 import { Enquiry } from "@/types";
 
 interface AllEnquiriesViewProps {
@@ -18,13 +26,14 @@ interface AllEnquiriesViewProps {
     onBack: () => void;
 }
 
+// Helper: format date
 // Helper: format date (date only, no time)
 const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("en-GB", {
         day: "2-digit",
         month: "2-digit",
-        year: "numeric",
+        year: "numeric"
     });
 };
 
@@ -67,8 +76,7 @@ const getStageColor = (stage: string) => {
 };
 
 // Capitalize
-const capitalize = (text: string) =>
-    text.charAt(0).toUpperCase() + text.slice(1);
+const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
 export function AllEnquiriesView({ onNavigate, onBack }: AllEnquiriesViewProps) {
     const [searchTerm, setSearchTerm] = useState("");
@@ -79,7 +87,8 @@ export function AllEnquiriesView({ onNavigate, onBack }: AllEnquiriesViewProps) 
     const [showDetailsModal, setShowDetailsModal] = useState(false);
 
     // Polling
-    const { enquiries, deleteEnquiry } = useEnquiriesWithPolling(30000);
+    const { enquiries, loading, error, lastUpdate, refetch, deleteEnquiry } =
+        useEnquiriesWithPolling(30000);
 
     // Filter
     const filteredEnquiries = enquiries.filter((enquiry) => {
@@ -89,8 +98,7 @@ export function AllEnquiriesView({ onNavigate, onBack }: AllEnquiriesViewProps) 
             enquiry.phone.includes(searchTerm) ||
             enquiry.id.toString().includes(searchTerm);
 
-        const matchesStage =
-            stageFilter === "all" || enquiry.currentStage === stageFilter;
+        const matchesStage = stageFilter === "all" || enquiry.currentStage === stageFilter;
 
         return matchesSearch && matchesStage;
     });
@@ -98,10 +106,7 @@ export function AllEnquiriesView({ onNavigate, onBack }: AllEnquiriesViewProps) 
     // Pagination
     const totalPages = Math.ceil(filteredEnquiries.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
-    const paginatedEnquiries = filteredEnquiries.slice(
-        startIndex,
-        startIndex + itemsPerPage
-    );
+    const paginatedEnquiries = filteredEnquiries;
 
     useEffect(() => {
         setCurrentPage(1);
@@ -145,6 +150,16 @@ export function AllEnquiriesView({ onNavigate, onBack }: AllEnquiriesViewProps) 
                         </p>
                     </div>
                 </div>
+
+                {/* <div className="flex flex-wrap items-center gap-2">
+                    {lastUpdate && (
+                        <span className="text-xs text-muted-foreground">
+                            Last updated: {formatDate(lastUpdate.toISOString())}
+                        </span>
+                    )}
+
+
+                </div>*/}
             </div>
 
             {/* Filters */}
@@ -182,8 +197,9 @@ export function AllEnquiriesView({ onNavigate, onBack }: AllEnquiriesViewProps) 
             </Card>
 
             {/* Enquiries Table (Responsive) */}
+            {/* Enquiries List */}
             <Card className="overflow-hidden">
-                {/* Table view - desktop */}
+                {/* Table view - only for laptop/desktop */}
                 <div className="overflow-x-auto hidden sm:block">
                     <table className="w-full min-w-[700px]">
                         <thead className="bg-muted/50">
@@ -200,54 +216,34 @@ export function AllEnquiriesView({ onNavigate, onBack }: AllEnquiriesViewProps) 
                         </thead>
                         <tbody>
                             {paginatedEnquiries.map((enquiry) => (
-                                <tr
-                                    key={enquiry.id}
-                                    className="border-b border-border hover:bg-muted/30"
-                                >
+                                <tr key={enquiry.id} className="border-b border-border hover:bg-muted/30">
                                     <td className="p-4 font-mono text-sm">{enquiry.id}</td>
                                     <td className="p-4">{enquiry.customerName}</td>
                                     <td className="p-4">
                                         <div className="flex items-center text-sm">
                                             <Phone className="h-3 w-3 mr-1 text-muted-foreground" />
-                                            {enquiry.phone.startsWith("+91")
-                                                ? enquiry.phone
-                                                : `+91 ${enquiry.phone}`}
+                                            {enquiry.phone.startsWith("+91") ? enquiry.phone : `+91 ${enquiry.phone}`}
                                         </div>
                                     </td>
                                     <td className="p-4">{enquiry.product}</td>
                                     <td className="p-4">
-                                        <span
-                                            className={`inline-flex px-2 py-1 rounded-full text-xs border ${getStatusColor(
-                                                enquiry.status
-                                            )}`}
-                                        >
+                                        <span className={`inline-flex px-2 py-1 rounded-full text-xs border ${getStatusColor(enquiry.status)}`}>
                                             {capitalize(enquiry.status)}
                                         </span>
                                     </td>
                                     <td className="p-4">
-                                        <span
-                                            className={`inline-flex px-2 py-1 rounded-full text-xs border ${getStageColor(
-                                                enquiry.currentStage
-                                            )}`}
-                                        >
+                                        <span className={`inline-flex px-2 py-1 rounded-full text-xs border ${getStageColor(enquiry.currentStage)}`}>
                                             {capitalize(enquiry.currentStage)}
                                         </span>
                                     </td>
                                     <td className="p-4">{formatDate(enquiry.date)}</td>
                                     <td className="p-4">
                                         <div className="flex space-x-2">
-                                            <button
-                                                onClick={() =>
-                                                    onNavigate("crm", "edit-enquiry", enquiry.id)
-                                                }
-                                                className="p-1 hover:text-blue-600"
-                                            >
+
+                                            <button onClick={() => onNavigate("crm", "edit-enquiry", enquiry.id)} className="p-1 hover:text-blue-600">
                                                 <Edit className="h-4 w-4" />
                                             </button>
-                                            <button
-                                                onClick={() => handleDelete(enquiry.id)}
-                                                className="p-1 hover:text-red-600"
-                                            >
+                                            <button onClick={() => handleDelete(enquiry.id)} className="p-1 hover:text-red-600">
                                                 <Trash2 className="h-4 w-4" />
                                             </button>
                                         </div>
@@ -258,7 +254,7 @@ export function AllEnquiriesView({ onNavigate, onBack }: AllEnquiriesViewProps) 
                     </table>
                 </div>
 
-                {/* Card view - mobile */}
+                {/* Card view - only for mobile */}
                 <div className="space-y-4 sm:hidden p-4">
                     {paginatedEnquiries.map((enquiry) => (
                         <div
@@ -276,18 +272,10 @@ export function AllEnquiriesView({ onNavigate, onBack }: AllEnquiriesViewProps) 
                             <p className="text-sm">Product: {enquiry.product}</p>
 
                             <div className="flex flex-wrap gap-2 my-2">
-                                <span
-                                    className={`px-2 py-1 rounded-full text-xs border ${getStatusColor(
-                                        enquiry.status
-                                    )}`}
-                                >
+                                <span className={`px-2 py-1 rounded-full text-xs border ${getStatusColor(enquiry.status)}`}>
                                     {capitalize(enquiry.status)}
                                 </span>
-                                <span
-                                    className={`px-2 py-1 rounded-full text-xs border ${getStageColor(
-                                        enquiry.currentStage
-                                    )}`}
-                                >
+                                <span className={`px-2 py-1 rounded-full text-xs border ${getStageColor(enquiry.currentStage)}`}>
                                     {capitalize(enquiry.currentStage)}
                                 </span>
                             </div>
@@ -297,83 +285,21 @@ export function AllEnquiriesView({ onNavigate, onBack }: AllEnquiriesViewProps) 
                             </p>
 
                             <div className="flex justify-end space-x-2 mt-3">
-                                <button
-                                    onClick={() => handleViewDetails(enquiry)}
-                                    className="p-1 hover:text-primary"
-                                >
+                                <button onClick={() => handleViewDetails(enquiry)} className="p-1 hover:text-primary">
                                     <Eye className="h-4 w-4" />
                                 </button>
-                                <button
-                                    onClick={() =>
-                                        onNavigate("crm", "edit-enquiry", enquiry.id)
-                                    }
-                                    className="p-1 hover:text-blue-600"
-                                >
+                                <button onClick={() => onNavigate("crm", "edit-enquiry", enquiry.id)} className="p-1 hover:text-blue-600">
                                     <Edit className="h-4 w-4" />
                                 </button>
-                                <button
-                                    onClick={() => handleDelete(enquiry.id)}
-                                    className="p-1 hover:text-red-600"
-                                >
+                                <button onClick={() => handleDelete(enquiry.id)} className="p-1 hover:text-red-600">
                                     <Trash2 className="h-4 w-4" />
                                 </button>
                             </div>
                         </div>
                     ))}
                 </div>
-
-                {/* Pagination */}
-                {totalPages > 1 && (
-                    <Card className="p-4 border-t border-border">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
-                            {/* Page Info */}
-                            <div className="text-sm text-muted-foreground text-center sm:text-left">
-                                Page {currentPage} of {totalPages}
-                            </div>
-
-                            {/* Controls */}
-                            <div className="flex items-center justify-center space-x-2">
-                                {/* Previous */}
-                                <button
-                                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                                    disabled={currentPage === 1}
-                                    className="flex items-center px-3 py-2 border border-border rounded-lg hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
-                                >
-                                    <ChevronLeft className="h-4 w-4 mr-1" />
-                                    Previous
-                                </button>
-
-                                {/* Page Numbers */}
-                                <div className="flex items-center space-x-1">
-                                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                                        <button
-                                            key={page}
-                                            onClick={() => setCurrentPage(page)}
-                                            className={`px-3 py-1 rounded-md text-sm transition-colors ${page === currentPage
-                                                ? "bg-primary text-white"
-                                                : "hover:bg-muted"
-                                                }`}
-                                        >
-                                            {page}
-                                        </button>
-                                    ))}
-                                </div>
-
-                                {/* Next */}
-                                <button
-                                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                                    disabled={currentPage === totalPages}
-                                    className="flex items-center px-3 py-2 border border-border rounded-lg hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
-                                >
-                                    Next
-                                    <ChevronRight className="h-4 w-4 ml-1" />
-                                </button>
-                            </div>
-                        </div>
-                    </Card>
-                )}
-
             </Card>
+
         </div>
     );
 }
