@@ -146,7 +146,7 @@ export function PendingPickupsView({ onNavigate, onBack }: PendingPickupsViewPro
                     </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
+                {/*  <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
                     {lastUpdate && (
                         <span className="text-xs text-muted-foreground text-center sm:text-left">
                             Last updated: {formatDate(lastUpdate.toISOString())}
@@ -169,7 +169,7 @@ export function PendingPickupsView({ onNavigate, onBack }: PendingPickupsViewPro
                             <span className="text-sm">Schedule</span>
                         </button>
                     </div>
-                </div>
+                </div> */}
             </div>
 
             {/* Error State */}
@@ -199,7 +199,7 @@ export function PendingPickupsView({ onNavigate, onBack }: PendingPickupsViewPro
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                         <input
                             type="text"
-                            placeholder="Search by name, phone, or ID..."
+                            placeholder="Search by name, phone, or ID"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-sm"
@@ -226,10 +226,7 @@ export function PendingPickupsView({ onNavigate, onBack }: PendingPickupsViewPro
                     <span className="text-center sm:text-left">
                         Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, filteredPickups.length)} of {filteredPickups.length} pending pickups
                     </span>
-                    <span className="flex items-center justify-center sm:justify-start space-x-2">
-                        <div className={`w-2 h-2 rounded-full ${loading ? 'bg-amber-400' : 'bg-green-400'}`}></div>
-                        <span>{loading ? 'Syncing...' : 'Up to date'}</span>
-                    </span>
+
                 </div>
             </Card>
 
@@ -389,7 +386,7 @@ export function PendingPickupsView({ onNavigate, onBack }: PendingPickupsViewPro
                                                 <div className="space-y-1">
                                                     <div className="flex items-center text-sm">
                                                         <Phone className="h-3 w-3 mr-1 text-muted-foreground" />
-                                                        <span>{enquiry.phone}</span>
+                                                        <span>{enquiry.phone.startsWith("+91") ? enquiry.phone : `+91 ${enquiry.phone}`}</span>
                                                     </div>
                                                     {enquiry.location && (
                                                         <div className="flex items-center text-sm text-muted-foreground">
@@ -511,22 +508,16 @@ export function PendingPickupsView({ onNavigate, onBack }: PendingPickupsViewPro
                                         <label className="text-sm font-medium text-muted-foreground">Customer Name</label>
                                         <div className="text-foreground">{selectedEnquiry.customerName}</div>
                                     </div>
-                                    <div>
-                                        <label className="text-sm font-medium text-muted-foreground">Pickup ID</label>
-                                        <div className="text-foreground font-mono">#{selectedEnquiry.id}</div>
-                                    </div>
+
                                 </div>
 
                                 {/* Contact Info */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
                                         <label className="text-sm font-medium text-muted-foreground">Phone</label>
-                                        <div className="text-foreground">{selectedEnquiry.phone}</div>
+                                        <div className="text-foreground">{selectedEnquiry.phone.startsWith("+91") ? selectedEnquiry.phone : `+91 ${selectedEnquiry.phone}`}</div>
                                     </div>
-                                    <div>
-                                        <label className="text-sm font-medium text-muted-foreground">Location</label>
-                                        <div className="text-foreground">{selectedEnquiry.location || 'Not provided'}</div>
-                                    </div>
+
                                 </div>
 
                                 {/* Address */}
@@ -567,15 +558,7 @@ export function PendingPickupsView({ onNavigate, onBack }: PendingPickupsViewPro
 
                                 {/* Timing */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="text-sm font-medium text-muted-foreground">Scheduled Time</label>
-                                        <div className="text-foreground">
-                                            {selectedEnquiry.pickupDetails?.scheduledTime
-                                                ? formatDate(selectedEnquiry.pickupDetails.scheduledTime)
-                                                : 'Not scheduled'
-                                            }
-                                        </div>
-                                    </div>
+
                                     {selectedEnquiry.pickupDetails?.collectedAt && (
                                         <div>
                                             <label className="text-sm font-medium text-muted-foreground">Collected At</label>

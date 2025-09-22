@@ -32,8 +32,7 @@ const formatDate = (dateString: string) => {
         day: "2-digit",
         month: "2-digit",
         year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
+
     });
 };
 
@@ -152,7 +151,7 @@ export function CompletedServicesView({ onNavigate, onBack }: CompletedServicesV
                     </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
+                {/*  <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
                     {lastUpdate && (
                         <span className="text-xs text-muted-foreground text-center sm:text-left">
                             Last updated: {formatDate(lastUpdate.toISOString())}
@@ -166,7 +165,7 @@ export function CompletedServicesView({ onNavigate, onBack }: CompletedServicesV
                         <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                         <span className="text-sm">Refresh</span>
                     </button>
-                </div>
+                </div>*/}
             </div>
 
             {/* Statistics Cards */}
@@ -204,7 +203,7 @@ export function CompletedServicesView({ onNavigate, onBack }: CompletedServicesV
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                         <input
                             type="text"
-                            placeholder="Search by customer, product, invoice number, or ID..."
+                            placeholder="Search by customer, product, invoice number, or ID"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-sm"
@@ -231,10 +230,7 @@ export function CompletedServicesView({ onNavigate, onBack }: CompletedServicesV
                     <span className="text-center sm:text-left">
                         Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, filteredServices.length)} of {filteredServices.length} completed services
                     </span>
-                    <span className="flex items-center justify-center sm:justify-start space-x-2">
-                        <div className={`w-2 h-2 rounded-full ${loading ? 'bg-amber-400' : 'bg-green-400'}`}></div>
-                        <span>{loading ? 'Syncing...' : 'Up to date'}</span>
-                    </span>
+
                 </div>
             </Card>
 
@@ -392,7 +388,7 @@ export function CompletedServicesView({ onNavigate, onBack }: CompletedServicesV
                                                 <div className="space-y-1">
                                                     <div className="flex items-center text-sm">
                                                         <Phone className="h-3 w-3 mr-1 text-muted-foreground" />
-                                                        <span>{service.phone}</span>
+                                                        <span>{service.phone.startsWith("+91") ? service.phone : `+91 ${service.phone}`}</span>
                                                     </div>
                                                 </div>
                                             </td>
@@ -526,7 +522,7 @@ export function CompletedServicesView({ onNavigate, onBack }: CompletedServicesV
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
                                         <label className="text-sm font-medium text-muted-foreground">Phone</label>
-                                        <div className="text-foreground">{selectedService.phone}</div>
+                                        <div className="text-foreground">{selectedService.phone.startsWith("+91") ? selectedService.phone : `+91 ${selectedService.phone}`}</div>
                                     </div>
                                     <div>
                                         <label className="text-sm font-medium text-muted-foreground">Address</label>

@@ -158,7 +158,7 @@ export function InServiceView({ onNavigate, onBack }: InServiceViewProps) {
                     </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
+                {/* <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
                     {lastUpdate && (
                         <span className="text-xs text-muted-foreground text-center sm:text-left">
                             Last updated: {formatDate(lastUpdate.toISOString())}
@@ -181,7 +181,7 @@ export function InServiceView({ onNavigate, onBack }: InServiceViewProps) {
                             <span className="text-sm">Workshop</span>
                         </button>
                     </div>
-                </div>
+                </div>*/}
             </div>
 
             {/* Error State */}
@@ -211,7 +211,7 @@ export function InServiceView({ onNavigate, onBack }: InServiceViewProps) {
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                         <input
                             type="text"
-                            placeholder="Search by customer, product, or ID..."
+                            placeholder="Search by customer, product, or ID"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-sm"
@@ -238,10 +238,7 @@ export function InServiceView({ onNavigate, onBack }: InServiceViewProps) {
                     <span className="text-center sm:text-left">
                         Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, filteredServices.length)} of {filteredServices.length} items in service
                     </span>
-                    <span className="flex items-center justify-center sm:justify-start space-x-2">
-                        <div className={`w-2 h-2 rounded-full ${loading ? 'bg-amber-400' : 'bg-green-400'}`}></div>
-                        <span>{loading ? 'Syncing...' : 'Up to date'}</span>
-                    </span>
+
                 </div>
             </Card>
 
@@ -249,7 +246,7 @@ export function InServiceView({ onNavigate, onBack }: InServiceViewProps) {
             {loading && inServiceItems.length === 0 ? (
                 <Card className="p-8 sm:p-12 text-center">
                     <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-muted-foreground">Loading services...</p>
+                    <p className="text-muted-foreground">Loading services</p>
                 </Card>
             ) : paginatedServices.length === 0 ? (
                 <Card className="p-8 sm:p-12 text-center">

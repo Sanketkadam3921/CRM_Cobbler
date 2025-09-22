@@ -10,6 +10,7 @@ import { AllEnquiriesView } from './AllEnquiriesView';
 import { PendingPickupsView } from './PendingPickupsView';
 import { InServiceView } from './InServiceView';
 import { CompletedServicesView } from './CompletedServiceView';
+import { useCompletedStats } from '@/services/completedApiService';
 
 const defaultStats = [
   {
@@ -34,7 +35,7 @@ const defaultStats = [
     redirectTo: "in-service",
   },
   {
-    name: "Service Completion Rate",
+    name: "Total Completed Services",
     value: "0/0",
     changeType: "neutral" as const,
     icon: ClipboardCheck,
@@ -105,6 +106,7 @@ const getDeliveryStatusColor = (status: string) => {
 export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
   const [dynamicStats, setDynamicStats] = useState(defaultStats);
   const [currentView, setCurrentView] = useState<'dashboard' | 'all-enquiries' | 'pending-pickups' | 'in-service' | 'service-completion'>('dashboard');
+  const { stats: completedStats, loading: completedLoading, error: completedError } = useCompletedStats();
 
   // Dashboard data for total enquiries and completion ratio
   const { data: dashboardData, loading, error, refreshData } = useDashboardData();
@@ -141,22 +143,18 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
   );
 
   useEffect(() => {
-    if (dashboardData && deliveryEnquiries && pickupEnquiries) {
-      // ✅ Use pickup enquiries for CORRECT pending pickups count (same logic as PendingPickupsView)
+    if (dashboardData && deliveryEnquiries && pickupEnquiries && serviceEnquiries) {
       const pendingPickups = pickupEnquiries.filter(
         enquiry =>
           enquiry.currentStage === 'pickup' &&
           enquiry.pickupDetails?.status !== 'received'
       ).length;
 
-      // ✅ In-service count from delivery enquiries
-      // Count all service enquiries that are not fully done
       const inService = serviceEnquiries.filter(enquiry =>
         enquiry.serviceTypes &&
         enquiry.serviceTypes.length > 0 &&
         !enquiry.serviceTypes.every(service => service.status === "done")
       ).length;
-
 
       setDynamicStats([
         {
@@ -166,23 +164,23 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
         },
         {
           ...defaultStats[1],
-          value: pendingPickups.toString(), // 🔥 Now using pickup enquiries for accurate count
+          value: pendingPickups.toString(),
           changeType: "neutral",
         },
         {
           ...defaultStats[2],
-          value: inService.toString(), // ✅ Now uses service enquiries
+          value: inService.toString(),
           changeType: "warning",
         },
         {
           ...defaultStats[3],
-          value: dashboardData.completedDeliveredRatio,
-          change: "Delivered",
+          value: completedStats.totalCompleted.toString(), // ✅ total completed services
           changeType: "positive",
         },
       ]);
     }
-  }, [dashboardData, deliveryEnquiries, pickupEnquiries, serviceEnquiries]); // ✅ Added serviceEnquiries dependency
+  }, [dashboardData, deliveryEnquiries, pickupEnquiries, serviceEnquiries, completedStats]);
+
 
   // Handle navigation internally
   const handleNavigate = (view: string, action?: string, id?: number) => {
