@@ -177,7 +177,7 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
         {
           ...defaultStats[3],
           value: dashboardData.completedDeliveredRatio,
-          change: "delivered",
+          change: "Delivered",
           changeType: "positive",
         },
       ]);
@@ -495,7 +495,10 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
                     <div className="w-2 h-2 rounded-full mt-2 flex-shrink-0 bg-primary" />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs sm:text-sm font-medium text-foreground break-words">{activity.text}</p>
-                      <p className="text-xs text-muted-foreground">{activity.time}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(activity.time).toLocaleDateString("en-GB")}{" "}
+                        {new Date(activity.time).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
+                      </p>
                     </div>
                   </div>
                 ))
