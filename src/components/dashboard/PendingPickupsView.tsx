@@ -116,21 +116,8 @@ export function PendingPickupsView({ onNavigate, onBack }: PendingPickupsViewPro
         }
     };
 
-    const handleMarkCollected = async (id: number, photo: string, notes?: string) => {
-        try {
-            await markCollected(id, photo, notes);
-        } catch (error) {
-            console.error('Failed to mark as collected:', error);
-        }
-    };
 
-    const handleMarkReceived = async (id: number, photo: string, notes?: string, estimatedCost?: number) => {
-        try {
-            await markReceived(id, photo, notes, estimatedCost);
-        } catch (error) {
-            console.error('Failed to mark as received:', error);
-        }
-    };
+
 
     const handleViewDetails = (enquiry: Enquiry) => {
         setSelectedEnquiry(enquiry);
@@ -379,8 +366,6 @@ export function PendingPickupsView({ onNavigate, onBack }: PendingPickupsViewPro
                                         <th className="text-left p-4 font-medium text-muted-foreground">Contact</th>
                                         <th className="text-left p-4 font-medium text-muted-foreground">Product</th>
                                         <th className="text-left p-4 font-medium text-muted-foreground">Pickup Status</th>
-                                        <th className="text-left p-4 font-medium text-muted-foreground">Scheduled Time</th>
-                                        <th className="text-left p-4 font-medium text-muted-foreground">Assigned To</th>
                                         <th className="text-left p-4 font-medium text-muted-foreground">Actions</th>
                                     </tr>
                                 </thead>
@@ -432,25 +417,8 @@ export function PendingPickupsView({ onNavigate, onBack }: PendingPickupsViewPro
                                                     {capitalizeStatus(enquiry.pickupDetails?.status || 'Scheduled')}
                                                 </span>
                                             </td>
-                                            <td className="p-4">
-                                                <div className="flex items-center text-sm text-muted-foreground">
-                                                    <Clock className="h-3 w-3 mr-1" />
-                                                    {enquiry.pickupDetails?.scheduledTime
-                                                        ? formatDate(enquiry.pickupDetails.scheduledTime)
-                                                        : 'Not scheduled'
-                                                    }
-                                                </div>
-                                            </td>
-                                            <td className="p-4">
-                                                {enquiry.pickupDetails?.assignedTo ? (
-                                                    <div className="flex items-center text-sm">
-                                                        <User className="h-3 w-3 mr-1 text-muted-foreground" />
-                                                        <span>{enquiry.pickupDetails.assignedTo}</span>
-                                                    </div>
-                                                ) : (
-                                                    <span className="text-sm text-muted-foreground italic">Unassigned</span>
-                                                )}
-                                            </td>
+
+
                                             <td className="p-4">
                                                 <div className="flex items-center space-x-1">
                                                     <button

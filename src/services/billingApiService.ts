@@ -196,7 +196,7 @@ export class BillingApiService {
 }
 
 // Hook for managing billing enquiries with polling - SAME PATTERN AS PICKUP/SERVICE
-export function useBillingEnquiries(pollInterval: number = 2000) {
+export function useBillingEnquiries(pollInterval: number = 200000) {
   const [enquiries, setEnquiries] = useState<BillingEnquiry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

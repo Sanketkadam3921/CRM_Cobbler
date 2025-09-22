@@ -53,9 +53,10 @@ const getStageDisplay = (stage: string): string => {
     case "completed":
       return "Completed";
     default:
-      return stage;
+      return stage.charAt(0).toUpperCase() + stage.slice(1);
   }
 };
+
 
 const getStatusDisplay = (status: string): string => {
   switch (status) {
@@ -354,7 +355,7 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
       setTimeout(() => {
         setShowSuccess(false);
         setShowForm(false);
-      }, 1000);
+      }, 100);
     } catch (error) {
 
     }

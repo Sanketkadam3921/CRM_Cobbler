@@ -3,6 +3,8 @@ import { Card } from "@/components/ui/card";
 import { Users, Calendar, Package, TrendingUp, ClipboardCheck, AlertTriangle, Truck, Clock, MapPin, RefreshCw } from "lucide-react";
 import { useDashboardData, DashboardData } from "@/services/dashboardApiService";
 import { useDeliveryEnquiries, DeliveryEnquiry } from "@/services/deliveryApiService";
+import { usePickupEnquiries } from "@/services/pickupApiService"; // Import pickup enquiries hook
+import { useServiceEnquiries } from "@/services/serviceApiService"; // Import service enquiries hook
 import { useInventoryItems } from "@/services/inventoryApiService";
 import { AllEnquiriesView } from './AllEnquiriesView';
 import { PendingPickupsView } from './PendingPickupsView';
@@ -13,7 +15,6 @@ const defaultStats = [
   {
     name: "Total Enquiries",
     value: "0",
-
     changeType: "neutral" as const,
     icon: Users,
     redirectTo: "all-enquiries"
@@ -21,7 +22,6 @@ const defaultStats = [
   {
     name: "Pending Pickups",
     value: "0",
-
     changeType: "neutral" as const,
     icon: Calendar,
     redirectTo: "pending-pickups",
@@ -29,7 +29,6 @@ const defaultStats = [
   {
     name: "In Service",
     value: "0",
-
     changeType: "neutral" as const,
     icon: Package,
     redirectTo: "in-service",
@@ -37,7 +36,6 @@ const defaultStats = [
   {
     name: "Service Completion Rate",
     value: "0/0",
-
     changeType: "neutral" as const,
     icon: ClipboardCheck,
     redirectTo: "service-completion",
@@ -108,11 +106,17 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
   const [dynamicStats, setDynamicStats] = useState(defaultStats);
   const [currentView, setCurrentView] = useState<'dashboard' | 'all-enquiries' | 'pending-pickups' | 'in-service' | 'service-completion'>('dashboard');
 
-  // Only use API data - no localStorage fallback
+  // Dashboard data for total enquiries and completion ratio
   const { data: dashboardData, loading, error, refreshData } = useDashboardData();
 
-  // Get delivery enquiries for upcoming deliveries
+  // Get delivery enquiries for upcoming deliveries and in-service count
   const { enquiries: deliveryEnquiries, loading: deliveryLoading, error: deliveryError } = useDeliveryEnquiries();
+
+  // ✅ Get pickup enquiries for ACCURATE pending pickups count
+  const { enquiries: pickupEnquiries, loading: pickupLoading } = usePickupEnquiries(30000);
+
+  // ✅ Get service enquiries for ACCURATE in-service count
+  const { enquiries: serviceEnquiries, loading: serviceLoading } = useServiceEnquiries(30000);
 
   // Get inventory items for low stock alerts
   const { items: inventoryItems, loading: inventoryLoading } = useInventoryItems();
@@ -137,8 +141,23 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
   );
 
   useEffect(() => {
-    if (dashboardData) {
-      // Only update when we have API data
+    if (dashboardData && deliveryEnquiries && pickupEnquiries) {
+      // ✅ Use pickup enquiries for CORRECT pending pickups count (same logic as PendingPickupsView)
+      const pendingPickups = pickupEnquiries.filter(
+        enquiry =>
+          enquiry.currentStage === 'pickup' &&
+          enquiry.pickupDetails?.status !== 'received'
+      ).length;
+
+      // ✅ In-service count from delivery enquiries
+      // Count all service enquiries that are not fully done
+      const inService = serviceEnquiries.filter(enquiry =>
+        enquiry.serviceTypes &&
+        enquiry.serviceTypes.length > 0 &&
+        !enquiry.serviceTypes.every(service => service.status === "done")
+      ).length;
+
+
       setDynamicStats([
         {
           ...defaultStats[0],
@@ -147,12 +166,12 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
         },
         {
           ...defaultStats[1],
-          value: dashboardData.pendingPickups.toString(),
+          value: pendingPickups.toString(), // 🔥 Now using pickup enquiries for accurate count
           changeType: "neutral",
         },
         {
           ...defaultStats[2],
-          value: dashboardData.inService.toString(),
+          value: inService.toString(), // ✅ Now uses service enquiries
           changeType: "warning",
         },
         {
@@ -160,10 +179,10 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
           value: dashboardData.completedDeliveredRatio,
           change: "delivered",
           changeType: "positive",
-        }
+        },
       ]);
     }
-  }, [dashboardData]);
+  }, [dashboardData, deliveryEnquiries, pickupEnquiries, serviceEnquiries]); // ✅ Added serviceEnquiries dependency
 
   // Handle navigation internally
   const handleNavigate = (view: string, action?: string, id?: number) => {
@@ -234,7 +253,7 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
 
         {/* API Status and Refresh */}
         <div className="flex items-center gap-2">
-          {(loading || deliveryLoading) && (
+          {(loading || deliveryLoading || pickupLoading || serviceLoading) && (
             <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           )}
           {error && (
@@ -323,6 +342,7 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
         </div>
       )}
 
+      {/* Rest of the component remains the same */}
       {/* Upcoming Deliveries Card */}
       <Card className="p-4 sm:p-6 bg-white border border-gray-200 shadow-md rounded-2xl">
         <div className="flex items-center justify-between mb-5">

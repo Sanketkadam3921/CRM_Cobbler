@@ -1354,23 +1354,25 @@ export default function ExpenseManagementSystem() {
                     <div className="flex gap-2">
                       <Button
                         size="sm"
-                        variant="outline"
                         onClick={() => handleEdit(expense)}
-                        className="w-full sm:w-auto border-blue-500 text-blue-600 hover:bg-blue-50 hover:text-blue-700 focus:ring-2 focus:ring-blue-400 transition-colors"
+                        className="flex items-center gap-1"
                       >
-                        <Edit className="h-4 w-4 mr-1" />
-                        Edit
+                        <Edit className="h-3 w-3" />
+                        <span className="hidden sm:inline">Edit</span>
                       </Button>
+
+
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button
+                            variant="destructive"
                             size="sm"
-                            variant="outline"
-                            className="border-red-300 text-red-600 hover:bg-red-50 text-xs h-8"
+                            className="flex items-center gap-1"
                           >
-                            <Trash2 className="h-3 w-3 sm:mr-1" />
                             <span className="hidden sm:inline">Delete</span>
                           </Button>
+
+
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>

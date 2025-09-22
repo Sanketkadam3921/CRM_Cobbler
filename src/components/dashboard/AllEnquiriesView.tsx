@@ -151,22 +151,15 @@ export function AllEnquiriesView({ onNavigate, onBack }: AllEnquiriesViewProps) 
                     </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
+                {/* <div className="flex flex-wrap items-center gap-2">
                     {lastUpdate && (
                         <span className="text-xs text-muted-foreground">
                             Last updated: {formatDate(lastUpdate.toISOString())}
                         </span>
                     )}
-                    <button
-                        onClick={refetch}
-                        disabled={loading}
-                        className="flex items-center space-x-1 px-3 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/80 transition-colors disabled:opacity-50"
-                    >
-                        <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-                        <span>Refresh</span>
-                    </button>
 
-                </div>
+
+                </div>*/}
             </div>
 
             {/* Filters */}
@@ -177,7 +170,7 @@ export function AllEnquiriesView({ onNavigate, onBack }: AllEnquiriesViewProps) 
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                         <input
                             type="text"
-                            placeholder="Search by name, phone, or ID..."
+                            placeholder="Search by name, phone, or ID"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
@@ -229,7 +222,7 @@ export function AllEnquiriesView({ onNavigate, onBack }: AllEnquiriesViewProps) 
                                     <td className="p-4">
                                         <div className="flex items-center text-sm">
                                             <Phone className="h-3 w-3 mr-1 text-muted-foreground" />
-                                            {enquiry.phone}
+                                            {enquiry.phone.startsWith("+91") ? enquiry.phone : `+91 ${enquiry.phone}`}
                                         </div>
                                     </td>
                                     <td className="p-4">{enquiry.product}</td>
@@ -246,9 +239,7 @@ export function AllEnquiriesView({ onNavigate, onBack }: AllEnquiriesViewProps) 
                                     <td className="p-4">{formatDate(enquiry.date)}</td>
                                     <td className="p-4">
                                         <div className="flex space-x-2">
-                                            <button onClick={() => handleViewDetails(enquiry)} className="p-1 hover:text-primary">
-                                                <Eye className="h-4 w-4" />
-                                            </button>
+
                                             <button onClick={() => onNavigate("crm", "edit-enquiry", enquiry.id)} className="p-1 hover:text-blue-600">
                                                 <Edit className="h-4 w-4" />
                                             </button>
