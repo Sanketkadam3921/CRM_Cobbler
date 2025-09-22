@@ -408,22 +408,33 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
   };
 
   const handleDelete = async (enquiry: Enquiry) => {
-    if (window.confirm(`Are you sure you want to delete the enquiry for ${enquiry.customerName}?`)) {
-      try {
-        await deleteEnquiry(enquiry.id);
-        toast({
-          title: "Enquiry Deleted",
-          description: `${enquiry.customerName}'s enquiry has been deleted successfully.`,
-          className: "bg-red-50 border-red-200 text-red-800",
-        });
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to delete enquiry",
-          variant: "destructive",
-        });
-      }
-    }
+    toast({
+      title: "Confirm Delete",
+      description: `Are you sure you want to delete the enquiry for ${enquiry.customerName}?`,
+      action: (
+        <button
+          onClick={async () => {
+            try {
+              await deleteEnquiry(enquiry.id);
+              toast({
+                title: "Enquiry Deleted",
+                description: `${enquiry.customerName}'s enquiry has been deleted successfully.`,
+                className: "bg-red-50 border-red-200 text-red-800",
+              });
+            } catch (error) {
+              toast({
+                title: "Error",
+                description: "Failed to delete enquiry",
+                variant: "destructive",
+              });
+            }
+          }}
+          className="bg-red-600 text-white px-3 py-1 rounded-md text-sm hover:bg-red-700"
+        >
+          Delete
+        </button>
+      ),
+    });
   };
 
   const markAsConverted = (enquiry: Enquiry) => {
@@ -556,19 +567,19 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
           <div className="text-lg sm:text-2xl font-bold text-gray-900">
             {statsLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : calculatedStats.totalCurrentMonth}
           </div>
-          <div className="text-xs sm:text-sm text-gray-500">This Month</div>
+          <div className="text-xs sm:text-sm text-gray-500">This Month Total Enquiries</div>
         </Card>
         <Card className="p-3 sm:p-4 bg-white border shadow-sm">
           <div className="text-lg sm:text-2xl font-bold text-black-600">
             {statsLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : calculatedStats.newThisWeek}
           </div>
-          <div className="text-xs sm:text-sm text-gray-500">This Week Pending</div>
+          <div className="text-xs sm:text-sm text-gray-500">This Week Pending Enquiries</div>
         </Card>
         <Card className="p-3 sm:p-4 bg-white border shadow-sm">
           <div className="text-lg sm:text-2xl font-bold text-black-600">
             {statsLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : calculatedStats.converted}
           </div>
-          <div className="text-xs sm:text-sm text-gray-500">Converted</div>
+          <div className="text-xs sm:text-sm text-gray-500">Converted Enquiries</div>
         </Card>
 
       </div>
@@ -1230,6 +1241,15 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                     >
                       <Edit className="h-4 w-4 mr-1" />
                       Edit
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => handleDelete(enquiry)}
+                    >
+                      <Trash2 className="h-3 w-3 mr-1" />
+                      Delete
                     </Button>
                   </div>
                 </div>

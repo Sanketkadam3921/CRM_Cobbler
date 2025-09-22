@@ -518,29 +518,26 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
                 onClick={() => handleNavigate("crm", "add-enquiry")}
                 className="p-3 sm:p-4 text-left rounded-lg border border-border hover:bg-primary/5 hover:border-primary/20 transition-all group"
               >
-                <div className="text-xs sm:text-sm font-medium text-foreground">Add Enquiry</div>
-                <div className="text-xs text-muted-foreground">Create new lead</div>
+                <div className="text-xs sm:text-sm font-medium text-foreground">Add New Enquiry</div>
+                <div className="text-xs text-muted-foreground"></div>
               </button>
               <button
                 onClick={() => handleNavigate("pickup", "schedule-pickup")}
                 className="p-3 sm:p-4 text-left rounded-lg border border-border hover:bg-primary/5 hover:border-primary/20 transition-all group"
               >
                 <div className="text-xs sm:text-sm font-medium text-foreground">Schedule Pickup</div>
-                <div className="text-xs text-muted-foreground">Book collection</div>
               </button>
               <button
                 onClick={() => handleNavigate("inventory", "add-inventory")}
                 className="p-3 sm:p-4 text-left rounded-lg border border-border hover:bg-primary/5 hover:border-primary/20 transition-all group"
               >
                 <div className="text-xs sm:text-sm font-medium text-foreground">Add Inventory</div>
-                <div className="text-xs text-muted-foreground">Update stock</div>
               </button>
               <button
                 onClick={() => handleNavigate("expenses", "add-expense")}
                 className="p-3 sm:p-4 text-left rounded-lg border border-border hover:bg-primary/5 hover:border-primary/20 transition-all group"
               >
                 <div className="text-xs sm:text-sm font-medium text-foreground">Add Expense</div>
-                <div className="text-xs text-muted-foreground">Record cost</div>
               </button>
             </div>
           </Card>

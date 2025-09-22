@@ -1198,7 +1198,7 @@ export default function ExpenseManagementSystem() {
               <div className="relative w-full">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4 sm:h-5 sm:w-5" />
                 <Input
-                  placeholder="Search Expenses"
+                  placeholder="Search expenses"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-8 sm:pl-10 border-slate-300 focus:border-blue-500 text-sm sm:text-base"

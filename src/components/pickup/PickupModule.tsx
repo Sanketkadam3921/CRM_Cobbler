@@ -230,7 +230,7 @@ export function PickupModule() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-2 gap-2 sm:gap-4">
         <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
           <div className="flex items-center justify-between">
             <div>
@@ -238,7 +238,7 @@ export function PickupModule() {
                 {statsLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : calculatedStats.scheduledPickups}
               </div>
               <div className="text-xs sm:text-sm text-muted-foreground">
-                Scheduled Pickups
+                Total Scheduled Pickups
               </div>
             </div>
           </div>
@@ -250,23 +250,12 @@ export function PickupModule() {
                 {statsLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : calculatedStats.assignedPickups}
               </div>
               <div className="text-xs sm:text-sm text-muted-foreground">
-                Assigned
+                Total Assigned Pickups
               </div>
             </div>
           </div>
         </Card>
-        <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-lg sm:text-2xl font-bold text-foreground">
-                {statsLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : calculatedStats.collectedPickups}
-              </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">
-                Collected
-              </div>
-            </div>
-          </div>
-        </Card>
+
 
       </div>
 

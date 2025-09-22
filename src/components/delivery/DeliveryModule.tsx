@@ -478,7 +478,7 @@ export function DeliveryModule() {
               zIndex: '1'
             }} />
             <Input
-              placeholder="Search Deliveries"
+              placeholder="Search deliveries"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
