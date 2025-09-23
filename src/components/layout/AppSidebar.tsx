@@ -62,7 +62,10 @@ export function AppSidebar({ currentView, onViewChange }: AppSidebarProps) {
       collapsible="icon"
     >
       <SidebarHeader className="p-6">
-        <div className="flex items-center space-x-3">
+        <button
+          onClick={() => handleNavigation("dashboard")} // ✅ go to dashboard route
+          className="flex items-center space-x-3 w-full text-left focus:outline-none"
+        >
           <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
             <Package className="h-6 w-6 text-white" />
           </div>
@@ -70,7 +73,7 @@ export function AppSidebar({ currentView, onViewChange }: AppSidebarProps) {
             <h2 className="text-lg font-bold text-foreground">Cobbler CRM</h2>
             <p className="text-sm text-muted-foreground">Business Management</p>
           </div>
-        </div>
+        </button>
       </SidebarHeader>
 
       <SidebarContent className="px-4">

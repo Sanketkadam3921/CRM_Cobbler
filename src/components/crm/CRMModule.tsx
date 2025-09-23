@@ -1245,12 +1245,13 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                     <Button
                       variant="destructive"
                       size="sm"
-                      className="flex-1"
                       onClick={() => handleDelete(enquiry)}
+                      className="w-full sm:w-auto flex items-center justify-center gap-1 bg-red-600 hover:bg-red-700 text-white"
                     >
-                      <Trash2 className="h-3 w-3 mr-1" />
+                      <Trash2 className="h-4 w-4" />
                       Delete
                     </Button>
+
                   </div>
                 </div>
               )}

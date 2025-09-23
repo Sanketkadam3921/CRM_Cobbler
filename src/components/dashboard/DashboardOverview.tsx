@@ -260,11 +260,12 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
           <button
             onClick={refreshData}
             disabled={loading}
-            className="text-xs px-2 py-1 bg-primary text-primary-foreground rounded hover:bg-primary/80 transition-colors disabled:opacity-50 flex items-center gap-1"
+            className="flex items-center gap-2 px-4 h-9 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
           >
-            <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </button>
+
         </div>
       </div>
 
@@ -343,17 +344,18 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
       {/* Rest of the component remains the same */}
       {/* Upcoming Deliveries Card */}
       <Card className="p-4 sm:p-6 bg-white border border-gray-200 shadow-md rounded-2xl">
-        <div className="flex items-center justify-between mb-5">
-          <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-5 gap-2">
+          <h3 className="text-lg font-semibold text-gray-900">
             Upcoming Deliveries (Next 3 Days)
           </h3>
           <button
             onClick={() => handleNavigate("delivery")}
-            className="text-xs px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+            className="whitespace-nowrap text-xs px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm self-start sm:self-auto"
           >
             View All
           </button>
         </div>
+
 
         {deliveryLoading ? (
           <div className="flex items-center justify-center py-10">

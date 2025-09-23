@@ -29,6 +29,7 @@ import { Enquiry, BillingDetails, BillingItem, BillingEnquiry, BillingCreateRequ
 // import { enquiriesStorage, workflowHelpers, businessInfoStorage } from "@/utils/localStorage";
 import { businessInfoStorage } from "@/utils/localStorage"; // Keep businessInfoStorage as requested
 import { useBillingEnquiries, useBillingStats, billingApiService } from "@/services/billingApiService";
+import { SettingsApiService } from "@/services/settingsApiService";
 import { InvoiceDisplay } from "./InvoiceDisplay";
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -54,10 +55,73 @@ export function BillingModule() {
   const { enquiries, loading: enquiriesLoading, error: enquiriesError, refetch, createBilling, moveToDelivery } = useBillingEnquiries(200000);
   const { stats, loading: statsLoading, error: statsError } = useBillingStats();
 
+  // Business info state
+  const [businessInfo, setBusinessInfo] = useState<any>(null);
+  const [businessInfoLoading, setBusinessInfoLoading] = useState(false);
+
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedEnquiry, setSelectedEnquiry] = useState<BillingEnquiry | null>(null);
   const [showBillingDialog, setShowBillingDialog] = useState<number | null>(null);
   const [showInvoiceDialog, setShowInvoiceDialog] = useState<boolean>(false);
+
+  // Load business info from API
+  const loadBusinessInfo = async () => {
+    try {
+      setBusinessInfoLoading(true);
+      console.log('[BillingModule] Loading business info from API...');
+
+      const businessData = await SettingsApiService.getBusinessInfo();
+      if (businessData) {
+        setBusinessInfo(businessData);
+        // Also update localStorage as fallback
+        businessInfoStorage.save(businessData);
+        console.log('[BillingModule] Business info loaded successfully:', businessData.businessName);
+      } else {
+        // Fallback to localStorage if API returns null
+        const fallbackData = businessInfoStorage.get();
+        setBusinessInfo(fallbackData);
+        console.log('[BillingModule] Using fallback business info from localStorage');
+      }
+    } catch (error) {
+      console.error('[BillingModule] Failed to load business info from API:', error);
+      // Fallback to localStorage on error
+      const fallbackData = businessInfoStorage.get();
+      setBusinessInfo(fallbackData);
+      console.log('[BillingModule] Using fallback business info from localStorage due to error');
+    } finally {
+      setBusinessInfoLoading(false);
+    }
+  };
+
+  // Load business info on component mount
+  useEffect(() => {
+    loadBusinessInfo();
+  }, []);
+
+  // Refresh business info when component becomes visible (e.g., when user navigates from Settings)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log('[BillingModule] Component became visible, refreshing business info...');
+        loadBusinessInfo();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Also refresh when window gains focus (user switches back to tab)
+    const handleFocus = () => {
+      console.log('[BillingModule] Window gained focus, refreshing business info...');
+      loadBusinessInfo();
+    };
+
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, []);
 
   // Billing form state
   const [billingForm, setBillingForm] = useState<Partial<BillingDetails>>({
@@ -434,7 +498,8 @@ export function BillingModule() {
 
     try {
       console.log('🔄 Preparing billing data for API...');
-      const businessInfo = businessInfoStorage.get();
+      // Use business info from state (loaded from API)
+      const currentBusinessInfo = businessInfo || businessInfoStorage.get();
 
       const billingData: BillingCreateRequest = {
         finalAmount: billingForm.finalAmount || 0,
@@ -446,7 +511,7 @@ export function BillingModule() {
         customerName: selectedEnquiry.customerName,
         customerPhone: selectedEnquiry.phone,
         customerAddress: selectedEnquiry.address,
-        businessInfo,
+        businessInfo: currentBusinessInfo,
         notes: billingForm.notes || "",
         items: billingForm.items || []
       };
@@ -487,8 +552,8 @@ export function BillingModule() {
 
   // Convert BillingEnquiry to Enquiry for InvoiceDisplay compatibility
   const convertBillingEnquiryToEnquiry = (billingEnquiry: BillingEnquiry): Enquiry => {
-    // FIXED: Get business info from localStorage instead of DB
-    const businessInfo = businessInfoStorage.get();
+    // Use business info from state (loaded from API)
+    const currentBusinessInfo = businessInfo || businessInfoStorage.get();
 
     return {
       id: billingEnquiry.id,
@@ -523,7 +588,7 @@ export function BillingModule() {
         // FIXED: Override billingDetails with business info from localStorage
         billingDetails: billingEnquiry.serviceDetails.billingDetails ? {
           ...billingEnquiry.serviceDetails.billingDetails,
-          businessInfo: businessInfo
+          businessInfo: currentBusinessInfo
         } : undefined
       } : undefined
     };
