@@ -831,7 +831,7 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                   setFormErrors({});
                   setShowSuccess(false);
                 }}
-                className="w-24 h-10 bg-red-500 text-white hover:bg-red-600 hover:text-white font-medium"
+                className="bg-red-500 text-white hover:bg-red-600 hover:text-white font-medium w-full sm:w-auto"
               >
                 Cancel
               </Button>

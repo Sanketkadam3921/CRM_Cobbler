@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { usePickupEnquiries, PickupApiService } from "@/services/pickupApiService";
 import { Enquiry } from "@/types";
+import { FormControl, InputLabel, Select, MenuItem } from "@mui/material";
 
 interface PendingPickupsViewProps {
     onNavigate: (view: string, action?: string, id?: number) => void;
@@ -209,18 +210,20 @@ export function PendingPickupsView({ onNavigate, onBack }: PendingPickupsViewPro
                     </div>
 
                     {/* Status Filter */}
-                    <div className="sm:w-48">
-                        <select
+                    <FormControl size="small" className="sm:w-48 w-full">
+                        <InputLabel id="status-filter-label">Status</InputLabel>
+                        <Select
+                            labelId="status-filter-label"
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}
-                            className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-sm"
+                            label="Status"
                         >
-                            <option value="all">All Status</option>
-                            <option value="scheduled">Scheduled</option>
-                            <option value="assigned">Assigned</option>
-                            <option value="collected">Collected</option>
-                        </select>
-                    </div>
+                            <MenuItem value="all">All Status</MenuItem>
+                            <MenuItem value="scheduled">Scheduled</MenuItem>
+                            <MenuItem value="assigned">Assigned</MenuItem>
+                            <MenuItem value="collected">Collected</MenuItem>
+                        </Select>
+                    </FormControl>
                 </div>
 
                 {/* Results Summary */}

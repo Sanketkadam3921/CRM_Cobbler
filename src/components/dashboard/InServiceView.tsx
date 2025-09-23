@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { useServiceEnquiries, serviceApiService } from "@/services/serviceApiService";
 import { ServiceDetails, ServiceTypeStatus } from "@/types";
-
+import { FormControl, InputLabel, Select, MenuItem } from "@mui/material"
 interface InServiceViewProps {
     onNavigate: (view: string, action?: string, id?: number) => void;
     onBack: () => void;
@@ -219,17 +219,19 @@ export function InServiceView({ onNavigate, onBack }: InServiceViewProps) {
                     </div>
 
                     {/* Status Filter */}
-                    <div className="sm:w-48">
-                        <select
+                    <FormControl size="small" className="sm:w-48 w-full">
+                        <InputLabel id="status-filter-label">Status</InputLabel>
+                        <Select
+                            labelId="status-filter-label"
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}
-                            className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-sm"
+                            label="Status"
                         >
-                            <option value="all">All Status</option>
-                            <option value="pending">Pending</option>
-                            <option value="in progress">In Progress</option>
-                        </select>
-                    </div>
+                            <MenuItem value="all">All Status</MenuItem>
+                            <MenuItem value="pending">Pending</MenuItem>
+                            <MenuItem value="in progress">In Progress</MenuItem>
+                        </Select>
+                    </FormControl>
                 </div>
 
                 {/* Results Summary */}

@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 
 // API Configuration
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (
-  typeof window !== 'undefined' && window.location.origin !== 'http://localhost:5173' 
+  typeof window !== 'undefined' && window.location.origin !== 'http://localhost:5173'
     ? `${window.location.origin}/api`
     : 'http://localhost:3001/api'
 );
@@ -28,7 +28,7 @@ class ApiClient {
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
-    
+
     const config: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
@@ -40,7 +40,7 @@ class ApiClient {
 
     try {
       const response = await fetch(url, config);
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
@@ -100,11 +100,11 @@ export class EnquiryApiService {
   } = {}): Promise<PaginatedResponse<Enquiry>> {
     try {
       const response = await apiClient.get<ApiResponse<PaginatedResponse<Enquiry>>>('/enquiries', filters);
-      
+
       if (!response.success) {
         throw new Error(response.error || 'Failed to fetch enquiries');
       }
-      
+
       return response.data!;
     } catch (error) {
       console.error('Failed to get enquiries:', error);
@@ -116,11 +116,11 @@ export class EnquiryApiService {
   static async getById(id: number): Promise<Enquiry> {
     try {
       const response = await apiClient.get<ApiResponse<Enquiry>>(`/enquiries/${id}`);
-      
+
       if (!response.success) {
         throw new Error(response.error || 'Failed to fetch enquiry');
       }
-      
+
       return response.data!;
     } catch (error) {
       console.error(`Failed to get enquiry ${id}:`, error);
@@ -132,11 +132,11 @@ export class EnquiryApiService {
   static async create(enquiryData: Omit<Enquiry, 'id'>): Promise<Enquiry> {
     try {
       const response = await apiClient.post<ApiResponse<Enquiry>>('/enquiries', enquiryData);
-      
+
       if (!response.success) {
         throw new Error(response.error || 'Failed to create enquiry');
       }
-      
+
       return response.data!;
     } catch (error) {
       console.error('Failed to create enquiry:', error);
@@ -148,11 +148,11 @@ export class EnquiryApiService {
   static async update(id: number, updates: Partial<Enquiry>): Promise<Enquiry> {
     try {
       const response = await apiClient.put<ApiResponse<Enquiry>>(`/enquiries/${id}`, updates);
-      
+
       if (!response.success) {
         throw new Error(response.error || 'Failed to update enquiry');
       }
-      
+
       return response.data!;
     } catch (error) {
       console.error(`Failed to update enquiry ${id}:`, error);
@@ -164,7 +164,7 @@ export class EnquiryApiService {
   static async delete(id: number): Promise<void> {
     try {
       const response = await apiClient.delete<ApiResponse<void>>(`/enquiries/${id}`);
-      
+
       if (!response.success) {
         throw new Error(response.error || 'Failed to delete enquiry');
       }
@@ -188,11 +188,11 @@ export class EnquiryApiService {
         converted: number;
         pendingFollowUp: number;
       }>>('/enquiries/stats');
-      
+
       if (!response.success) {
         throw new Error(response.error || 'Failed to fetch statistics');
       }
-      
+
       return response.data!;
     } catch (error) {
       console.error('Failed to get statistics:', error);
@@ -204,11 +204,11 @@ export class EnquiryApiService {
   static async markContacted(id: number): Promise<Enquiry> {
     try {
       const response = await apiClient.patch<ApiResponse<Enquiry>>(`/enquiries/${id}/contact`);
-      
+
       if (!response.success) {
         throw new Error(response.error || 'Failed to mark enquiry as contacted');
       }
-      
+
       return response.data!;
     } catch (error) {
       console.error(`Failed to mark enquiry ${id} as contacted:`, error);
@@ -222,11 +222,11 @@ export class EnquiryApiService {
       const response = await apiClient.patch<ApiResponse<Enquiry>>(`/enquiries/${id}/convert`, {
         quotedAmount
       });
-      
+
       if (!response.success) {
         throw new Error(response.error || 'Failed to convert enquiry');
       }
-      
+
       return response.data!;
     } catch (error) {
       console.error(`Failed to convert enquiry ${id}:`, error);
@@ -240,11 +240,11 @@ export class EnquiryApiService {
       const response = await apiClient.patch<ApiResponse<Enquiry>>(`/enquiries/${id}/stage`, {
         stage
       });
-      
+
       if (!response.success) {
         throw new Error(response.error || 'Failed to transition enquiry stage');
       }
-      
+
       return response.data!;
     } catch (error) {
       console.error(`Failed to transition enquiry ${id} to stage ${stage}:`, error);
@@ -256,11 +256,11 @@ export class EnquiryApiService {
   static async getByStage(stage: string): Promise<Enquiry[]> {
     try {
       const response = await apiClient.get<ApiResponse<Enquiry[]>>(`/enquiries/stage/${stage}`);
-      
+
       if (!response.success) {
         throw new Error(response.error || 'Failed to fetch enquiries by stage');
       }
-      
+
       return response.data!;
     } catch (error) {
       console.error(`Failed to get enquiries by stage ${stage}:`, error);
@@ -279,7 +279,7 @@ export function useEnquiriesWithPolling(pollInterval: number = 30000) {
   const fetchEnquiries = useCallback(async () => {
     try {
       setError(null);
-      const result = await EnquiryApiService.getAll({ limit: 1000 }); // Get all enquiries
+      const result = await EnquiryApiService.getAll({ limit: 100000 }); // Get all enquiries
       setEnquiries(result.data);
       setLastUpdate(new Date());
     } catch (err) {
@@ -309,18 +309,18 @@ export function useEnquiriesWithPolling(pollInterval: number = 30000) {
         ...enquiryData,
         id: Date.now(), // Temporary ID
       };
-      
+
       // Add to state immediately for instant feedback
       setEnquiries(prev => [optimisticEnquiry, ...prev]);
-      
+
       // Make actual API call
       const createdEnquiry = await EnquiryApiService.create(enquiryData);
-      
+
       // Replace optimistic enquiry with real one
-      setEnquiries(prev => 
+      setEnquiries(prev =>
         prev.map(e => e.id === optimisticEnquiry.id ? createdEnquiry : e)
       );
-      
+
       return createdEnquiry;
     } catch (error) {
       // Remove optimistic enquiry on error
@@ -332,18 +332,18 @@ export function useEnquiriesWithPolling(pollInterval: number = 30000) {
   const updateEnquiryOptimistic = useCallback(async (id: number, updates: Partial<Enquiry>) => {
     try {
       // Update optimistically
-      setEnquiries(prev => 
+      setEnquiries(prev =>
         prev.map(e => e.id === id ? { ...e, ...updates } : e)
       );
-      
+
       // Make actual API call
       const updatedEnquiry = await EnquiryApiService.update(id, updates);
-      
+
       // Replace with real updated enquiry
-      setEnquiries(prev => 
+      setEnquiries(prev =>
         prev.map(e => e.id === id ? updatedEnquiry : e)
       );
-      
+
       return updatedEnquiry;
     } catch (error) {
       // Revert optimistic update on error
@@ -356,7 +356,7 @@ export function useEnquiriesWithPolling(pollInterval: number = 30000) {
     try {
       // Remove optimistically
       setEnquiries(prev => prev.filter(e => e.id !== id));
-      
+
       // Make actual API call
       await EnquiryApiService.delete(id);
     } catch (error) {
@@ -404,9 +404,9 @@ export function useCrmStats() {
 
   useEffect(() => {
     fetchStats();
-    
+
     // Refresh stats every 30 seconds
-    const interval = setInterval(fetchStats, 30000);
+    const interval = setInterval(fetchStats, 300000);
     return () => clearInterval(interval);
   }, [fetchStats]);
 

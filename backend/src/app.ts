@@ -29,6 +29,8 @@ import settingsRouter from './routes/settings';
 dotenv.config();
 
 const app = express();
+app.set('trust proxy', 1); // Trust first proxy (like AWS ALB, Nginx, or Render)
+
 const PORT = process.env.PORT || 3001;
 const FRONTEND_PORT = process.env.FRONTEND_PORT || 8080;
 

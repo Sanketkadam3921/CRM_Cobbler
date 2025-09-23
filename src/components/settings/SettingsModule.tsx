@@ -25,6 +25,32 @@ import { toast } from "sonner";
 //   { id: 3, name: "Mahesh Singh", role: "Junior Technician", email: "mahesh@example.com", phone: "+91 76543 21098", status: "inactive" },
 // ];
 
+
+// Enhanced email validation function
+const validateEmail = (email: string): boolean => {
+  // More strict email regex pattern
+  const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+
+  // Additional checks for common invalid patterns
+  if (!emailRegex.test(email)) return false;
+
+  // Check for valid TLD (Top Level Domain) - at least 2 characters
+  const parts = email.split('@');
+  if (parts.length !== 2) return false;
+
+  const domain = parts[1];
+  const domainParts = domain.split('.');
+
+  // Must have at least one dot in domain
+  if (domainParts.length < 2) return false;
+
+  // Last part (TLD) should be at least 2 characters and only letters
+  const tld = domainParts[domainParts.length - 1];
+  if (tld.length < 2 || !/^[a-zA-Z]+$/.test(tld)) return false;
+
+  return true;
+};
+
 export function SettingsModule() {
   // ADDED: Loading states - Reason: Handle async API operations with proper user feedback
   const [isLoading, setIsLoading] = useState(false);
@@ -160,9 +186,14 @@ export function SettingsModule() {
     if (businessInfo.phone && !/^[0-9]{10}$/.test(businessInfo.phone)) {
       errors.phone = "Phone number must be exactly 10 digits";
     }
-    if (businessInfo.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(businessInfo.email)) {
+    // if (businessInfo.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(businessInfo.email)) {
+    //   errors.email = "Please enter a valid email address";
+    // }
+
+    if (businessInfo.email && !validateEmail(businessInfo.email)) {
       errors.email = "Please enter a valid email address";
     }
+
     if (businessInfo.website && businessInfo.website.trim() && !/^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}$/.test(businessInfo.website.replace(/^www\./, ''))) {
       errors.website = "Please enter a valid website URL (e.g., example.com)";
     }
@@ -332,9 +363,14 @@ export function SettingsModule() {
     if (staffFormData.phone && !/^[0-9]{10}$/.test(staffFormData.phone)) {
       errors.push("Phone number must be exactly 10 digits");
     }
-    if (staffFormData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(staffFormData.email)) {
+    // if (staffFormData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(staffFormData.email)) {
+    //   errors.push("Please enter a valid email address");
+    // }
+
+    if (staffFormData.email && !validateEmail(staffFormData.email)) {
       errors.push("Please enter a valid email address");
     }
+
     return errors;
   };
 
@@ -428,7 +464,7 @@ export function SettingsModule() {
                         )}
                       </div>
                       <p className="text-xs text-slate-500">
-                        Recommended: 200x200px, PNG or JPG format
+                        Recommended: PNG, JPG, JPEG format
                       </p>
                       <input
                         id="logoUpload"
@@ -822,13 +858,14 @@ export function SettingsModule() {
                   </h2>
                   <Button
                     type="button"
-                    variant="outline"
-                    size="sm"
+                    variant="ghost"
+                    size="icon"
                     onClick={resetStaffForm}
                     disabled={isStaffLoading}
-                    className="p-2"
+                    className="text-gray-600 hover:text-black hover:bg-transparent"
                   >
-                    <X className="h-4 w-4 text-red-600" />
+                    <X className="h-4 w-4" />
+                    <span className="sr-only">Close</span>
                   </Button>
                 </div>
 
@@ -855,13 +892,17 @@ export function SettingsModule() {
 
                   <div>
                     <Label htmlFor="staffRole" className="text-sm font-medium text-gray-700">
-                      Role/Position <span className="text-red-500">*</span>
+                      Role/Position <span className="text-gray-600">*</span>
                     </Label>
                     <Input
                       id="staffRole"
                       type="text"
                       value={staffFormData.role}
-                      onChange={(e) => setStaffFormData({ ...staffFormData, role: e.target.value })}
+                      onChange={(e) => {
+                        // Allow only letters, spaces, and common role characters
+                        let value = e.target.value.replace(/[^a-zA-Z\s&.,'-]/g, '');
+                        setStaffFormData({ ...staffFormData, role: value });
+                      }}
                       placeholder="e.g., Senior Technician, Pickup Staff"
                       required
                       className="mt-1"
@@ -871,7 +912,7 @@ export function SettingsModule() {
 
                   <div>
                     <Label htmlFor="staffEmail" className="text-sm font-medium text-gray-700">
-                      Email Address <span className="text-red-500">*</span>
+                      Email Address <span className="text-gray-600">*</span>
                     </Label>
                     <Input
                       id="staffEmail"
@@ -887,7 +928,7 @@ export function SettingsModule() {
 
                   <div>
                     <Label htmlFor="staffPhone" className="text-sm font-medium text-gray-700">
-                      Phone Number <span className="text-red-500">*</span>
+                      Phone Number <span className="text-gray-600">*</span>
                     </Label>
                     <Input
                       id="staffPhone"
@@ -935,8 +976,7 @@ export function SettingsModule() {
                   <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 mt-4 sm:mt-6">
                     <Button
                       type="button"
-                      variant="outline"
-                      className="flex-1 w-full sm:w-auto"
+                      className="flex-1 w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white"
                       onClick={resetStaffForm}
                       disabled={isStaffLoading}
                     >
@@ -974,13 +1014,14 @@ export function SettingsModule() {
                   </h2>
                   <Button
                     type="button"
-                    variant="outline"
-                    size="sm"
+                    variant="ghost"
+                    size="icon"
                     onClick={() => setShowDeleteConfirm(null)}
                     disabled={isStaffLoading}
-                    className="p-2"
+                    className="text-gray-600 hover:text-black hover:bg-transparent"
                   >
-                    <X className="h-4 w-4 text-red-600" />
+                    <X className="h-4 w-4" />
+                    <span className="sr-only">Close</span>
                   </Button>
                 </div>
 

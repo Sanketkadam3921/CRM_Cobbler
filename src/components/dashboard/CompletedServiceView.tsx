@@ -19,7 +19,7 @@ import {
     Truck
 } from "lucide-react";
 import { useCompletedEnquiries, CompletedEnquiry } from "@/services/completedApiService";
-
+import { FormControl, InputLabel, Select, MenuItem } from "@mui/material"
 interface CompletedServicesViewProps {
     onNavigate: (view: string, action?: string, id?: number) => void;
     onBack: () => void;
@@ -211,18 +211,20 @@ export function CompletedServicesView({ onNavigate, onBack }: CompletedServicesV
                     </div>
 
                     {/* Date Filter */}
-                    <div className="sm:w-48">
-                        <select
+                    <FormControl size="small" className="sm:w-48 w-full">
+                        <InputLabel id="date-filter-label">Date</InputLabel>
+                        <Select
+                            labelId="date-filter-label"
                             value={dateFilter}
                             onChange={(e) => setDateFilter(e.target.value)}
-                            className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-sm"
+                            label="Date"
                         >
-                            <option value="all">All Time</option>
-                            <option value="today">Today</option>
-                            <option value="week">This Week</option>
-                            <option value="month">This Month</option>
-                        </select>
-                    </div>
+                            <MenuItem value="all">All Time</MenuItem>
+                            <MenuItem value="today">Today</MenuItem>
+                            <MenuItem value="week">This Week</MenuItem>
+                            <MenuItem value="month">This Month</MenuItem>
+                        </Select>
+                    </FormControl>
                 </div>
 
                 {/* Results Summary */}

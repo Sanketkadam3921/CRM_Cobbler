@@ -207,7 +207,7 @@ export class PickupApiService {
   }
 }
 // Hook for managing pickup enquiries with polling (FIXED POLLING INTERVAL)
-export function usePickupEnquiries(pollInterval: number = 2000) {
+export function usePickupEnquiries(pollInterval: number = 20000) {
   const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -317,7 +317,7 @@ export function usePickupEnquiries(pollInterval: number = 2000) {
 }
 
 // Hook for pickup statistics
-export function usePickupStats(pollInterval: number = 2000) {
+export function usePickupStats(pollInterval: number = 500000) {
   const [stats, setStats] = useState<{
     scheduledPickups: number;
     assignedPickups: number;

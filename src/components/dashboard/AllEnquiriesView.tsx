@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useEnquiriesWithPolling } from "@/services/enquiryApiService";
 import { Enquiry } from "@/types";
+import { FormControl, InputLabel, Select, MenuItem } from "@mui/material";
 
 interface AllEnquiriesViewProps {
     onNavigate: (view: string, action?: string, id?: number) => void;
@@ -163,21 +164,23 @@ export function AllEnquiriesView({ onNavigate, onBack }: AllEnquiriesViewProps) 
                     </div>
 
                     {/* Stage Filter */}
-                    <div className="sm:w-48">
-                        <select
+                    <FormControl size="small" className="sm:w-48 w-full">
+                        <InputLabel id="stage-filter-label">Stage</InputLabel>
+                        <Select
+                            labelId="stage-filter-label"
                             value={stageFilter}
                             onChange={(e) => setStageFilter(e.target.value)}
-                            className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                            label="Stage"
                         >
-                            <option value="all">All Stages</option>
-                            <option value="enquiry">Enquiry</option>
-                            <option value="pickup">Pickup</option>
-                            <option value="service">Service</option>
-                            <option value="billing">Billing</option>
-                            <option value="delivery">Delivery</option>
-                            <option value="completed">Completed</option>
-                        </select>
-                    </div>
+                            <MenuItem value="all">All Stages</MenuItem>
+                            <MenuItem value="enquiry">Enquiry</MenuItem>
+                            <MenuItem value="pickup">Pickup</MenuItem>
+                            <MenuItem value="service">Service</MenuItem>
+                            <MenuItem value="billing">Billing</MenuItem>
+                            <MenuItem value="delivery">Delivery</MenuItem>
+                            <MenuItem value="completed">Completed</MenuItem>
+                        </Select>
+                    </FormControl>
                 </div>
             </Card>
 
