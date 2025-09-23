@@ -132,6 +132,8 @@ export function ServiceModule() {
           title: "Error",
           description: "Service type not found. Please try again.",
           variant: "destructive",
+          duration: 3000, // 3 seconds
+
         });
         return;
       }
@@ -148,6 +150,8 @@ export function ServiceModule() {
         title: "Service Started!",
         description: `${serviceType} has been started for enquiry #${enquiryId}`,
         className: "bg-blue-50 border-blue-200 text-blue-800",
+        duration: 3000, // 3 seconds
+
       });
 
       // Send WhatsApp notification (simulated)
@@ -156,6 +160,8 @@ export function ServiceModule() {
           title: "WhatsApp Notification",
           description: `WhatsApp message sent to ${enquiry.customerName}: "Your ${enquiry.product} has been sent to ${department} for ${serviceType} work."`,
           className: "bg-blue-50 border-blue-200 text-blue-800",
+          duration: 3000, // 3 seconds
+
         });
       }
     } catch (error) {
@@ -164,6 +170,8 @@ export function ServiceModule() {
         title: "Error",
         description: "Failed to start service. Please try again.",
         variant: "destructive",
+        duration: 3000, // 3 seconds
+
       });
     }
   };
@@ -182,6 +190,8 @@ export function ServiceModule() {
           title: "Error",
           description: "Service type not found. Please try again.",
           variant: "destructive",
+          duration: 3000, // 3 seconds
+
         });
         return;
       }
@@ -197,6 +207,8 @@ export function ServiceModule() {
         title: "Service Completed!",
         description: `${serviceType} has been completed for enquiry #${enquiryId}`,
         className: "bg-green-50 border-green-200 text-green-800",
+        duration: 3000, // 3 seconds
+
       });
 
       // Send WhatsApp notification (simulated)
@@ -205,6 +217,8 @@ export function ServiceModule() {
           title: "WhatsApp Notification",
           description: `WhatsApp message sent to ${enquiry.customerName}: "Your ${serviceType} work on ${enquiry.product} has been completed."`,
           className: "bg-blue-50 border-blue-200 text-blue-800",
+          duration: 3000, // 3 seconds
+
         });
       }
     } catch (error) {
@@ -213,6 +227,8 @@ export function ServiceModule() {
         title: "Error",
         description: "Failed to complete service. Please try again.",
         variant: "destructive",
+        duration: 3000, // 3 seconds
+
       });
     }
   };
@@ -230,6 +246,8 @@ export function ServiceModule() {
           title: "Error",
           description: "No service details found for this enquiry",
           variant: "destructive",
+          duration: 3000, // 3 seconds
+
         });
         return;
       }
@@ -242,6 +260,8 @@ export function ServiceModule() {
           title: "Cannot Complete",
           description: "All services must be completed before moving to billing stage",
           variant: "destructive",
+          duration: 3000, // 3 seconds
+
         });
         return;
       }
@@ -277,6 +297,8 @@ export function ServiceModule() {
         title: "Workflow Complete!",
         description: "All services completed and moved to billing stage",
         className: "bg-green-50 border-green-200 text-green-800",
+        duration: 3000, // 3 seconds
+
       });
 
       // Send WhatsApp notification (simulated)
@@ -286,6 +308,8 @@ export function ServiceModule() {
           title: "WhatsApp Notification",
           description: `WhatsApp message sent to ${enquiry.customerName}: "All services completed and ready for billing!"`,
           className: "bg-blue-50 border-blue-200 text-blue-800",
+          duration: 3000, // 3 seconds
+
         });
       }
     } catch (error) {
@@ -294,6 +318,8 @@ export function ServiceModule() {
         title: "Error",
         description: "Failed to complete workflow. Please try again.",
         variant: "destructive",
+        duration: 3000, // 3 seconds
+
       });
     }
   };
@@ -306,6 +332,8 @@ export function ServiceModule() {
       title: "Invoice Sent!",
       description: `Invoice sent to ${enquiry.customerName}`,
       className: "bg-green-50 border-green-200 text-green-800",
+      duration: 3000, // 3 seconds
+
     });
   };
 
@@ -320,6 +348,8 @@ export function ServiceModule() {
           title: "No Services Selected",
           description: "Please select at least one service type",
           variant: "destructive",
+          duration: 3000, // 3 seconds
+
         });
         return;
       }
@@ -339,6 +369,8 @@ export function ServiceModule() {
           toast({
             title: "No New Services Added",
             description: "You haven't selected any new services to add.",
+            duration: 3000, // 3 seconds
+
           });
           setShowServiceAssignment(null); // Close the dialog
           return;
@@ -368,6 +400,8 @@ export function ServiceModule() {
         title: "Services Updated!",
         description: `Services have been successfully updated for enquiry #${enquiryId}`,
         className: "bg-green-50 border-green-200 text-green-800",
+        duration: 3000, // 3 seconds
+
       });
 
       // Send WhatsApp notification (simulated)
@@ -377,6 +411,8 @@ export function ServiceModule() {
           title: "WhatsApp Notification",
           description: `WhatsApp message sent to ${enquiry.customerName}: "Services have been assigned for your ${enquiry.product}."`,
           className: "bg-blue-50 border-blue-200 text-blue-800",
+          duration: 3000, // 3 seconds
+
         });
       }
     } catch (error) {
@@ -385,6 +421,8 @@ export function ServiceModule() {
         title: "Error",
         description: "Failed to assign services. Please try again.",
         variant: "destructive",
+        duration: 3000, // 3 seconds
+
       });
     }
   };
@@ -412,6 +450,8 @@ export function ServiceModule() {
         title: "Photo Saved!",
         description: "Overall before photo has been saved",
         className: "bg-green-50 border-green-200 text-green-800",
+        duration: 3000, // 3 seconds
+
       });
     } catch (error) {
       console.error('❌ Failed to save overall before photo:', error);
@@ -419,6 +459,8 @@ export function ServiceModule() {
         title: "Error",
         description: "Failed to save photo. Please try again.",
         variant: "destructive",
+        duration: 3000, // 3 seconds
+
       });
     }
   };
@@ -449,6 +491,8 @@ export function ServiceModule() {
         title: "Final Photo Saved!",
         description: "Final photo has been saved. You can now complete the service.",
         className: "bg-green-50 border-green-200 text-green-800",
+        duration: 3000, // 3 seconds
+
       });
 
     } catch (error) {
@@ -457,6 +501,8 @@ export function ServiceModule() {
         title: "Error",
         description: "Failed to save final photo. Please try again.",
         variant: "destructive",
+        duration: 3000, // 3 seconds
+
       });
     } finally {
       setIsProcessingPhoto(false);
@@ -612,10 +658,24 @@ export function ServiceModule() {
           {filteredEnquiries.map((enquiry) => (
             <Card
               key={enquiry.enquiryId}
-              className="p-4 sm:p-6 bg-gradient-card border-0 shadow-soft hover:shadow-medium transition-all duration-300"
+              className="p-4 sm:p-6 bg-gradient-card border-0 shadow-soft hover:shadow-medium transition-all duration-300 relative"
             >
-              {/* Mobile-optimized header */}
-              <div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-start justify-between mb-4">
+              {/* Badge group - always top-right */}
+              <div className="absolute top-3 right-3 flex flex-col sm:flex-col items-end gap-2">
+                <Badge
+                  className={`${getStatusColor(
+                    getOverallStatus(enquiry.serviceTypes || []) as ServiceStatus
+                  )} text-xs px-2 py-1 rounded-full font-medium`}
+                >
+                  {getOverallStatus(enquiry.serviceTypes || [])}
+                </Badge>
+                <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-xs px-2 py-1 rounded-full font-medium">
+                  {getProgressText(enquiry.serviceTypes || [])}
+                </Badge>
+              </div>
+
+              {/* Header (customer info) */}
+              <div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-start justify-between mb-4 pr-28">
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-foreground text-base sm:text-lg">
                     {enquiry.customerName}
@@ -629,20 +689,12 @@ export function ServiceModule() {
                     </span>
                   </div>
                 </div>
-                <div className="flex flex-row sm:flex-col items-start sm:items-end gap-2">
-                  <Badge className={`${getStatusColor(getOverallStatus(enquiry.serviceTypes || []) as ServiceStatus)} text-xs px-2 py-1 rounded-full font-medium`}>
-                    {getOverallStatus(enquiry.serviceTypes || [])}
-                  </Badge>
-                  <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-xs px-2 py-1 rounded-full font-medium">
-                    {getProgressText(enquiry.serviceTypes || [])}
-                  </Badge>
-                </div>
               </div>
 
               <div className="space-y-3">
-                {/* Product info - mobile optimized */}
-                <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
-                  <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium inline-block w-fit">
+                {/* Product info */}
+                <div className="flex flex-row items-center space-x-2 sm:flex-row sm:items-center">
+                  <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium w-fit">
                     Quantity: {enquiry.quantity}
                   </div>
                   <span className="text-gray-500 text-sm">{enquiry.product}</span>
@@ -654,16 +706,21 @@ export function ServiceModule() {
                   </span>
                 </div>
 
-                {/* Service Types - mobile optimized */}
+                {/* Service Types */}
                 <div className="space-y-2">
                   <h4 className="text-sm font-medium text-foreground">Services:</h4>
                   {enquiry.serviceTypes && enquiry.serviceTypes.length > 0 ? (
                     <div className="space-y-2">
                       {enquiry.serviceTypes.map((service, index) => (
-                        <div key={index} className="flex flex-col sm:flex-row sm:items-center justify-between p-2 bg-muted/50 rounded space-y-2 sm:space-y-0">
+                        <div
+                          key={index}
+                          className="flex flex-col sm:flex-row sm:items-center justify-between p-2 bg-muted/50 rounded space-y-2 sm:space-y-0"
+                        >
                           <div className="flex items-center space-x-2">
                             <span className="text-sm text-foreground">{service.type}</span>
-                            <Badge className={`${getStatusColor(service.status)} text-xs`}>
+                            <Badge
+                              className={`${getStatusColor(service.status)} text-xs`}
+                            >
                               {capitalizeFirst(service.status)}
                             </Badge>
                           </div>
@@ -671,7 +728,12 @@ export function ServiceModule() {
                             size="sm"
                             variant="outline"
                             className="text-xs w-full sm:w-auto"
-                            onClick={() => setSelectedServiceDetail({ enquiryId: enquiry.enquiryId, serviceType: service.type })}
+                            onClick={() =>
+                              setSelectedServiceDetail({
+                                enquiryId: enquiry.enquiryId,
+                                serviceType: service.type,
+                              })
+                            }
                           >
                             <Eye className="h-3 w-3 mr-1" />
                             View
@@ -686,53 +748,45 @@ export function ServiceModule() {
                   )}
                 </div>
 
-                {/* Overall Photos - mobile optimized */}
+                {/* Overall Photos */}
                 <div className="space-y-2">
                   <h4 className="text-sm font-medium text-foreground">Overall Photos:</h4>
                   <div className="grid grid-cols-2 gap-2">
                     {/* Before Photo */}
                     <div className="text-center">
-                      <p className="text-sm font-semibold text-muted-foreground mb-1">Before</p>
+                      <p className="text-sm font-semibold text-muted-foreground mb-1">
+                        Before
+                      </p>
                       {enquiry.overallPhotos?.beforePhoto ? (
                         <img
                           src={enquiry.overallPhotos.beforePhoto}
                           alt="Before service"
                           className="h-20 w-full object-contain rounded border bg-gray-50"
-                          loading="eager"
-                          decoding="sync"
-                          style={{
-                            imageRendering: 'crisp-edges',
-                            transform: 'translateZ(0)',
-                            backfaceVisibility: 'hidden',
-                            WebkitBackfaceVisibility: 'hidden'
-                          } as React.CSSProperties}
                         />
                       ) : (
                         <div className="h-20 bg-muted rounded flex items-center justify-center border">
-                          <span className="text-xs text-muted-foreground text-center px-1">No before photo</span>
+                          <span className="text-xs text-muted-foreground text-center px-1">
+                            No before photo
+                          </span>
                         </div>
                       )}
                     </div>
                     {/* After Photo */}
                     <div className="text-center">
-                      <p className="text-sm font-semibold text-muted-foreground mb-1">After</p>
+                      <p className="text-sm font-semibold text-muted-foreground mb-1">
+                        After
+                      </p>
                       {enquiry.overallPhotos?.afterPhoto ? (
                         <img
                           src={enquiry.overallPhotos.afterPhoto}
                           alt="After service"
                           className="h-20 w-full object-contain rounded border bg-gray-50"
-                          loading="eager"
-                          decoding="sync"
-                          style={{
-                            imageRendering: 'crisp-edges',
-                            transform: 'translateZ(0)',
-                            backfaceVisibility: 'hidden',
-                            WebkitBackfaceVisibility: 'hidden'
-                          } as React.CSSProperties}
                         />
                       ) : (
                         <div className="h-20 bg-muted rounded flex items-center justify-center border">
-                          <span className="text-xs text-muted-foreground text-center px-1">No after photo</span>
+                          <span className="text-xs text-muted-foreground text-center px-1">
+                            No after photo
+                          </span>
                         </div>
                       )}
                     </div>

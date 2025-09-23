@@ -93,12 +93,16 @@ export function PickupModule() {
         title: "Pickup Assigned!",
         description: `Pickup has been assigned to ${assignedTo}`,
         className: "bg-green-50 border-green-200 text-green-800",
+        duration: 3000, // 3 seconds
+
       });
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to assign pickup",
         variant: "destructive",
+        duration: 3000, // 3 seconds
+
       });
     }
   };
@@ -109,6 +113,8 @@ export function PickupModule() {
         title: "Photo Required",
         description: "Please upload a collection proof photo",
         variant: "destructive",
+        duration: 3000, // 3 seconds
+
       });
       return;
     }
@@ -123,6 +129,8 @@ export function PickupModule() {
         title: "Pickup Collected!",
         description: "Pickup has been marked as collected successfully",
         className: "bg-green-50 border-green-200 text-green-800",
+        duration: 3000, // 3 seconds
+
       });
 
       // Send WhatsApp notification (simulated)
@@ -132,6 +140,8 @@ export function PickupModule() {
           title: "WhatsApp Notification",
           description: `WhatsApp message sent to ${enquiry.customerName}: "Your ${enquiry.product} has been successfully collected."`,
           className: "bg-blue-50 border-blue-200 text-blue-800",
+          duration: 3000, // 3 seconds
+
         });
       }
     } catch (error) {
@@ -139,6 +149,8 @@ export function PickupModule() {
         title: "Error",
         description: "Failed to mark pickup as collected",
         variant: "destructive",
+        duration: 3000, // 3 seconds
+
       });
     }
   };
@@ -155,6 +167,8 @@ export function PickupModule() {
           title: "Error",
           description: "Failed to process image. Please try again.",
           variant: "destructive",
+          duration: 3000, // 3 seconds
+
         });
       }
     }
@@ -166,6 +180,8 @@ export function PickupModule() {
         title: "Photo Required",
         description: "Please upload a received condition photo",
         variant: "destructive",
+        duration: 3000, // 3 seconds
+
       });
       return;
     }
@@ -184,6 +200,8 @@ export function PickupModule() {
         title: "Item Received!",
         description: "Item has been received and moved to service department",
         className: "bg-green-50 border-green-200 text-green-800",
+        duration: 3000, // 3 seconds
+
       });
 
       // Send WhatsApp notification (simulated)
@@ -192,6 +210,8 @@ export function PickupModule() {
           title: "WhatsApp Notification",
           description: `WhatsApp message sent to ${enquiry.customerName}: "We have received your ${enquiry.product} and it has been moved to service department."`,
           className: "bg-blue-50 border-blue-200 text-blue-800",
+          duration: 3000, // 3 seconds
+
         });
       }
     } catch (error) {
@@ -199,6 +219,8 @@ export function PickupModule() {
         title: "Error",
         description: "Failed to mark item as received",
         variant: "destructive",
+        duration: 3000, // 3 seconds
+
       });
     }
   };
@@ -212,6 +234,8 @@ export function PickupModule() {
       title: "Invoice Sent!",
       description: `Invoice sent to ${enquiry.customerName}`,
       className: "bg-green-50 border-green-200 text-green-800",
+      duration: 3000, // 3 seconds
+
     });
   };
 
@@ -301,8 +325,7 @@ export function PickupModule() {
             {filteredEnquiries.map((enquiry) => (
               <Card
                 key={enquiry.id}
-                className="p-4 sm:p-6 bg-gradient-card border-0 shadow-soft hover:shadow-medium transition-all duration-300"
-              >
+                className="p-4 sm:p-6 bg-gradient-card border-0 shadow-soft hover:shadow-medium transition-all duration-300 relative"              >
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-4 gap-3">
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-foreground text-base sm:text-lg">
@@ -320,7 +343,7 @@ export function PickupModule() {
                   <Badge
                     className={`${getStatusColor(
                       enquiry.pickupDetails?.status || "scheduled"
-                    )} text-xs self-start`}
+                    )} text-xs absolute top-3 right-3`}
                   >
                     {stringUtils.capitalizeWords(enquiry.pickupDetails?.status || "scheduled")}
                   </Badge>

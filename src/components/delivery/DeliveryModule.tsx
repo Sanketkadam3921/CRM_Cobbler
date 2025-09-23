@@ -229,6 +229,8 @@ export function DeliveryModule() {
         toast({
           title: `WhatsApp message sent to ${enquiry.customerName}!`,
           description: `Your ${enquiry.product} delivery has been scheduled for ${scheduledTime}.`,
+          duration: 3000, // 3 seconds
+
         });
 
       }
@@ -242,6 +244,8 @@ export function DeliveryModule() {
         variant: "destructive",
         title: "Failed to schedule delivery",
         description: "Please try again.",
+        duration: 3000, // 3 seconds
+
       });
     }
   };
@@ -266,6 +270,8 @@ export function DeliveryModule() {
         toast({
           title: `WhatsApp message sent to ${enquiry.customerName}!`,
           description: `Your ${enquiry.product} is out for delivery. Expected delivery: ${enquiry.deliveryDetails?.scheduledTime}`,
+          duration: 3000, // 3 seconds
+
         });
 
       }
@@ -314,6 +320,8 @@ export function DeliveryModule() {
         toast({
           title: `WhatsApp message sent to ${enquiry.customerName}!`,
           description: `Your ${enquiry.product} has been delivered successfully. Thank you for choosing our service!`,
+          duration: 3000, // 3 seconds
+
         });
 
       }
@@ -327,6 +335,8 @@ export function DeliveryModule() {
         variant: "destructive",
         title: "Failed to complete delivery",
         description: "Please try again.",
+        duration: 3000, // 3 seconds
+
       });
     }
   };
@@ -771,6 +781,8 @@ export function DeliveryModule() {
                                   variant: "destructive", // red styling
                                   title: "Missing Scheduled Time",
                                   description: "Please select a scheduled time before proceeding.",
+                                  duration: 3000, // 3 seconds
+
                                 });
                               }
 

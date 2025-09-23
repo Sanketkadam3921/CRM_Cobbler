@@ -38,6 +38,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Enquiry } from "@/types";
 import { useEnquiriesWithPolling, useCrmStats } from "@/services/enquiryApiService";
+import { Card as Card1, CardContent, Stack, Box, Button as Button1 } from "@mui/material";
 
 // Helper function to get business-appropriate stage display
 const getStageDisplay = (stage: string): string => {
@@ -307,6 +308,8 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
           </div>
         ),
         className: "max-w-md bg-orange-50 border-orange-200 text-orange-800",
+        duration: 3000, // 3 seconds
+
       });
 
       return;
@@ -376,6 +379,8 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
         title: `Please fix ${errorCount} error${errorCount > 1 ? 's' : ''}`,
         description: "Please correct the validation errors before saving.",
         variant: "destructive",
+        duration: 3000, // 3 seconds
+
       });
       return;
     }
@@ -390,6 +395,8 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
           title: "Success",
           description: "Enquiry updated successfully",
           className: "bg-green-50 border-green-200 text-green-800",
+          duration: 3000, // 3 seconds
+
         });
       }
     } catch (error) {
@@ -397,6 +404,8 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
         title: "Error",
         description: "Failed to update enquiry",
         variant: "destructive",
+        duration: 3000, // 3 seconds
+
       });
     }
   };
@@ -408,9 +417,16 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
   };
 
   const handleDelete = async (enquiry: Enquiry) => {
+    // Helper function to truncate name for toast display
+    const getTruncatedName = (name: string, maxLength: number = 20) => {
+      return name.length > maxLength ? `${name.substring(0, maxLength)}...` : name;
+    };
+
+    const truncatedName = getTruncatedName(enquiry.customerName);
+
     toast({
       title: "Confirm Delete",
-      description: `Are you sure you want to delete the enquiry for ${enquiry.customerName}?`,
+      description: `Are you sure you want to delete the enquiry for ${truncatedName}?`,
       action: (
         <button
           onClick={async () => {
@@ -418,22 +434,27 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
               await deleteEnquiry(enquiry.id);
               toast({
                 title: "Enquiry Deleted",
-                description: `${enquiry.customerName}'s enquiry has been deleted successfully.`,
+                description: `${truncatedName}'s enquiry has been deleted successfully.`,
                 className: "bg-red-50 border-red-200 text-red-800",
+                duration: 3000, // 3 seconds
+
               });
             } catch (error) {
               toast({
                 title: "Error",
                 description: "Failed to delete enquiry",
                 variant: "destructive",
+                duration: 3000, // 3 seconds
+
               });
             }
           }}
-          className="bg-red-600 text-white px-3 py-1 rounded-md text-sm hover:bg-red-700"
+          className="bg-red-600 text-white px-3 py-1 rounded-md text-sm hover:bg-red-700 flex-shrink-0 ml-2"
         >
           Delete
         </button>
       ),
+
     });
   };
 
@@ -463,6 +484,8 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
         title: "Error",
         description: "Failed to schedule pickup",
         variant: "destructive",
+        duration: 3000, // 3 seconds
+
       });
     }
   };
@@ -1142,55 +1165,73 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                 </div>
               ) : (
                 // ================= View Mode =================
-                <div className="flex flex-col lg:flex-row lg:items-start justify-between space-y-4 lg:space-y-0">
+                <div className="flex flex-col xl:flex-row xl:items-start justify-between space-y-4 xl:space-y-0">
+                  {/* Left section: Customer info */}
                   <div className="flex-1">
-                    <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 mb-3">
-                      <h3 className="font-semibold text-gray-900 text-lg">
-                        {enquiry.customerName}
+                    {/* Mobile/Tablet: Name on separate line, then other info below */}
+                    <div className="mb-3">
+                      {/* Name - always on its own line for mobile/tablet */}
+                      <h3
+                        className="font-semibold text-gray-900 text-lg mb-2 xl:mb-0 xl:inline xl:mr-3 break-words max-w-full"
+                        style={{
+                          wordBreak: 'break-all',
+                          lineHeight: '1.4',
+                          maxWidth: '100%',
+                          overflowWrap: 'break-word'
+                        }}
+                      >
+                        {enquiry.customerName.match(/.{1,25}/g)?.join('\n') || enquiry.customerName}
                       </h3>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Badge className={`text-xs ${getStatusColor(enquiry.status)}`}>
+
+                      {/* Status, Product info - stacked on mobile/tablet, inline on desktop */}
+                      <div className="flex flex-col space-y-2 xl:flex-row xl:items-center xl:space-y-0 xl:space-x-3 xl:inline-flex">
+                        <Badge className={`text-xs w-fit ${getStatusColor(enquiry.status)}`}>
                           {getStatusDisplay(enquiry.status)}
                         </Badge>
-                        <div className="flex items-center space-x-1 text-gray-500">
-                          {getEnquiryIcon(enquiry.inquiryType)}
-                          <span className="text-sm">{enquiry.inquiryType}</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
-                            Quantity: {enquiry.quantity}
+
+                        <div className="flex flex-wrap items-center gap-2">
+                          <div className="flex items-center space-x-1 text-gray-500">
+                            {getEnquiryIcon(enquiry.inquiryType)}
+                            <span className="text-sm">{enquiry.inquiryType}</span>
                           </div>
-                          <span className="text-gray-500 text-sm">{enquiry.product}</span>
+
+                          <div className="flex items-center space-x-2">
+                            <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                              Quantity: {enquiry.quantity}
+                            </div>
+                            <span className="text-gray-500 text-sm">{enquiry.product}</span>
+                          </div>
                         </div>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-sm text-gray-600 mb-3">
+                    {/* Contact info grid - responsive grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2 text-sm text-gray-600 mb-3">
                       <div className="flex items-center space-x-1 text-gray-600">
-                        <Phone className="h-4 w-4" />
+                        <Phone className="h-4 w-4 flex-shrink-0" />
                         <span className="text-sm">
-                          {enquiry.phone.startsWith("+91")
-                            ? enquiry.phone
-                            : `+91 ${enquiry.phone}`}
+                          {enquiry.phone.startsWith("+91") ? enquiry.phone : `+91 ${enquiry.phone}`}
                         </span>
                       </div>
-                      <div className="flex items-center">
+                      <div className="flex items-start">
                         <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                        <span className="ml-1">{enquiry.address || 'No address provided'}</span>
+                        <span className="ml-1 break-words">{enquiry.address || "No address provided"}</span>
                       </div>
                       <div className="flex items-center">
                         <Calendar className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                        <span className="ml-1">
-                          {new Date(enquiry.date).toLocaleDateString("en-GB")}
-                        </span>
+                        <span className="ml-1">{new Date(enquiry.date).toLocaleDateString("en-GB")}</span>
                       </div>
                     </div>
 
-                    <p className="text-gray-700 text-sm sm:text-base mb-3">
-                      {enquiry.message || 'No message provided'}
+                    {/* Message */}
+                    <p className="text-gray-700 text-sm sm:text-base mb-3 break-words">
+                      {enquiry.message || "No message provided"}
                     </p>
+
+                    {/* Contact status */}
                     <div className="mt-3">{getContactStatus(enquiry)}</div>
 
+                    {/* Quoted amount */}
                     {enquiry.status === "converted" && enquiry.quotedAmount && (
                       <div className="mt-2 flex items-center space-x-1 text-green-600">
                         <span className="text-sm font-medium">₹{enquiry.quotedAmount}</span>
@@ -1199,61 +1240,66 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                     )}
                   </div>
 
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 lg:ml-4 min-w-fit">
+                  {/* Right section: Stage badge & Action Buttons */}
+                  <div className="flex flex-col items-start xl:items-end space-y-3 xl:ml-4 xl:min-w-fit w-full xl:w-auto">
+                    {/* Stage badge */}
                     {enquiry.currentStage !== "enquiry" && (
                       <Badge
-                        className={`${getStageBadgeColor(
-                          enquiry.currentStage
-                        )} text-xs px-2 py-1 rounded-full font-medium`}
+                        className={`${getStageBadgeColor(enquiry.currentStage)} text-xs px-2 py-1 rounded-full font-medium w-fit`}
                       >
                         {getStageDisplay(enquiry.currentStage)}
                       </Badge>
                     )}
 
-                    {enquiry.currentStage === "enquiry" && enquiry.status === "new" && (
-                      <Button
-                        size="sm"
-                        onClick={() => markAsConverted(enquiry)}
-                        className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white"
-                      >
-                        <CheckCircle className="h-4 w-4 mr-1" />
-                        Mark as Converted
-                      </Button>
-                    )}
+                    {/* Action buttons - full width on mobile/tablet, auto width on desktop */}
+                    <div className="flex flex-col sm:flex-row gap-2 w-full xl:w-auto">
+                      {enquiry.currentStage === "enquiry" && enquiry.status === "new" && (
+                        <Button
+                          size="sm"
+                          onClick={() => markAsConverted(enquiry)}
+                          className="w-full xl:w-auto bg-blue-600 hover:bg-blue-700 text-white"
+                        >
+                          <CheckCircle className="h-4 w-4 mr-1" />
+                          Mark as Converted
+                        </Button>
+                      )}
 
-                    {enquiry.currentStage === "enquiry" &&
-                      enquiry.status === "converted" && (
+                      {enquiry.currentStage === "enquiry" && enquiry.status === "converted" && (
                         <Button
                           size="sm"
                           onClick={() => schedulePickup(enquiry)}
-                          className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white"
+                          className="w-full xl:w-auto bg-green-600 hover:bg-green-700 text-white"
                         >
                           <ArrowRight className="h-4 w-4 mr-1" />
                           Schedule Pickup
                         </Button>
                       )}
 
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleEdit(enquiry)}
-                      className="w-full sm:w-auto border-blue-500 text-blue-600 hover:bg-blue-50 hover:text-blue-700 focus:ring-2 focus:ring-blue-400 transition-colors"
-                    >
-                      <Edit className="h-4 w-4 mr-1" />
-                      Edit
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleDelete(enquiry)}
-                      className="w-full sm:w-auto flex items-center justify-center gap-1 bg-red-600 hover:bg-red-700 text-white"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      Delete
-                    </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleEdit(enquiry)}
+                        className="w-full xl:w-auto border-blue-500 text-blue-600 hover:bg-blue-50 hover:text-blue-700 focus:ring-2 focus:ring-blue-400 transition-colors"
+                      >
+                        <Edit className="h-4 w-4 mr-1" />
+                        Edit
+                      </Button>
 
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDelete(enquiry)}
+                        className="w-full xl:w-auto flex items-center justify-center gap-1 bg-red-600 hover:bg-red-700 text-white"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Delete
+                      </Button>
+                    </div>
                   </div>
                 </div>
+
+
+
               )}
             </Card>
           ))
@@ -1337,6 +1383,8 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                       description:
                         "Please enter a valid quoted amount of 1 or greater.",
                       variant: "destructive",
+                      duration: 3000, // 3 seconds
+
                     });
                     return;
                   }
@@ -1361,6 +1409,8 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                       title: "Enquiry Converted!",
                       description: `${convertingEnquiry.customerName} has been marked as converted with quoted amount ₹${amount}.`,
                       className: "bg-blue-50 border-blue-200 text-blue-800",
+                      duration: 3000, // 3 seconds
+
                     });
                   }
 
@@ -1372,6 +1422,8 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                     title: "Missing Information",
                     description: "Please enter a quoted amount of 1 or greater.",
                     variant: "destructive",
+                    duration: 3000, // 3 seconds
+
                   });
                 }
               }}

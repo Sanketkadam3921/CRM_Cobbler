@@ -233,7 +233,7 @@ export function CompletedModule() {
           {!enquiriesLoading && filteredEnquiries.map((enquiry) => (
             <Card
               key={enquiry.id}
-              className="p-4 sm:p-6 bg-gradient-card border-0 shadow-soft hover:shadow-medium transition-all duration-300"
+              className="relative p-4 sm:p-6 bg-gradient-card border-0 shadow-soft hover:shadow-medium transition-all duration-300"
             >
               <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-4 gap-3">
                 <div className="flex-1 min-w-0">
@@ -241,25 +241,26 @@ export function CompletedModule() {
                     {enquiry.customerName}
                   </h3>
                   <div className="flex items-center space-x-1 text-gray-600">
-                    <Phone className="h-4 w-4" />
-                    <span className="text-sm">
+                    <Phone className="h-4 w-4 shrink-0" />
+                    <span className="text-sm whitespace-nowrap">
                       {enquiry.phone.startsWith("+91")
                         ? enquiry.phone
                         : `+91 ${enquiry.phone}`}
                     </span>
                   </div>
                 </div>
-                <Badge className="w-fit inline-block bg-green-100 text-green-800 border-green-200 text-xs px-2 py-1 sm:px-3 sm:py-1.5 rounded-full font-medium">
+
+                {/* ✅ Badge at top-right on mobile, inline on larger screens */}
+                <Badge className="w-fit inline-block bg-green-100 text-green-800 border-green-200 text-xs px-2 py-1 sm:px-3 sm:py-1.5 rounded-full font-medium absolute top-2 right-2 sm:static">
                   Completed
                 </Badge>
-
-
               </div>
 
+              {/* rest of your content remains unchanged */}
               <div className="space-y-3">
                 <div className="flex items-center">
                   <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                  <span className="ml-1">{enquiry.address || 'No address provided'}</span>
+                  <span className="ml-1">{enquiry.address || "No address provided"}</span>
                 </div>
 
                 <div className="flex items-center space-x-2">
@@ -272,11 +273,13 @@ export function CompletedModule() {
                 <div className="flex items-center space-x-2">
                   <span className="text-sm font-semibold text-foreground">
                     Final Amount: ₹
-                    {(Number(enquiry.subtotalAmount || 0) + Number(enquiry.gstAmount || 0))
-                      .toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {(Number(enquiry.subtotalAmount || 0) +
+                      Number(enquiry.gstAmount || 0)).toLocaleString("en-IN", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
                   </span>
                 </div>
-
 
                 <div className="flex items-center space-x-2">
                   <span className="text-sm text-foreground">
@@ -287,7 +290,8 @@ export function CompletedModule() {
                 {enquiry.deliveredAt && (
                   <div className="flex items-center space-x-2">
                     <span className="text-sm text-foreground">
-                      <span className="font-bold">Delivered:</span> {formatDateTime(enquiry.deliveredAt)}
+                      <span className="font-bold">Delivered:</span>{" "}
+                      {formatDateTime(enquiry.deliveredAt)}
                     </span>
                   </div>
                 )}
@@ -295,11 +299,13 @@ export function CompletedModule() {
                 {enquiry.deliveryMethod && (
                   <div className="flex items-center space-x-2">
                     <span className="text-sm text-foreground">
-                      <span className="font-bold">Delivery:</span> {enquiry.deliveryMethod === 'customer-pickup' ? 'Customer Pickup' : 'Home Delivery'}
+                      <span className="font-bold">Delivery:</span>{" "}
+                      {enquiry.deliveryMethod === "customer-pickup"
+                        ? "Customer Pickup"
+                        : "Home Delivery"}
                     </span>
                   </div>
                 )}
-
 
                 {enquiry.deliveryNotes && (
                   <div className="space-y-2">
@@ -310,18 +316,8 @@ export function CompletedModule() {
                   </div>
                 )}
               </div>
-
-              {/* <div className="flex justify-end mt-4">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="text-xs sm:text-sm"
-                >
-                  <Eye className="h-3 w-3 mr-1" />
-                  View Details
-                </Button>
-              </div> */}
             </Card>
+
           ))}
         </div>
 

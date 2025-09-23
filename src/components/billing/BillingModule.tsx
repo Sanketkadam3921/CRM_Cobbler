@@ -449,6 +449,8 @@ export function BillingModule() {
         title: "Please select an enquiry",
         description: "You must select an enquiry before proceeding.",
         className: "max-w-md bg-red-50 border-red-200 text-red-800",
+        duration: 3000, // 3 seconds
+
       });
       return;
     }
@@ -460,6 +462,8 @@ export function BillingModule() {
       toast({
         title: "Please fix all validation errors before saving",
         className: "max-w-md bg-red-50 border-red-200 text-red-800",
+        duration: 3000, // 3 seconds
+
       });
       return;
     }
@@ -483,6 +487,8 @@ export function BillingModule() {
       toast({
         title: "Please fill in all required fields (Price and GST Rate) for each service",
         className: "max-w-md bg-red-50 border-red-200 text-red-800",
+        duration: 3000, // 3 seconds
+
       });
       return;
     }
@@ -492,6 +498,8 @@ export function BillingModule() {
       toast({
         title: "Please ensure all fields have valid values before saving",
         className: "max-w-md bg-red-50 border-red-200 text-red-800",
+        duration: 3000, // 3 seconds
+
       });
       return;
     }
@@ -540,12 +548,16 @@ export function BillingModule() {
         title: "Billing details saved successfully!",
         description: "You can now proceed to the next step.",
         className: "max-w-md bg-green-50 border-green-200 text-green-800",
+        duration: 3000, // 3 seconds
+
       });
     } catch (error) {
       console.error('❌ Failed to save billing details:', error);
       toast({
         title: "Failed to save billing details. Please try again.",
         className: "max-w-md bg-red-50 border-red-200 text-red-800",
+        duration: 3000, // 3 seconds
+
       });
     }
   };
@@ -601,6 +613,8 @@ export function BillingModule() {
       toast({
         title: "No billing details found. Please create billing first.",
         className: "max-w-md bg-red-50 border-red-200 text-red-800",
+        duration: 3000, // 3 seconds
+
       });
       return;
     }
@@ -666,6 +680,8 @@ export function BillingModule() {
         title: "Invoice PDF downloaded successfully!",
         description: `Filename: Invoice-${enquiry.serviceDetails.billingDetails.invoiceNumber}.pdf`,
         className: "max-w-md bg-green-50 border-green-200 text-green-800",
+        duration: 3000, // 3 seconds
+
       });
 
 
@@ -674,6 +690,8 @@ export function BillingModule() {
       toast({
         title: "Error generating PDF. Please try again.",
         className: "max-w-md bg-red-50 border-red-200 text-red-800",
+        duration: 3000, // 3 seconds
+
       });
     }
   };
@@ -685,6 +703,8 @@ export function BillingModule() {
       toast({
         title: "No billing details found. Please create billing first.",
         className: "max-w-md bg-red-50 border-red-200 text-red-800",
+        duration: 3000, // 3 seconds
+
       });
       return;
     }
@@ -693,6 +713,8 @@ export function BillingModule() {
       title: `Invoice sent to ${enquiry.customerName} via WhatsApp!`,
       description: `Amount: ₹${enquiry.serviceDetails.billingDetails.totalAmount}`,
       className: "max-w-md bg-green-50 border-green-200 text-green-800",
+      duration: 3000, // 3 seconds
+
     });
 
   };
@@ -712,6 +734,8 @@ export function BillingModule() {
         toast({
           title: `Moved ${enquiry.customerName}'s ${enquiry.product} to delivery stage!`,
           className: "max-w-md bg-green-50 border-green-200 text-green-800",
+          duration: 3000, // 3 seconds
+
         });
       }
     } catch (error) {
@@ -719,6 +743,8 @@ export function BillingModule() {
       toast({
         title: "Failed to move to delivery stage. Please try again.",
         className: "max-w-md bg-red-50 border-red-200 text-red-800",
+        duration: 3000, // 3 seconds
+
       });
     }
   };
@@ -765,6 +791,8 @@ export function BillingModule() {
       toast({
         title: "Enquiry not found!",
         className: "max-w-md bg-red-50 border-red-200 text-red-800",
+        duration: 3000, // 3 seconds
+
       });
       return;
     }
@@ -774,6 +802,8 @@ export function BillingModule() {
       toast({
         title: "No billing details found. Please create billing first.",
         className: "max-w-md bg-red-50 border-red-200 text-red-800",
+        duration: 3000, // 3 seconds
+
       });
       return;
     }
@@ -882,11 +912,14 @@ export function BillingModule() {
                     {enquiry.customerName}
                   </h3>
                   <div className="flex items-center space-x-1 text-muted-foreground">
-                    <Phone className="h-4 w-4" />
-                    <span className="text-sm">
-                      {enquiry.phone.startsWith('+91') ? enquiry.phone : `+91 ${enquiry.phone}`}
+                    <Phone className="h-4 w-4 shrink-0" />
+                    <span className="text-sm whitespace-nowrap">
+                      {enquiry.phone.startsWith("+91") ? enquiry.phone : `+91 ${enquiry.phone}`}
                     </span>
                   </div>
+
+
+
                 </div>
                 {/* This container now wraps badges horizontally */}
                 <div className="flex flex-wrap items-center justify-end gap-2">

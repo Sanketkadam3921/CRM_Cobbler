@@ -185,7 +185,7 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
   return (
     <div className="space-y-4 animate-fade-in p-2 sm:p-0">
       {/* Header - Mobile Optimized */}
-      <div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-center justify-between">
+      <div className="relative flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-center justify-between">
         <div className="flex flex-col space-y-2 sm:space-y-0 sm:flex-row sm:items-center sm:space-x-4">
           <Button variant="outline" size="sm" onClick={onBack} className="w-fit">
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -200,12 +200,19 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
             </p>
           </div>
         </div>
+
+        {/* Top-right badge */}
         {serviceTypeData && (
-          <Badge className={`${getStatusColor(serviceTypeData.status)} text-sm px-3 py-1 w-fit`}>
+          <Badge
+            className={`${getStatusColor(
+              serviceTypeData.status
+            )} text-sm px-3 py-1 w-fit absolute top-0 right-0 sm:static`}
+          >
             {capitalizeFirst(serviceTypeData.status)}
           </Badge>
         )}
       </div>
+
 
       {/* Compact Info - Mobile Optimized */}
       <Card className="p-4 bg-gradient-card border-0 shadow-soft">
