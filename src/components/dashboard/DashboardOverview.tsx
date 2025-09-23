@@ -35,7 +35,7 @@ const defaultStats = [
     redirectTo: "in-service",
   },
   {
-    name: "Total Completed Services",
+    name: "Completed Services",
     value: "0/0",
     changeType: "neutral" as const,
     icon: ClipboardCheck,

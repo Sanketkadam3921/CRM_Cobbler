@@ -254,8 +254,8 @@ export function CompletedServicesView({ onNavigate, onBack }: CompletedServicesV
                 </Card>
             ) : (
                 <>
-                    {/* Mobile Card View */}
-                    <div className="block sm:hidden space-y-3">
+                    {/* Mobile + Tablet Card View */}
+                    <div className="block lg:hidden space-y-3">
                         {paginatedServices.map((service) => (
                             <Card key={service.id} className="p-4 hover:shadow-md transition-shadow">
                                 <div className="flex items-start justify-between mb-3">
@@ -349,7 +349,7 @@ export function CompletedServicesView({ onNavigate, onBack }: CompletedServicesV
                     </div>
 
                     {/* Desktop Table View */}
-                    <Card className="overflow-hidden hidden sm:block">
+                    <Card className="overflow-hidden hidden lg:block">
                         <div className="overflow-x-auto">
                             <table className="w-full">
                                 <thead className="bg-muted/50">
@@ -620,6 +620,8 @@ export function CompletedServicesView({ onNavigate, onBack }: CompletedServicesV
                                     </div>
                                 )}
                             </div>
+
+                            {/* Action Buttons */}
 
                             {/* Action Buttons */}
                             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end space-y-2 sm:space-y-0 sm:space-x-2 mt-6 pt-6 border-t border-border">

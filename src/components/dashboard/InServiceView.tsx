@@ -270,8 +270,8 @@ export function InServiceView({ onNavigate, onBack }: InServiceViewProps) {
                 </Card>
             ) : (
                 <>
-                    {/* Mobile + Tablet Card View */}
-                    <div className="block md:hidden space-y-4">
+                    {/* Mobile + Tablet Card View (now applies to both mobile and tablet) */}
+                    <div className="block lg:hidden space-y-4">
                         {paginatedServices.map((service) => {
                             const progress = getProgressInfo(service.serviceTypes || []);
                             const overallStatus = getOverallServiceStatus(service.serviceTypes || []);
@@ -371,96 +371,7 @@ export function InServiceView({ onNavigate, onBack }: InServiceViewProps) {
                             );
                         })}
                     </div>
-                    <div className="hidden md:block lg:hidden space-y-4">
-                        {paginatedServices.map((service) => (
-                            <Card
-                                key={service.enquiryId}
-                                className="relative p-6 hover:shadow-md transition-shadow flex flex-col sm:flex-row min-h-[180px]"
-                            >
-                                {/* Left Column: Customer Info */}
-                                <div className="flex flex-col flex-1 sm:flex-row sm:space-x-6">
-                                    <div className="flex flex-col">
-                                        <span className="font-mono text-sm font-medium">{service.enquiryId}</span>
-                                        <h4 className="font-medium text-foreground text-sm truncate mt-1">{service.customerName}</h4>
-                                        {service.address && (
-                                            <p className="text-xs text-muted-foreground line-clamp-2">{service.address}</p>
-                                        )}
-                                        <div className="flex items-center space-x-2 text-xs text-muted-foreground mt-1">
-                                            <Phone className="h-3 w-3" />
-                                            <span className="truncate">{service.phone}</span>
-                                        </div>
-                                    </div>
-                                </div>
 
-                                {/* Right Column */}
-                                <div className="flex flex-col justify-between sm:items-end flex-1 mt-4 sm:mt-0 relative">
-                                    {/* Status Badge at Top Right */}
-                                    <div className="absolute top-4 right-4">
-                                        <span
-                                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getServiceStatusColor(
-                                                getOverallServiceStatus(service.serviceTypes || []).toLowerCase()
-                                            )}`}
-                                        >
-                                            {getOverallServiceStatus(service.serviceTypes || [])}
-                                        </span>
-                                    </div>
-
-                                    {/* Product & Cost Centered Vertically */}
-                                    <div className="grid grid-cols-2 gap-4 text-xs w-full sm:w-48 self-center">
-                                        <div className="text-center">
-                                            <span className="text-muted-foreground">Product:</span>
-                                            <div className="font-medium text-foreground truncate">{service.product}</div>
-                                            <div className="text-muted-foreground">Qty: {service.quantity}</div>
-                                        </div>
-                                        <div className="text-center">
-                                            <span className="text-muted-foreground">Estimated Cost:</span>
-                                            <div className="font-medium text-foreground">
-                                                ₹{service.estimatedCost?.toLocaleString() || "0"}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Progress Bar */}
-                                    <div className="space-y-1 w-full sm:w-40 mt-4 self-center">
-                                        <div className="flex items-center justify-between text-xs">
-                                            <span className="text-muted-foreground">Progress</span>
-                                            <span className="text-muted-foreground">
-                                                {getProgressInfo(service.serviceTypes || []).done}/{getProgressInfo(service.serviceTypes || []).total} completed
-                                            </span>
-                                        </div>
-                                        <div className="w-full bg-gray-200 rounded-full h-2">
-                                            <div
-                                                className="bg-blue-600 h-2 rounded-full transition-all"
-                                                style={{ width: `${getProgressInfo(service.serviceTypes || []).percentage}%` }}
-                                            ></div>
-                                        </div>
-                                        <div className="text-center text-xs font-medium text-blue-600">
-                                            {getProgressInfo(service.serviceTypes || []).percentage}% Complete
-                                        </div>
-                                    </div>
-
-                                    {/* Action Buttons at Bottom Right */}
-                                    <div className="flex items-center justify-end space-x-2 mt-4">
-                                        <button
-                                            onClick={() => handleViewDetails(service)}
-                                            className="p-2 text-muted-foreground hover:text-primary transition-colors rounded"
-                                        >
-                                            <Eye className="h-4 w-4" />
-                                        </button>
-                                        <button
-                                            onClick={() => onNavigate("service", "manage-service", service.enquiryId)}
-                                            className="p-2 text-muted-foreground hover:text-blue-600 transition-colors rounded"
-                                        >
-                                            <Wrench className="h-4 w-4" />
-                                        </button>
-                                    </div>
-                                </div>
-                            </Card>
-
-
-
-                        ))}
-                    </div>
                     {/* Desktop Table View */}
                     <Card className="overflow-hidden hidden lg:block">
                         <div className="overflow-x-auto">
