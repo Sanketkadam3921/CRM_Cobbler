@@ -228,7 +228,6 @@ export function InServiceView({ onNavigate, onBack }: InServiceViewProps) {
                             <option value="all">All Status</option>
                             <option value="pending">Pending</option>
                             <option value="in progress">In Progress</option>
-                            <option value="all done">All Done</option>
                         </select>
                     </div>
                 </div>

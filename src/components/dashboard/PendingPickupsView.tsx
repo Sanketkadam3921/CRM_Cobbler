@@ -92,7 +92,9 @@ export function PendingPickupsView({ onNavigate, onBack }: PendingPickupsViewPro
             enquiry.phone.includes(searchTerm) ||
             enquiry.id.toString().includes(searchTerm);
 
-        const matchesStatus = statusFilter === "all" || enquiry.pickupDetails?.status === statusFilter;
+        const matchesStatus =
+            statusFilter === "all" ||
+            (enquiry.pickupDetails?.status?.toLowerCase() || "scheduled") === statusFilter;
 
         return matchesSearch && matchesStatus;
     });
