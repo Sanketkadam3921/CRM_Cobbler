@@ -663,7 +663,7 @@ export function BillingModule() {
       pdf.save(`Invoice-${enquiry.serviceDetails.billingDetails.invoiceNumber}.pdf`);
 
       toast({
-        title: "Invoice PDF generated successfully!",
+        title: "Invoice PDF downloaded successfully!",
         description: `Filename: Invoice-${enquiry.serviceDetails.billingDetails.invoiceNumber}.pdf`,
         className: "max-w-md bg-green-50 border-green-200 text-green-800",
       });

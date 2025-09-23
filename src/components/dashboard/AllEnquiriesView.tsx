@@ -19,7 +19,6 @@ interface AllEnquiriesViewProps {
     onBack: () => void;
 }
 
-// Helper: format date (date only, no time)
 const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("en-GB", {
@@ -29,7 +28,6 @@ const formatDate = (dateString: string) => {
     });
 };
 
-// Status colors
 const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
         case "new":
@@ -47,7 +45,6 @@ const getStatusColor = (status: string) => {
     }
 };
 
-// Stage colors
 const getStageColor = (stage: string) => {
     switch (stage.toLowerCase()) {
         case "enquiry":
@@ -67,7 +64,6 @@ const getStageColor = (stage: string) => {
     }
 };
 
-// Capitalize
 const capitalize = (text: string) =>
     text.charAt(0).toUpperCase() + text.slice(1);
 
@@ -79,10 +75,8 @@ export function AllEnquiriesView({ onNavigate, onBack }: AllEnquiriesViewProps) 
     const [selectedEnquiry, setSelectedEnquiry] = useState<Enquiry | null>(null);
     const [showDetailsModal, setShowDetailsModal] = useState(false);
 
-    // Polling
     const { enquiries, deleteEnquiry } = useEnquiriesWithPolling(30000);
 
-    // Filter
     const filteredEnquiries = enquiries.filter((enquiry) => {
         const matchesSearch =
             searchTerm === "" ||
@@ -96,7 +90,6 @@ export function AllEnquiriesView({ onNavigate, onBack }: AllEnquiriesViewProps) 
         return matchesSearch && matchesStage;
     });
 
-    // Pagination
     const totalPages = Math.ceil(filteredEnquiries.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const paginatedEnquiries = filteredEnquiries.slice(
@@ -108,7 +101,6 @@ export function AllEnquiriesView({ onNavigate, onBack }: AllEnquiriesViewProps) 
         setCurrentPage(1);
     }, [searchTerm, stageFilter]);
 
-    // Delete
     const handleDelete = async (id: number) => {
         if (window.confirm("Are you sure you want to delete this enquiry?")) {
             try {
@@ -119,7 +111,6 @@ export function AllEnquiriesView({ onNavigate, onBack }: AllEnquiriesViewProps) 
         }
     };
 
-    // View
     const handleViewDetails = (enquiry: Enquiry) => {
         setSelectedEnquiry(enquiry);
         setShowDetailsModal(true);
@@ -128,7 +119,7 @@ export function AllEnquiriesView({ onNavigate, onBack }: AllEnquiriesViewProps) 
     return (
         <div className="space-y-6 animate-fade-in p-2 sm:p-0">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
                 <div className="flex items-center space-x-4">
                     <button
                         onClick={onBack}
@@ -150,7 +141,7 @@ export function AllEnquiriesView({ onNavigate, onBack }: AllEnquiriesViewProps) 
 
             {/* Filters */}
             <Card className="p-4 sm:p-6">
-                <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:gap-4">
                     {/* Search */}
                     <div className="flex-1 relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -159,7 +150,7 @@ export function AllEnquiriesView({ onNavigate, onBack }: AllEnquiriesViewProps) 
                             placeholder="Search by name, phone, or ID"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                            className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-sm"
                         />
                     </div>
 
@@ -186,19 +177,19 @@ export function AllEnquiriesView({ onNavigate, onBack }: AllEnquiriesViewProps) 
 
             {/* Enquiries Table (Responsive) */}
             <Card className="overflow-hidden">
-                {/* Table view - desktop */}
-                <div className="overflow-x-auto hidden sm:block">
-                    <table className="w-full min-w-[700px]">
+                {/* Table view - tablet & desktop */}
+                <div className="overflow-x-auto hidden lg:block">
+                    <table className="w-full min-w-[900px]">
                         <thead className="bg-muted/50">
                             <tr>
-                                <th className="text-left p-4">ID</th>
-                                <th className="text-left p-4">Customer</th>
-                                <th className="text-left p-4">Contact</th>
-                                <th className="text-left p-4">Product</th>
-                                <th className="text-left p-4">Status</th>
-                                <th className="text-left p-4">Stage</th>
-                                <th className="text-left p-4">Created</th>
-                                <th className="text-left p-4">Actions</th>
+                                <th className="text-left p-3">ID</th>
+                                <th className="text-left p-3">Customer</th>
+                                <th className="text-left p-3">Contact</th>
+                                <th className="text-left p-3 hidden md:table-cell">Product</th>
+                                <th className="text-left p-3">Status</th>
+                                <th className="text-left p-3">Stage</th>
+                                <th className="text-left p-3 hidden md:table-cell">Created</th>
+                                <th className="text-left p-3">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -207,9 +198,9 @@ export function AllEnquiriesView({ onNavigate, onBack }: AllEnquiriesViewProps) 
                                     key={enquiry.id}
                                     className="border-b border-border hover:bg-muted/30"
                                 >
-                                    <td className="p-4 font-mono text-sm">{enquiry.id}</td>
-                                    <td className="p-4">{enquiry.customerName}</td>
-                                    <td className="p-4">
+                                    <td className="p-3 font-mono text-sm">{enquiry.id}</td>
+                                    <td className="p-3">{enquiry.customerName}</td>
+                                    <td className="p-3">
                                         <div className="flex items-center text-sm">
                                             <Phone className="h-3 w-3 mr-1 text-muted-foreground" />
                                             {enquiry.phone.startsWith("+91")
@@ -217,8 +208,10 @@ export function AllEnquiriesView({ onNavigate, onBack }: AllEnquiriesViewProps) 
                                                 : `+91 ${enquiry.phone}`}
                                         </div>
                                     </td>
-                                    <td className="p-4">{enquiry.product}</td>
-                                    <td className="p-4">
+                                    <td className="p-3 hidden md:table-cell">
+                                        {enquiry.product}
+                                    </td>
+                                    <td className="p-3">
                                         <span
                                             className={`inline-flex px-2 py-1 rounded-full text-xs border ${getStatusColor(
                                                 enquiry.status
@@ -227,7 +220,7 @@ export function AllEnquiriesView({ onNavigate, onBack }: AllEnquiriesViewProps) 
                                             {capitalize(enquiry.status)}
                                         </span>
                                     </td>
-                                    <td className="p-4">
+                                    <td className="p-3">
                                         <span
                                             className={`inline-flex px-2 py-1 rounded-full text-xs border ${getStageColor(
                                                 enquiry.currentStage
@@ -236,8 +229,10 @@ export function AllEnquiriesView({ onNavigate, onBack }: AllEnquiriesViewProps) 
                                             {capitalize(enquiry.currentStage)}
                                         </span>
                                     </td>
-                                    <td className="p-4">{formatDate(enquiry.date)}</td>
-                                    <td className="p-4">
+                                    <td className="p-3 hidden md:table-cell">
+                                        {formatDate(enquiry.date)}
+                                    </td>
+                                    <td className="p-3">
                                         <div className="flex space-x-2">
                                             <button
                                                 onClick={() =>
@@ -262,61 +257,66 @@ export function AllEnquiriesView({ onNavigate, onBack }: AllEnquiriesViewProps) 
                 </div>
 
                 {/* Card view - mobile */}
-                <div className="space-y-4 sm:hidden p-4">
+                {/* Card view - mobile + tablet */}
+                <div className="space-y-4 lg:hidden p-4">
                     {paginatedEnquiries.map((enquiry) => (
                         <div
                             key={enquiry.id}
-                            className="border border-border rounded-xl p-4 shadow-sm bg-white"
+                            className="border border-border rounded-xl p-4 shadow-sm bg-white flex flex-col space-y-3"
                         >
-                            <div className="flex justify-between items-center mb-2">
+                            {/* Top Row: Customer Name + ID */}
+                            <div className="flex justify-between items-start">
                                 <h3 className="font-bold text-lg">{enquiry.customerName}</h3>
-                                <span className="text-xs font-mono">{enquiry.id}</span>
+                                <span className="text-xs font-mono text-muted-foreground">{enquiry.id}</span>
                             </div>
 
-                            <p className="text-sm text-muted-foreground flex items-center">
-                                <Phone className="h-4 w-4 mr-1" /> {enquiry.phone}
-                            </p>
-                            <p className="text-sm">Product: {enquiry.product}</p>
-
-                            <div className="flex flex-wrap gap-2 my-2">
+                            {/* Status Badges */}
+                            <div className="flex flex-wrap gap-2">
                                 <span
-                                    className={`px-2 py-1 rounded-full text-xs border ${getStatusColor(
-                                        enquiry.status
-                                    )}`}
+                                    className={`px-2 py-1 rounded-full text-xs border ${getStatusColor(enquiry.status)}`}
                                 >
                                     {capitalize(enquiry.status)}
                                 </span>
                                 <span
-                                    className={`px-2 py-1 rounded-full text-xs border ${getStageColor(
-                                        enquiry.currentStage
-                                    )}`}
+                                    className={`px-2 py-1 rounded-full text-xs border ${getStageColor(enquiry.currentStage)}`}
                                 >
                                     {capitalize(enquiry.currentStage)}
                                 </span>
                             </div>
 
+                            {/* Product & Contact Info */}
+                            <div className="flex flex-col gap-1 text-sm text-muted-foreground">
+                                <p className="flex items-center">
+                                    <Phone className="h-4 w-4 mr-1" /> {enquiry.phone}
+                                </p>
+                                <p>Product: <span className="text-foreground font-medium">{enquiry.product}</span></p>
+                            </div>
+
+                            {/* Created Date */}
                             <p className="text-xs text-muted-foreground">
                                 Created: {formatDate(enquiry.date)}
                             </p>
 
-                            <div className="flex justify-end space-x-2 mt-3">
+                            {/* Action Buttons */}
+                            <div className="flex justify-end space-x-2 mt-2">
                                 <button
                                     onClick={() => handleViewDetails(enquiry)}
-                                    className="p-1 hover:text-primary"
+                                    className="p-2 text-muted-foreground hover:text-primary transition-colors rounded"
+                                    title="View Details"
                                 >
                                     <Eye className="h-4 w-4" />
                                 </button>
                                 <button
-                                    onClick={() =>
-                                        onNavigate("crm", "edit-enquiry", enquiry.id)
-                                    }
-                                    className="p-1 hover:text-blue-600"
+                                    onClick={() => onNavigate("crm", "edit-enquiry", enquiry.id)}
+                                    className="p-2 text-muted-foreground hover:text-blue-600 transition-colors rounded"
+                                    title="Edit Enquiry"
                                 >
                                     <Edit className="h-4 w-4" />
                                 </button>
                                 <button
                                     onClick={() => handleDelete(enquiry.id)}
-                                    className="p-1 hover:text-red-600"
+                                    className="p-2 text-muted-foreground hover:text-red-600 transition-colors rounded"
+                                    title="Delete Enquiry"
                                 >
                                     <Trash2 className="h-4 w-4" />
                                 </button>
@@ -325,18 +325,16 @@ export function AllEnquiriesView({ onNavigate, onBack }: AllEnquiriesViewProps) 
                     ))}
                 </div>
 
+
                 {/* Pagination */}
                 {totalPages > 1 && (
                     <Card className="p-4 border-t border-border">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
-                            {/* Page Info */}
                             <div className="text-sm text-muted-foreground text-center sm:text-left">
                                 Page {currentPage} of {totalPages}
                             </div>
 
-                            {/* Controls */}
                             <div className="flex items-center justify-center space-x-2">
-                                {/* Previous */}
                                 <button
                                     onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                                     disabled={currentPage === 1}
@@ -346,25 +344,27 @@ export function AllEnquiriesView({ onNavigate, onBack }: AllEnquiriesViewProps) 
                                     Previous
                                 </button>
 
-                                {/* Page Numbers */}
                                 <div className="flex items-center space-x-1">
-                                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                                        <button
-                                            key={page}
-                                            onClick={() => setCurrentPage(page)}
-                                            className={`px-3 py-1 rounded-md text-sm transition-colors ${page === currentPage
-                                                ? "bg-primary text-white"
-                                                : "hover:bg-muted"
-                                                }`}
-                                        >
-                                            {page}
-                                        </button>
-                                    ))}
+                                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                                        (page) => (
+                                            <button
+                                                key={page}
+                                                onClick={() => setCurrentPage(page)}
+                                                className={`px-3 py-1 rounded-md text-sm transition-colors ${page === currentPage
+                                                    ? "bg-primary text-white"
+                                                    : "hover:bg-muted"
+                                                    }`}
+                                            >
+                                                {page}
+                                            </button>
+                                        )
+                                    )}
                                 </div>
 
-                                {/* Next */}
                                 <button
-                                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                                    onClick={() =>
+                                        setCurrentPage(Math.min(totalPages, currentPage + 1))
+                                    }
                                     disabled={currentPage === totalPages}
                                     className="flex items-center px-3 py-2 border border-border rounded-lg hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
                                 >
@@ -375,7 +375,6 @@ export function AllEnquiriesView({ onNavigate, onBack }: AllEnquiriesViewProps) 
                         </div>
                     </Card>
                 )}
-
             </Card>
         </div>
     );

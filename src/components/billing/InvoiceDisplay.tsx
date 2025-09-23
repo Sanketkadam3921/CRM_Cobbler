@@ -97,60 +97,50 @@ export function InvoiceDisplay({ enquiry }: InvoiceDisplayProps) {
                 {billingDetails.businessInfo.tagline}
               </p>
             )}
-            <div
-              style={{ fontSize: "14px", color: "#6b7280", lineHeight: "1.4" }}
-            >
-              <p style={{ margin: "0" }}>
-                {billingDetails.businessInfo?.address || "Address"}
+            <div className="text-gray-500 text-sm leading-5">
+              <p>
+                <span className="font-semibold text-gray-700">Address:</span>{" "}
+                {billingDetails.businessInfo?.address || "-"}
               </p>
-              <p style={{ margin: "0" }}>
-                Phone: {billingDetails.businessInfo?.phone || "Phone"}
+              <p>
+                <span className="font-semibold text-gray-700">Phone:</span>{" "}
+                {billingDetails.businessInfo?.phone || "-"}
               </p>
-              <p style={{ margin: "0" }}>
-                Email: {billingDetails.businessInfo?.email || "Email"}
+              <p>
+                <span className="font-semibold text-gray-700">Email:</span>{" "}
+                {billingDetails.businessInfo?.email || "-"}
               </p>
               {billingDetails.businessInfo?.gstNumber && (
-                <p style={{ margin: "0" }}>
-                  GST: {billingDetails.businessInfo.gstNumber}
+                <p>
+                  <span className="font-semibold text-gray-700">GST:</span>{" "}
+                  {billingDetails.businessInfo.gstNumber}
                 </p>
               )}
             </div>
+
           </div>
         </div>
 
         {/* Invoice Details */}
-        <div style={{ textAlign: "right" }}>
-          <h2
-            style={{
-              fontSize: "32px",
-              fontWeight: "bold",
-              color: "#2563eb",
-              margin: "0 0 8px 0",
-            }}
-          >
-            INVOICE
-          </h2>
-          <div style={{ fontSize: "14px", lineHeight: "1.6" }}>
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <span>
-                <strong>Invoice #:</strong>
-              </span>
-              <span>{billingDetails.invoiceNumber}</span>
+        <div className="text-right">
+          <h2 className="text-2xl md:text-3xl font-bold text-blue-600 mb-2">INVOICE</h2>
+
+          <div className="text-sm md:text-base leading-6 space-y-1">
+            <div className="flex justify-between">
+              <span className="font-semibold">Invoice #:</span>
+              <span>{billingDetails.invoiceNumber || "-"}</span>
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <span>
-                <strong>Date:</strong>
-              </span>
+            <div className="flex justify-between">
+              <span className="font-semibold">Date:</span>
               <span>{formatDate(billingDetails.invoiceDate || "")}</span>
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <span>
-                <strong>Due Date:</strong>
-              </span>
+            <div className="flex justify-between">
+              <span className="font-semibold">Due Date:</span>
               <span>{formatDate(billingDetails.invoiceDate || "")}</span>
             </div>
           </div>
         </div>
+
       </div>
 
       {/* Customer Info */}
@@ -186,37 +176,23 @@ export function InvoiceDisplay({ enquiry }: InvoiceDisplayProps) {
             </div>
           </div>
           <div>
-            <h3
-              style={{
-                fontSize: "18px",
-                fontWeight: "600",
-                color: "#111827",
-                margin: "0 0 12px 0",
-              }}
-            >
-              Invoice Details:
-            </h3>
-            <div style={{ fontSize: "14px", color: "#6b7280", lineHeight: "1.6" }}>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span>
-                  <strong>Invoice Number:</strong>
-                </span>
-                <span>{billingDetails.invoiceNumber}</span>
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">Invoice Details:</h3>
+            <div className="text-sm text-gray-500 leading-6 space-y-1">
+              <div className="flex justify-between">
+                <span className="font-semibold text-gray-900">Invoice Number:</span>
+                <span>{billingDetails.invoiceNumber || "-"}</span>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span>
-                  <strong>Invoice Date:</strong>
-                </span>
+              <div className="flex justify-between">
+                <span className="font-semibold text-gray-900">Invoice Date:</span>
                 <span>{formatDate(billingDetails.invoiceDate || "")}</span>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span>
-                  <strong>Generated:</strong>
-                </span>
+              <div className="flex justify-between">
+                <span className="font-semibold text-gray-900">Generated:</span>
                 <span>{formatDate(billingDetails.generatedAt || "")}</span>
               </div>
             </div>
           </div>
+
         </div>
       </div>
 
@@ -239,7 +215,7 @@ export function InvoiceDisplay({ enquiry }: InvoiceDisplayProps) {
                 </th>
                 <th
                   style={{
-                    textAlign: "right",
+                    textAlign: "left",
                     padding: "12px 16px",
                     fontWeight: "600",
                     color: "#111827",
@@ -249,7 +225,7 @@ export function InvoiceDisplay({ enquiry }: InvoiceDisplayProps) {
                 </th>
                 <th
                   style={{
-                    textAlign: "right",
+                    textAlign: "left",
                     padding: "12px 16px",
                     fontWeight: "600",
                     color: "#111827",
@@ -259,7 +235,7 @@ export function InvoiceDisplay({ enquiry }: InvoiceDisplayProps) {
                 </th>
                 <th
                   style={{
-                    textAlign: "right",
+                    textAlign: "left",
                     padding: "12px 16px",
                     fontWeight: "600",
                     color: "#111827",
@@ -269,7 +245,7 @@ export function InvoiceDisplay({ enquiry }: InvoiceDisplayProps) {
                 </th>
                 <th
                   style={{
-                    textAlign: "right",
+                    textAlign: "left",
                     padding: "12px 16px",
                     fontWeight: "600",
                     color: "#111827",
@@ -334,6 +310,13 @@ export function InvoiceDisplay({ enquiry }: InvoiceDisplayProps) {
                   <td style={{ padding: "12px 16px", textAlign: "right" }}>
                     {(parseFloat(item.gstAmount) || 0) > 0 ? (
                       <div>
+
+                        <p style={{ color: "#2563eb", margin: "0" }}>
+                          +
+                          {formatCurrency(
+                            parseFloat(item.gstAmount) || 0
+                          )}
+                        </p>
                         <p
                           style={{
                             color: "#2563eb",
@@ -342,12 +325,6 @@ export function InvoiceDisplay({ enquiry }: InvoiceDisplayProps) {
                           }}
                         >
                           ({parseFloat(item.gstRate) || 0}%)
-                        </p>
-                        <p style={{ color: "#2563eb", margin: "0" }}>
-                          +
-                          {formatCurrency(
-                            parseFloat(item.gstAmount) || 0
-                          )}
                         </p>
                       </div>
                     ) : (
@@ -379,6 +356,7 @@ export function InvoiceDisplay({ enquiry }: InvoiceDisplayProps) {
       <div style={{ padding: "20px", background: "#f9fafb" }}>
         <div style={{ display: "flex", justifyContent: "flex-end" }}>
           <div style={{ width: "320px" }}>
+            {/* Original Amount */}
             <div
               style={{
                 display: "flex",
@@ -387,8 +365,8 @@ export function InvoiceDisplay({ enquiry }: InvoiceDisplayProps) {
                 marginBottom: "8px",
               }}
             >
-              <span style={{ color: "#6b7280" }}>Original Amount:</span>
-              <span style={{ fontWeight: "500" }}>
+              <span style={{ fontWeight: "600", color: "#111827" }}>Original Amount:</span>
+              <span style={{ fontWeight: "500", color: "#111827" }}>
                 {formatCurrency(
                   billingDetails.items.reduce(
                     (sum, item) => sum + (parseFloat(item.originalAmount) || 0),
@@ -397,31 +375,30 @@ export function InvoiceDisplay({ enquiry }: InvoiceDisplayProps) {
                 )}
               </span>
             </div>
-            {billingDetails.items.some(
-              (item) => (parseFloat(item.discountAmount) || 0) > 0
-            ) && (
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    fontSize: "14px",
-                    marginBottom: "8px",
-                    color: "#059669",
-                  }}
-                >
-                  <span>Service Discounts:</span>
-                  <span>
-                    -
-                    {formatCurrency(
-                      billingDetails.items.reduce(
-                        (sum, item) =>
-                          sum + (parseFloat(item.discountAmount) || 0),
-                        0
-                      )
-                    )}
-                  </span>
-                </div>
-              )}
+
+            {/* Service Discounts */}
+            {billingDetails.items.some((item) => (parseFloat(item.discountAmount) || 0) > 0) && (
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  fontSize: "14px",
+                  marginBottom: "8px",
+                }}
+              >
+                <span style={{ fontWeight: "600", color: "#059669" }}>Service Discounts:</span>
+                <span style={{ fontWeight: "500", color: "#059669" }}>
+                  -{formatCurrency(
+                    billingDetails.items.reduce(
+                      (sum, item) => sum + (parseFloat(item.discountAmount) || 0),
+                      0
+                    )
+                  )}
+                </span>
+              </div>
+            )}
+
+            {/* Subtotal */}
             <div
               style={{
                 display: "flex",
@@ -432,30 +409,30 @@ export function InvoiceDisplay({ enquiry }: InvoiceDisplayProps) {
                 paddingTop: "8px",
               }}
             >
-              <span style={{ fontWeight: "500", color: "#111827" }}>
-                Subtotal:
-              </span>
+              <span style={{ fontWeight: "600", color: "#111827" }}>Subtotal:</span>
               <span style={{ fontWeight: "500", color: "#111827" }}>
                 {formatCurrency(parseFloat(billingDetails.subtotal) || 0)}
               </span>
             </div>
-            {billingDetails.gstIncluded &&
-              (parseFloat(billingDetails.gstAmount) || 0) > 0 && (
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    fontSize: "14px",
-                    marginBottom: "8px",
-                    color: "#2563eb",
-                  }}
-                >
-                  <span>Total GST:</span>
-                  <span>
-                    +{formatCurrency(parseFloat(billingDetails.gstAmount) || 0)}
-                  </span>
-                </div>
-              )}
+
+            {/* GST */}
+            {billingDetails.gstIncluded && (parseFloat(billingDetails.gstAmount) || 0) > 0 && (
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  fontSize: "14px",
+                  marginBottom: "8px",
+                }}
+              >
+                <span style={{ fontWeight: "600", color: "#2563eb" }}>Total GST:</span>
+                <span style={{ fontWeight: "500", color: "#2563eb" }}>
+                  +{formatCurrency(parseFloat(billingDetails.gstAmount) || 0)}
+                </span>
+              </div>
+            )}
+
+            {/* Total Amount */}
             <div
               style={{
                 display: "flex",
@@ -466,14 +443,15 @@ export function InvoiceDisplay({ enquiry }: InvoiceDisplayProps) {
                 paddingTop: "8px",
               }}
             >
-              <span>Total Amount:</span>
-              <span style={{ color: "#2563eb" }}>
+              <span style={{ fontWeight: "700", color: "#111827" }}>Total Amount:</span>
+              <span style={{ color: "#2563eb", fontWeight: "700" }}>
                 {formatCurrency(parseFloat(billingDetails.totalAmount) || 0)}
               </span>
             </div>
           </div>
         </div>
       </div>
+
 
       {/* Notes */}
       {billingDetails.notes && (

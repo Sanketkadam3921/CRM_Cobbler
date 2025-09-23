@@ -263,102 +263,96 @@ export function PendingPickupsView({ onNavigate, onBack }: PendingPickupsViewPro
             ) : (
                 <>
                     {/* Mobile Card View */}
-                    <div className="block sm:hidden space-y-3">
+                    <div className="space-y-3 lg:hidden">
                         {paginatedPickups.map((enquiry) => (
-                            <Card key={enquiry.id} className="p-4 hover:shadow-md transition-shadow">
-                                <div className="flex items-start justify-between mb-3">
-                                    <div className="flex items-center space-x-2">
-                                        <span className="font-mono text-sm font-medium">{enquiry.id}</span>
-                                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getPickupStatusColor(enquiry.pickupDetails?.status || 'scheduled')}`}>
-                                            {capitalizeStatus(enquiry.pickupDetails?.status || 'Scheduled')}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center space-x-1">
-                                        <button
-                                            onClick={() => handleViewDetails(enquiry)}
-                                            className="p-1.5 text-muted-foreground hover:text-primary transition-colors"
-                                            title="View Details"
-                                        >
-                                            <Eye className="h-4 w-4" />
-                                        </button>
-                                        {enquiry.pickupDetails?.status === 'scheduled' && !enquiry.pickupDetails?.assignedTo && (
-                                            <button
-                                                onClick={() => {
-                                                    const assignTo = prompt('Assign to (staff member name):');
-                                                    if (assignTo) handleAssignPickup(enquiry.id, assignTo);
-                                                }}
-                                                className="p-1.5 text-muted-foreground hover:text-blue-600 transition-colors"
-                                                title="Assign Pickup"
-                                            >
-                                                <UserCheck className="h-4 w-4" />
-                                            </button>
-                                        )}
-                                        <button
-                                            onClick={() => onNavigate("pickup", "manage-pickup", enquiry.id)}
-                                            className="p-1.5 text-muted-foreground hover:text-green-600 transition-colors"
-                                            title="Manage Pickup"
-                                        >
-                                            <Package className="h-4 w-4" />
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <div>
+                            <Card key={enquiry.id} className="p-4 hover:shadow-md transition-shadow flex flex-col space-y-3">
+                                {/* Top Info */}
+                                <div className="flex justify-between items-start">
+                                    <div className="flex flex-col space-y-1">
+                                        <span className="font-mono text-sm font-medium">ID: {enquiry.id}</span>
                                         <h4 className="font-medium text-foreground text-sm">{enquiry.customerName}</h4>
                                         {enquiry.address && (
-                                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{enquiry.address}</p>
+                                            <p className="text-xs text-muted-foreground line-clamp-2">{enquiry.address}</p>
                                         )}
                                     </div>
+                                    {/* Status badge */}
+                                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getPickupStatusColor(enquiry.pickupDetails?.status || 'scheduled')}`}>
+                                        {capitalizeStatus(enquiry.pickupDetails?.status || 'Scheduled')}
+                                    </span>
+                                </div>
 
-                                    <div className="flex items-center space-x-4 text-xs text-muted-foreground">
+                                {/* Product & Quantity */}
+                                <div className="flex justify-between text-sm">
+                                    <div>
+                                        <span className="text-muted-foreground">Product:</span> {enquiry.product}
+                                        <div className="text-muted-foreground text-xs">Qty: {enquiry.quantity}</div>
+                                    </div>
+                                    {enquiry.quotedAmount && (
+                                        <div className="text-sm font-semibold text-green-600">
+                                            ₹{enquiry.quotedAmount.toLocaleString()}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Contact & Location */}
+                                <div className="flex flex-col space-y-1 text-xs text-muted-foreground">
+                                    <div className="flex items-center space-x-1">
+                                        <Phone className="h-3 w-3" />
+                                        <span>{enquiry.phone}</span>
+                                    </div>
+                                    {enquiry.location && (
                                         <div className="flex items-center space-x-1">
-                                            <Phone className="h-3 w-3" />
-                                            <span>{enquiry.phone}</span>
+                                            <MapPin className="h-3 w-3" />
+                                            <span className="truncate">{enquiry.location}</span>
                                         </div>
-                                        {enquiry.location && (
-                                            <div className="flex items-center space-x-1 flex-1 min-w-0">
-                                                <MapPin className="h-3 w-3 flex-shrink-0" />
-                                                <span className="truncate">{enquiry.location}</span>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-3 text-xs">
-                                        <div>
-                                            <span className="text-muted-foreground">Product:</span>
-                                            <div className="font-medium text-foreground">{enquiry.product}</div>
-                                            <div className="text-muted-foreground">Qty: {enquiry.quantity}</div>
-                                        </div>
-                                        <div>
-                                            <span className="text-muted-foreground">Assigned:</span>
-                                            <div className="font-medium text-foreground">
-                                                {enquiry.pickupDetails?.assignedTo || 'Unassigned'}
-                                            </div>
-                                        </div>
-                                    </div>
-
+                                    )}
                                     {enquiry.pickupDetails?.scheduledTime && (
-                                        <div className="flex items-center space-x-1 text-xs text-muted-foreground pt-2 border-t border-border">
+                                        <div className="flex items-center space-x-1">
                                             <Clock className="h-3 w-3" />
                                             <span>Scheduled: {formatDate(enquiry.pickupDetails.scheduledTime)}</span>
                                         </div>
                                     )}
+                                    <div>
+                                        <span className="text-muted-foreground">Assigned:</span> {enquiry.pickupDetails?.assignedTo || 'Unassigned'}
+                                    </div>
+                                </div>
 
-                                    {enquiry.quotedAmount && (
-                                        <div className="text-right">
-                                            <span className="text-sm font-semibold text-green-600">
-                                                ₹{enquiry.quotedAmount.toLocaleString()}
-                                            </span>
-                                        </div>
+                                {/* Action Buttons */}
+                                <div className="flex justify-end space-x-2 mt-2">
+                                    <button
+                                        onClick={() => handleViewDetails(enquiry)}
+                                        className="p-1 text-muted-foreground hover:text-primary transition-colors"
+                                        title="View Details"
+                                    >
+                                        <Eye className="h-4 w-4" />
+                                    </button>
+                                    {enquiry.pickupDetails?.status === 'scheduled' && !enquiry.pickupDetails?.assignedTo && (
+                                        <button
+                                            onClick={() => {
+                                                const assignTo = prompt('Assign to (staff member name):');
+                                                if (assignTo) handleAssignPickup(enquiry.id, assignTo);
+                                            }}
+                                            className="p-1 text-muted-foreground hover:text-blue-600 transition-colors"
+                                            title="Assign Pickup"
+                                        >
+                                            <UserCheck className="h-4 w-4" />
+                                        </button>
                                     )}
+                                    <button
+                                        onClick={() => onNavigate("pickup", "manage-pickup", enquiry.id)}
+                                        className="p-1 text-muted-foreground hover:text-green-600 transition-colors"
+                                        title="Manage Pickup"
+                                    >
+                                        <Package className="h-4 w-4" />
+                                    </button>
                                 </div>
                             </Card>
+
                         ))}
                     </div>
 
                     {/* Desktop Table View */}
-                    <Card className="overflow-hidden hidden sm:block">
+                    <Card className="overflow-hidden hidden lg:block">
                         <div className="overflow-x-auto">
                             <table className="w-full">
                                 <thead className="bg-muted/50">

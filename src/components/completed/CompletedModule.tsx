@@ -292,14 +292,14 @@ export function CompletedModule() {
                   </div>
                 )}
 
-
                 {enquiry.deliveryMethod && (
                   <div className="flex items-center space-x-2">
                     <span className="text-sm text-foreground">
-                      Delivery: {enquiry.deliveryMethod === 'customer-pickup' ? 'Customer Pickup' : 'Home Delivery'}
+                      <span className="font-bold">Delivery:</span> {enquiry.deliveryMethod === 'customer-pickup' ? 'Customer Pickup' : 'Home Delivery'}
                     </span>
                   </div>
                 )}
+
 
                 {enquiry.deliveryNotes && (
                   <div className="space-y-2">

@@ -12,13 +12,7 @@ interface InvoiceUIProps {
 
 export function InvoiceUI({ billingDetails, onDownload, onSend, onPrint }: InvoiceUIProps) {
   const businessInfo = billingDetails.businessInfo;
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-IN', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
+
   const formatDate = (dateString: string) => {
     if (!dateString) return "";
     const date = new Date(dateString);
@@ -187,13 +181,17 @@ export function InvoiceUI({ billingDetails, onDownload, onSend, onPrint }: Invoi
       )}
 
       {/* Footer */}
+      {/* Footer */}
       <div className="p-8 bg-gray-900 text-white">
-        <div className="flex justify-between items-center">
-          <div className="text-sm">
+        <div className="flex flex-col items-center space-y-4">
+          {/* Footer Text */}
+          <div className="text-center text-sm">
             <p>Thank you for your business!</p>
             <p className="text-gray-400 mt-1">{businessInfo?.businessName}</p>
           </div>
-          <div className="flex space-x-2">
+
+          {/* Buttons */}
+          <div className="flex justify-center space-x-4"> {/* Centered buttons */}
             {onPrint && (
               <button
                 onClick={onPrint}
@@ -224,6 +222,8 @@ export function InvoiceUI({ billingDetails, onDownload, onSend, onPrint }: Invoi
           </div>
         </div>
       </div>
+
+
     </Card>
   );
 }

@@ -31,6 +31,44 @@ interface jsPDFWithAutoTable extends jsPDF {
   lastAutoTable: { finalY: number };
 }
 
+// ADDED: Date formatting utility function for consistent DD-MM-YYYY HH:MM format
+// REASON: Ensure consistent date formatting across all PDF exports matching other modules
+const formatDate = (dateString: string | Date): string => {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return "";
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${day}-${month}-${year} ${hours}:${minutes}`;
+};
+
+// ADDED: Number formatting utility function for PDF exports
+// REASON: Fix PDF number formatting issues (removes formatting characters like ¹ and replaces with ₹)
+const formatNumberForPDF = (num: number | string): string => {
+  // Convert to string and handle special characters
+  let numStr = num.toString();
+
+  // Replace ¹, ², ³, etc. with empty string and clean the number
+  let cleanNum = numStr.replace(/[¹²³⁴⁵⁶⁷⁸⁹⁰]/g, '').replace(/[^\d.]/g, '');
+
+  // Convert to number to ensure proper formatting
+  const numericValue = parseFloat(cleanNum);
+
+  if (isNaN(numericValue)) return '0.00';
+
+  // Format with 2 decimal places
+  const fixedDecimal = numericValue.toFixed(2);
+
+  // Add commas for thousands separator
+  const parts = fixedDecimal.split('.');
+  const integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+  return `${integerPart}.${parts[1]}`;
+};
+
 // Main Component
 export default function ReportsModule() {
   console.log('[ReportsModule] Component initializing');
@@ -171,7 +209,7 @@ export default function ReportsModule() {
       doc.setTextColor(40);
 
       doc.text(`Period: ${selectedPeriod.charAt(0).toUpperCase() + selectedPeriod.slice(1)}`, 14, 28);
-      doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 33);
+      doc.text(`Generated on: ${formatDate(new Date())}`, 14, 33);
 
       // Reset to normal after
       doc.setFont("helvetica", "normal");
@@ -183,9 +221,9 @@ export default function ReportsModule() {
       doc.setTextColor(40);
       doc.text("Key Metrics", 14, 45);
       const metricsData = [
-        ["Total Revenue", `₹${exportData.metrics.totalRevenue.toLocaleString()}`],
-        ["Total Expenditure", `₹${exportData.metrics.totalExpenditure.toLocaleString()}`],
-        ["Net Profit", `₹${exportData.metrics.netProfit.toLocaleString()}`],
+        ["Total Revenue", `₹${formatNumberForPDF(exportData.metrics.totalRevenue)}`],
+        ["Total Expenditure", `₹${formatNumberForPDF(exportData.metrics.totalExpenditure)}`],
+        ["Net Profit", `₹${formatNumberForPDF(exportData.metrics.netProfit)}`],
         ["Total Orders", exportData.metrics.totalOrders.toString()],
         ["Active Customers", exportData.metrics.activeCustomers.toString()],
       ];
@@ -205,7 +243,7 @@ export default function ReportsModule() {
         doc.text("Top 5 Customers", 14, firstTableEnd + 15);
         autoTable(doc, {
           head: [['Rank', 'Customer Name', 'Orders', 'Revenue']],
-          body: exportData.topCustomers.map((c, i) => [i + 1, c.name, c.orders, `₹${c.revenue.toLocaleString()}`]),
+          body: exportData.topCustomers.map((c, i) => [i + 1, c.name, c.orders, `₹${formatNumberForPDF(c.revenue)}`]),
           startY: firstTableEnd + 18,
           headStyles: { fillColor: tableHeaderColor },
           styles: { fontSize: 10, cellPadding: 2 },
@@ -220,9 +258,9 @@ export default function ReportsModule() {
         autoTable(doc, {
           head: [['Date', 'Category', 'Amount', 'Description']],
           body: exportData.expenseBreakdown.map(e => [
-            new Date(e.date).toLocaleDateString(),
+            formatDate(e.date),
             e.category,
-            `₹${e.amount.toLocaleString()}`,
+            `₹${formatNumberForPDF(e.amount)}`,
             e.description || e.title
           ]),
           startY: expenseTableEnd + 18,
@@ -315,7 +353,7 @@ export default function ReportsModule() {
         <Card className="p-4 bg-card border shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-2xl font-bold text-foreground">₹{metrics.totalRevenue.toLocaleString()}</div>
+              <div className="text-2xl font-bold text-foreground">₹{metrics.totalRevenue.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
               <div className="text-sm text-muted-foreground">Total Revenue</div>
             </div>
           </div>
@@ -331,7 +369,7 @@ export default function ReportsModule() {
         <Card className="p-4 bg-card border shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-2xl font-bold text-foreground">₹{metrics.totalExpenditure.toLocaleString()}</div>
+              <div className="text-2xl font-bold text-foreground">₹{metrics.totalExpenditure.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
               <div className="text-sm text-muted-foreground">Total Expenditure</div>
             </div>
           </div>
@@ -340,7 +378,7 @@ export default function ReportsModule() {
           <div className="flex items-center justify-between">
             <div>
               <div className={`text-2xl font-bold ${metrics.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                ₹{metrics.netProfit.toLocaleString()}
+                ₹{metrics.netProfit.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
               <div className="text-sm text-muted-foreground">Net Profit</div>
             </div>
@@ -404,7 +442,7 @@ export default function ReportsModule() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="font-semibold text-foreground">₹{customer.revenue.toLocaleString()}</div>
+                  <div className="font-semibold text-foreground">₹{customer.revenue.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                   <div className="text-sm text-muted-foreground">revenue</div>
                 </div>
               </div>

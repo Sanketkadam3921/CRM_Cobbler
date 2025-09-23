@@ -20,7 +20,7 @@ import {
 // Added for backend API integration - replacing localStorage with proper backend APIs
 import { useInventoryItems, useInventoryStats } from "@/services/inventoryApiService";
 import { InventoryItem, UpdateHistory } from "@/types";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 
 // Removed local interfaces - now using types from @/types for backend API integration
@@ -63,6 +63,7 @@ export default function InventoryManager() {
   const [updateQuantity, setUpdateQuantity] = useState("");
   const [updaterName, setUpdaterName] = useState("");
   const [showHistoryModal, setShowHistoryModal] = useState<InventoryItem | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<{ id: number; name: string } | null>(null);
   const [formData, setFormData] = useState<FormData>({
     name: "",
     category: "",
@@ -126,10 +127,7 @@ export default function InventoryManager() {
       !formData.purchasePrice ||
       !formData.sellingPrice
     ) {
-      toast({
-        description: "⚠️ Please fill in all required fields before submitting.",
-        variant: "destructive",
-      });
+      toast.error("Please fill in all required fields");
       return;
     }
 
@@ -139,15 +137,12 @@ export default function InventoryManager() {
     const sellingPrice = parseFloat(formData.sellingPrice);
 
     if (quantity < 0 || purchasePrice < 0 || sellingPrice < 0) {
-      toast({
-        description: "⚠️ Values cannot be negative. Please enter positive numbers only.",
-        variant: "destructive",
-      });
+      toast.error("Values cannot be negative. Please enter positive numbers only.");
       return;
     }
 
     try {
-      console.log("🔄 [InventoryModule] Creating new inventory item...");
+      console.log('🔄 [InventoryModule] Creating new inventory item...');
       const newQuantity = parseInt(formData.quantity);
 
       await createItem({
@@ -156,110 +151,66 @@ export default function InventoryManager() {
         unit: formData.unit,
         quantity: newQuantity,
         purchasePrice: parseFloat(formData.purchasePrice),
-        sellingPrice: parseFloat(formData.sellingPrice),
+        sellingPrice: parseFloat(formData.sellingPrice)
       });
 
-      console.log("✅ [InventoryModule] Successfully created inventory item");
+      console.log('✅ [InventoryModule] Successfully created inventory item');
+      toast.success("Item created successfully");
       resetForm();
       setShowAddForm(false);
-
-      toast({
-        description: "✅ Inventory item created successfully.",
-      });
     } catch (error) {
-      console.error("❌ [InventoryModule] Failed to create inventory item:", error);
-      toast({
-        description: `❌ Failed to create item: ${error instanceof Error ? error.message : "Unknown error"
-          }`,
-        variant: "destructive",
-      });
+      console.error('❌ [InventoryModule] Failed to create inventory item:', error);
+      toast.error(`Failed to create item: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
-
 
   const checkStockAlert = (item: InventoryItem) => {
     if (item.quantity < item.minStock) {
-      toast({
-        description: `⚠️ LOW STOCK ALERT! 
-      
-      Item: ${item.name} 
-      Current Stock: ${item.quantity} ${item.unit} 
-      Minimum Required: ${item.minStock} ${item.unit} 
-      
-      Please restock soon!`,
-        variant: "destructive", // red/error style
-      });
+      toast.error(
+        `⚠️ LOW STOCK ALERT! Item: ${item.name} - Only ${item.quantity} ${item.unit} left (Minimum: ${item.minStock} ${item.unit}). Please restock soon!`
+      );
     }
   };
 
-
   // Updated to use backend API for updating stock instead of localStorage
   const handleUpdateStock = async (item: InventoryItem, newQuantity: number) => {
-    // Validate updater name
     if (!updaterName.trim()) {
-      toast({
-        description: "⚠️ Please provide the name of the person updating the stock.",
-        variant: "destructive",
-      });
+      toast.error("Please provide the name of the person updating the stock.");
       return;
     }
 
     // Validate for negative values
     if (newQuantity < 0) {
-      toast({
-        description: "⚠️ Quantity cannot be negative. Please enter a positive number.",
-        variant: "destructive",
-      });
+      toast.error("Quantity cannot be negative. Please enter a positive number.");
       return;
     }
 
     try {
-      console.log(
-        "🔄 [InventoryModule] Updating inventory item quantity:",
-        item.id,
-        "to",
-        newQuantity
-      );
+      console.log('🔄 [InventoryModule] Updating inventory item quantity:', item.id, 'to', newQuantity);
 
       await updateItem(item.id, newQuantity, updaterName);
 
-      console.log("✅ [InventoryModule] Successfully updated inventory item quantity");
-
-      // Show low stock alert if needed
+      console.log('✅ [InventoryModule] Successfully updated inventory item quantity');
+      toast.success("Stock updated successfully");
       checkStockAlert({ ...item, quantity: newQuantity });
-
-      // Reset form and state
       setEditingItem(null);
       setShowUpdateForm(false);
       setUpdateQuantity("");
       setUpdaterName("");
-
-      // Optional: Success toast
-      toast({
-        description: `✅ Stock updated successfully for ${item.name}.`,
-      });
     } catch (error) {
-      console.error(
-        "❌ [InventoryModule] Failed to update inventory item quantity:",
-        error
-      );
-      toast({
-        description: `❌ Failed to update item: ${error instanceof Error ? error.message : "Unknown error"
-          }`,
-        variant: "destructive",
-      });
+      console.error('❌ [InventoryModule] Failed to update inventory item quantity:', error);
+      toast.error(`Failed to update item: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
-
 
   // Updated to use backend API for restocking instead of localStorage
   const handleRestock = async (item: InventoryItem, additionalQuantity: number) => {
     if (additionalQuantity <= 0) {
-      alert("Please enter a valid quantity to add (must be greater than 0)");
+      toast.error("Please enter a valid quantity to add (must be greater than 0)");
       return;
     }
     if (!updaterName.trim()) {
-      alert("Please provide the name of the person updating the stock.");
+      toast.error("Please provide the name of the person updating the stock.");
       return;
     }
 
@@ -270,52 +221,38 @@ export default function InventoryManager() {
       await updateItem(item.id, newQuantity, updaterName);
 
       console.log('✅ [InventoryModule] Successfully restocked inventory item');
+      toast.success("Item restocked successfully");
       setEditingItem(null);
       setShowUpdateForm(false);
       setUpdateQuantity("");
       setUpdaterName("");
     } catch (error) {
       console.error('❌ [InventoryModule] Failed to restock inventory item:', error);
-      alert(`Failed to restock item: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      toast.error(`Failed to restock item: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
   // Updated to use backend API for deleting items instead of localStorage
   const handleDeleteItem = async (id: number, name: string) => {
-    // Show a confirmation toast instead of window.confirm
-    toast({
-      description: `Are you sure you want to delete "${name}"?`,
-      action: (
-        <button
-          onClick={async () => {
-            try {
-              console.log("🔄 [InventoryModule] Deleting inventory item:", id);
-
-              await deleteItem(id);
-
-              console.log("✅ [InventoryModule] Successfully deleted inventory item:", id);
-
-              toast({
-                description: `✅ Item "${name}" deleted successfully.`,
-              });
-            } catch (error) {
-              console.error("❌ [InventoryModule] Failed to delete inventory item:", error);
-
-              toast({
-                description: `❌ Failed to delete item: ${error instanceof Error ? error.message : "Unknown error"
-                  }`,
-                variant: "destructive",
-              });
-            }
-          }}
-          className="bg-red-600 text-white px-3 py-1 rounded-md text-sm hover:bg-red-700"
-        >
-          Delete
-        </button>
-      ),
-    });
+    setShowDeleteConfirm({ id, name });
   };
 
+  const confirmDeleteItem = async () => {
+    if (!showDeleteConfirm) return;
+
+    try {
+      console.log('🔄 [InventoryModule] Deleting inventory item:', showDeleteConfirm.id);
+
+      await deleteItem(showDeleteConfirm.id);
+
+      console.log('✅ [InventoryModule] Successfully deleted inventory item:', showDeleteConfirm.id);
+      toast.success("Item deleted successfully");
+      setShowDeleteConfirm(null);
+    } catch (error) {
+      console.error('❌ [InventoryModule] Failed to delete inventory item:', error);
+      toast.error(`Failed to delete item: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
 
   const handleFormChange = (field: keyof FormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -417,8 +354,8 @@ export default function InventoryManager() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {lowStockItems.map((item) => (
-              <div key={item.id} className="text-xs sm:text-sm text-red-800">
-                <span className="font-medium">{item.name}</span> - Only{" "}
+              <div key={item.id} className="text-xs sm:text-sm text-red-800 break-words">
+                <span className="font-medium break-words">{item.name}</span> - Only{" "}
                 {item.quantity} {item.unit} left
               </div>
             ))}
@@ -442,10 +379,10 @@ export default function InventoryManager() {
       {/* Add Item Form Modal */}
       {showAddForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto">
+          <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto overflow-x-hidden">
             <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-gray-900">
+              <div className="flex items-center justify-between mb-4 gap-2">
+                <h2 className="text-xl font-bold text-gray-900 break-words flex-1 min-w-0">
                   Add New Item
                 </h2>
                 <Button
@@ -453,12 +390,11 @@ export default function InventoryManager() {
                   size="icon"
                   variant="ghost"
                   onClick={() => setShowAddForm(false)}
-                  className="absolute right-4 top-4 rounded-sm opacity-70 hover:opacity-100"
+                  className="text-gray-600 hover:text-black hover:bg-transparent"
                 >
                   <X className="h-4 w-4" />
                   <span className="sr-only">Close</span>
                 </Button>
-
               </div>
 
               <div className="space-y-4">
@@ -479,7 +415,7 @@ export default function InventoryManager() {
                     required
                   />
                   {formData.name && !/^[A-Za-z\s]+$/.test(formData.name) && (
-                    <p className="text-red-500 text-sm mt-1">
+                    <p className="text-red-500 text-sm mt-1 break-words">
                       Item name should not contain numbers.
                     </p>
                   )}
@@ -503,7 +439,7 @@ export default function InventoryManager() {
                   />
                   {formData.category &&
                     !/^[A-Za-z\s,]+$/.test(formData.category) && (
-                      <p className="text-red-500 text-sm mt-1">
+                      <p className="text-red-500 text-sm mt-1 break-words">
                         Category should not contain numbers.
                       </p>
                     )}
@@ -526,7 +462,7 @@ export default function InventoryManager() {
                     required
                   />
                   {formData.unit && !/^[A-Za-z\s,]+$/.test(formData.unit) && (
-                    <p className="text-red-500 text-sm mt-1">
+                    <p className="text-red-500 text-sm mt-1 break-words">
                       Unit type should not contain numbers.
                     </p>
                   )}
@@ -628,23 +564,32 @@ export default function InventoryManager() {
       {/* Update Stock Form Modal */}
       {showUpdateForm && editingItem && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <Card className="w-full max-w-md">
+          <Card className="w-full max-w-md overflow-hidden">
             <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-gray-900 truncate">
+              <div className="flex items-center justify-between mb-4 gap-2">
+                <h2 className="text-xl font-bold text-gray-900 break-words flex-1 min-w-0">
                   Update Stock
                 </h2>
-
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => setShowUpdateForm(false)}
+                  className="text-gray-600 hover:text-black hover:bg-transparent"
+                >
+                  <X className="h-4 w-4" />
+                  <span className="sr-only">Close</span>
+                </Button>
               </div>
 
               <div className="mb-4 space-y-1">
-                <p className="text-sm text-gray-600 truncate">
+                <p className="text-sm text-gray-600 break-words">
                   <span className="font-semibold text-gray-900">Item:</span>{" "}
-                  <span className="font-medium truncate">{editingItem.name}</span>
+                  <span className="font-medium break-words">{editingItem.name}</span>
                 </p>
-                <p className="text-sm text-gray-600 truncate">
+                <p className="text-sm text-gray-600 break-words">
                   <span className="font-semibold text-gray-900">Current Stock:</span>{" "}
-                  <span className="font-medium truncate">
+                  <span className="font-medium break-words">
                     {editingItem.quantity} {editingItem.unit}
                   </span>
                 </p>
@@ -668,7 +613,7 @@ export default function InventoryManager() {
                     }}
                     placeholder="Enter new quantity"
                     min="0"
-                    className="no-spinner truncate"
+                    className="no-spinner"
                   />
                 </div>
                 <div>
@@ -681,7 +626,7 @@ export default function InventoryManager() {
                     onChange={(e) => setUpdaterName(e.target.value)}
                     placeholder="Enter your name"
                     required
-                    className="truncate"
+                    className=""
                   />
                 </div>
               </div>
@@ -711,19 +656,21 @@ export default function InventoryManager() {
       {/* History Modal */}
       {showHistoryModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <Card className="w-full max-w-2xl max-h-[90vh] flex flex-col">
+          <Card className="w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
             <div className="p-6 border-b">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900 truncate">
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="text-xl font-bold text-gray-900 break-words flex-1 min-w-0">
                   Update History for: {showHistoryModal.name}
                 </h2>
                 <Button
                   type="button"
-                  size="sm"
-                  variant="secondary"
+                  size="icon"
+                  variant="ghost"
                   onClick={() => setShowHistoryModal(null)}
+                  className="text-gray-600 hover:text-black hover:bg-transparent"
                 >
                   <X className="h-4 w-4" />
+                  <span className="sr-only">Close</span>
                 </Button>
 
               </div>
@@ -742,7 +689,7 @@ export default function InventoryManager() {
                           </div>
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium text-gray-800 truncate">
+                          <p className="text-sm font-medium text-gray-800 break-words">
                             {entry.updatedBy}{" "}
                             <span className="text-gray-500 font-normal">
                               {entry.action === "Created"
@@ -750,10 +697,10 @@ export default function InventoryManager() {
                                 : "updated the stock"}
                             </span>
                           </p>
-                          <p className="text-xs text-gray-500 mb-1 truncate">
+                          <p className="text-xs text-gray-500 mb-1 break-words">
                             {new Date(entry.date).toLocaleDateString("en-GB")}
                           </p>
-                          <p className="text-sm text-gray-700 truncate">
+                          <p className="text-sm text-gray-700 break-words">
                             Quantity changed by{" "}
                             <span
                               className={`font-bold ${entry.quantityChange >= 0
@@ -783,13 +730,56 @@ export default function InventoryManager() {
         </div>
       )}
 
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <Card className="w-full max-w-md">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4 gap-2">
+                <h2 className="text-xl font-bold text-gray-900 break-words flex-1 min-w-0">
+                  Confirm Delete
+                </h2>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => setShowDeleteConfirm(null)}
+                  className="text-gray-600 hover:text-black hover:bg-transparent"
+                >
+                  <X className="h-4 w-4" />
+                  <span className="sr-only">Close</span>
+                </Button>
+              </div>
+
+              <div className="mb-6">
+                <p className="text-gray-600 break-words">
+                  Are you sure you want to delete <span className="font-semibold text-gray-900">"{showDeleteConfirm.name}"</span>?
+                </p>
+                <p className="text-sm text-red-600 mt-2">
+                  This action cannot be undone.
+                </p>
+              </div>
+
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  className="bg-red-600 hover:bg-red-700 text-white px-6"
+                  onClick={confirmDeleteItem}
+                >
+                  Delete
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* Error Display - Added for backend API integration */}
       {(inventoryError || statsError) && (
         <Card className="p-3 sm:p-4 bg-red-50 border border-red-200">
           <div className="flex items-center space-x-2">
             <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-red-600" />
-            <div className="text-sm text-red-800">
+            <div className="text-sm text-red-800 break-words">
               <strong>Error:</strong> {inventoryError || statsError}
             </div>
           </div>
@@ -801,92 +791,105 @@ export default function InventoryManager() {
         <Card className="p-3 sm:p-4 bg-blue-50 border border-blue-200">
           <div className="flex items-center space-x-2">
             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-            <div className="text-sm text-blue-800">Loading inventory items...</div>
+            <div className="text-sm text-blue-800 break-words">Loading inventory items...</div>
           </div>
         </Card>
       )}
 
       {/* Inventory List - Added loading and error states for backend API integration */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
         {!inventoryLoading && filteredInventory.length > 0 ? (
           filteredInventory.map((item) => (
             <Card
               key={item.id}
-              className="p-4 flex flex-col justify-between bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200 min-w-0"
+              className="p-4 flex flex-col justify-between bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden"
             >
-              <div className="min-w-0">
+              <div>
                 <div className="flex justify-between items-start mb-2 gap-2">
-                  <h3 className="font-bold text-lg text-gray-800 truncate flex-1 min-w-0">
+                  <h3 className="font-bold text-lg text-gray-800 break-words flex-1 min-w-0">
                     {item.name}
                   </h3>
-                  <Badge className={`${getStockStatus(item).color} flex-shrink-0`}>
+                  <Badge className={getStockStatus(item).color} style={{ flexShrink: 0 }}>
                     {getStockStatus(item).status}
                   </Badge>
                 </div>
-                <p className="text-sm text-gray-500 mb-3 truncate">{item.category}</p>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm mb-4">
-                  <div className="font-medium text-gray-700">Stock</div>
-                  <div className="truncate">{item.quantity} {item.unit}</div>
-                  <div className="font-medium text-gray-700">Purchase Price</div>
-                  <div className="truncate">₹{item.purchasePrice.toLocaleString()}</div>
-                  <div className="font-medium text-gray-700">Selling Price</div>
-                  <div className="truncate">₹{item.sellingPrice.toLocaleString()}</div>
-                </div>
-                <div className="border-t border-gray-200 pt-3 space-y-2 text-xs text-gray-500">
-                  <div className="flex items-center flex-wrap gap-1">
-                    <Calendar className="h-3 w-3 flex-shrink-0" />
-                    <span className="font-semibold text-blue-600">Last Updated:</span>
-                    <span>{new Date(item.lastUpdated).toLocaleDateString('en-GB')}</span>
+                <p className="text-sm text-gray-500 mb-3 break-words">{item.category}</p>
+                <div className="space-y-2 text-sm mb-4">
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium text-gray-700">Stock:</span>
+                    <span className="text-gray-900 break-words text-right">
+                      {item.quantity} {item.unit}
+                    </span>
                   </div>
-                  <div className="flex items-center flex-wrap gap-1">
-                    <User className="h-3 w-3 flex-shrink-0" />
-                    <span className="font-semibold text-green-600">Updated By:</span>
-                    <span>{item.lastUpdatedBy || "N/A"}</span>
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium text-gray-700">Purchase Price:</span>
+                    <span className="text-gray-900">₹{item.purchasePrice.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium text-gray-700">Selling Price:</span>
+                    <span className="text-gray-900">₹{item.sellingPrice.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                </div>
+
+                <div className="border-t border-gray-200 pt-3 space-y-2 text-xs text-gray-500">
+                  <div className="flex items-start gap-2">
+                    <Calendar className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <span className="font-semibold text-blue-600">Last Updated:</span>
+                      <span className="ml-1 break-words">{new Date(item.lastUpdated).toLocaleDateString('en-GB')}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <User className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <span className="font-semibold text-green-600">Updated By:</span>
+                      <span className="ml-1 break-words">{item.lastUpdatedBy || "N/A"}</span>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Fixed button container */}
-              <div className="flex flex-col gap-2 mt-4 min-w-0 sm:flex-row">
+              <div className="flex flex-col md:flex-row gap-2 mt-4">
                 <Button
                   variant="outline"
                   size="sm"
-                  className="flex-1 min-w-0"
+                  className="flex-1 md:flex-none"
                   onClick={() => openUpdateForm(item)}
                 >
-                  <Edit className="h-3 w-3 mr-1 flex-shrink-0" />
-                  <span className="truncate">Update</span>
+                  <Edit className="h-3 w-3 mr-1" />
+                  Update
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="flex-1 min-w-0"
+                  className="flex-1 md:flex-none"
                   onClick={() => setShowHistoryModal(item)}
                 >
-                  <History className="h-3 w-3 mr-1 flex-shrink-0" />
-                  <span className="truncate">History</span>
+                  <History className="h-3 w-3 mr-1" />
+                  History
                 </Button>
                 <Button
                   variant="destructive"
                   size="sm"
-                  className="flex-1 min-w-0"
+                  className="flex-1 md:flex-none"
                   onClick={() => handleDeleteItem(item.id, item.name)}
                 >
-                  <Trash2 className="h-3 w-3 mr-1 flex-shrink-0" />
-                  <span className="truncate">Delete</span>
+                  <Trash2 className="h-3 w-3 mr-1" />
+                  Delete
                 </Button>
               </div>
             </Card>
           ))
         ) : !inventoryLoading ? (
-          <div className="col-span-1 sm:col-span-2 lg:col-span-3 text-center py-10 text-gray-500">
+          <div className="col-span-1 lg:col-span-2 xl:col-span-3 text-center py-10 text-gray-500">
             <Package className="h-12 w-12 mx-auto mb-2" />
             <p>No inventory items found.</p>
-            <p className="text-sm">Click "Add Item" to get started.</p>
+            <p className="text-sm">
+              Click "Add Item" to get started.
+            </p>
           </div>
         ) : null}
       </div>
-
     </div>
   );
 }
