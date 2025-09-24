@@ -671,7 +671,7 @@ export default function ExpenseManagementSystem() {
       <div className="max-w-7xl mx-auto space-y-3 sm:space-y-4 md:space-y-6">
         {/* Header */}
         <div className="flex flex-col gap-4">
-          <div className="text-center md:text-left">
+          <div className="text-left">
             <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent leading-tight">
               Expense Management System
             </h1>
@@ -679,10 +679,11 @@ export default function ExpenseManagementSystem() {
               Comprehensive expense tracking and management
             </p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+          {/* Mobile and Tablet buttons - centered */}
+          <div className="flex flex-row gap-2 sm:gap-3 w-full justify-center md:hidden">
             <Button
               onClick={() => setShowSalaryForm(!showSalaryForm)}
-              className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-sm sm:text-base flex-1 sm:flex-none"
+              className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-sm sm:text-base flex-1 max-w-[200px]"
               size="sm"
             >
               <Plus className="h-4 w-4" />
@@ -691,7 +692,28 @@ export default function ExpenseManagementSystem() {
             </Button>
             <Button
               onClick={() => setShowExpenseForm(!showExpenseForm)}
-              className="bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-sm sm:text-base flex-1 sm:flex-none"
+              className="bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-sm sm:text-base flex-1 max-w-[200px]"
+              size="sm"
+            >
+              <Plus className="h-4 w-4" />
+              <span className="hidden xs:inline">{editingExpense ? "Update Expense" : "Add Expense"}</span>
+              <span className="xs:hidden">{editingExpense ? "Update" : "Add Expense"}</span>
+            </Button>
+          </div>
+          {/* Desktop buttons - right aligned */}
+          <div className="hidden md:flex flex-row gap-2 sm:gap-3 w-auto justify-end">
+            <Button
+              onClick={() => setShowSalaryForm(!showSalaryForm)}
+              className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-sm sm:text-base"
+              size="sm"
+            >
+              <Plus className="h-4 w-4" />
+              <span className="hidden xs:inline">Add Employee</span>
+              <span className="xs:hidden">Add Employee</span>
+            </Button>
+            <Button
+              onClick={() => setShowExpenseForm(!showExpenseForm)}
+              className="bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-sm sm:text-base"
               size="sm"
             >
               <Plus className="h-4 w-4" />
@@ -1413,11 +1435,11 @@ export default function ExpenseManagementSystem() {
             <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900 mb-3 sm:mb-4 md:mb-6">
               Employee Salary Records
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
               {employees.map((employee) => (
                 <Card
                   key={employee.id}
-                  className="p-3 sm:p-4 md:p-5 bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200 shadow-sm hover:shadow-md transition-shadow duration-200"
+                  className="p-3 sm:p-4 md:p-5 bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden"
                 >
                   {/* Header with name and edit button */}
                   <div className="flex justify-between items-start mb-3">
@@ -1446,7 +1468,7 @@ export default function ExpenseManagementSystem() {
 
                   {/* Salary */}
                   <div className="mb-4">
-                    <p className="text-sm sm:text-lg md:text-2xl font-bold text-indigo-600">
+                    <p className="text-sm sm:text-base md:text-lg font-bold text-indigo-600 break-words">
                       ₹{Math.round(employee.monthlySalary).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/month
                     </p>
                   </div>

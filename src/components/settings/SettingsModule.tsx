@@ -380,11 +380,11 @@ export function SettingsModule() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-2 sm:p-4 md:p-6">
       <div className="max-w-7xl mx-auto space-y-3 sm:space-y-4 md:space-y-6 animate-fade-in">
         {/* Header */}
-        <div className="text-center sm:text-left">
-          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent leading-tight">
+        <div className="text-left">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent leading-tight">
             Settings
           </h1>
-          <p className="text-slate-600 mt-1 sm:mt-2 text-sm sm:text-base">
+          <p className="text-slate-600 mt-1 sm:mt-2 text-base sm:text-lg">
             Configure system settings and preferences
           </p>
         </div>
@@ -394,7 +394,7 @@ export function SettingsModule() {
           <Card className="p-3 sm:p-4 md:p-6 bg-gradient-to-br from-white to-slate-50 border-0 shadow-lg">
             <div className="flex items-center justify-center space-x-2">
               <RefreshCw className="h-4 w-4 animate-spin" />
-              <span className="text-sm sm:text-base">Loading settings...</span>
+              <span className="text-base sm:text-lg">Loading settings...</span>
             </div>
           </Card>
         )}
@@ -403,21 +403,21 @@ export function SettingsModule() {
           <TabsList className="grid w-full grid-cols-3 bg-slate-100 border border-slate-200">
             <TabsTrigger
               value="business"
-              className="flex items-center justify-center space-x-1 sm:space-x-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:border-blue-700 data-[state=active]:font-semibold transition-all duration-200 text-xs sm:text-sm"
+              className="flex items-center justify-center space-x-1 sm:space-x-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:border-blue-700 data-[state=active]:font-semibold transition-all duration-200 text-sm sm:text-base"
             >
               <Settings className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="inline">Business</span>
             </TabsTrigger>
             <TabsTrigger
               value="staff"
-              className="flex items-center justify-center space-x-1 sm:space-x-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:border-blue-700 data-[state=active]:font-semibold transition-all duration-200 text-xs sm:text-sm"
+              className="flex items-center justify-center space-x-1 sm:space-x-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:border-blue-700 data-[state=active]:font-semibold transition-all duration-200 text-sm sm:text-base"
             >
               <User className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="inline">Staff</span>
             </TabsTrigger>
             <TabsTrigger
               value="security"
-              className="flex items-center justify-center space-x-1 sm:space-x-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:border-blue-700 data-[state=active]:font-semibold transition-all duration-200 text-xs sm:text-sm"
+              className="flex items-center justify-center space-x-1 sm:space-x-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:border-blue-700 data-[state=active]:font-semibold transition-all duration-200 text-sm sm:text-base"
             >
               <Shield className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="inline">Security</span>
@@ -427,11 +427,11 @@ export function SettingsModule() {
           {/* Business Settings */}
           <TabsContent value="business" className="space-y-3 sm:space-y-4 md:space-y-6">
             <Card className="p-3 sm:p-4 md:p-6 bg-gradient-to-br from-white to-slate-50 border-0 shadow-lg">
-              <h3 className="text-base sm:text-lg md:text-xl font-semibold text-slate-900 mb-3 sm:mb-4">Business Information</h3>
+              <h3 className="text-lg sm:text-xl md:text-2xl font-semibold text-slate-900 mb-3 sm:mb-4">Business Information</h3>
               <div className="space-y-4 sm:space-y-6">
                 {/* Logo Upload */}
                 <div className="space-y-3 sm:space-y-4">
-                  <h4 className="font-medium text-slate-900 text-sm sm:text-base">Business Logo</h4>
+                  <h4 className="font-medium text-slate-900 text-base sm:text-lg">Business Logo</h4>
                   <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
                     {businessInfo.logo ? (
                       <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden border-2 border-gray-200">
@@ -450,7 +450,7 @@ export function SettingsModule() {
                       <div className="flex flex-row space-x-2">
                         <Button variant="outline" size="sm" onClick={() => document.getElementById('logoUpload')?.click()}>
                           <Upload className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                          <span className="text-xs sm:text-sm">Upload Logo</span>
+                          <span className="text-sm sm:text-base">Upload Logo</span>
                         </Button>
                         {businessInfo.logo && (
                           <Button
@@ -459,11 +459,11 @@ export function SettingsModule() {
                             className="bg-red-600 hover:bg-red-700 text-white"
                           >
                             <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                            <span className="text-xs sm:text-sm">Remove</span>
+                            <span className="text-sm sm:text-base">Remove</span>
                           </Button>
                         )}
                       </div>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-sm text-slate-500">
                         Recommended: PNG, JPG, JPEG format
                       </p>
                       <input
@@ -482,7 +482,7 @@ export function SettingsModule() {
                 {/* Business Details */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="businessName" className="text-sm font-medium text-slate-700">Business Name <span className="text-gray-600">*</span></Label>
+                    <Label htmlFor="businessName" className="text-base font-medium text-slate-700">Business Name <span className="text-gray-600">*</span></Label>
                     <Input
                       id="businessName"
                       value={businessInfo.businessName}
@@ -702,12 +702,12 @@ export function SettingsModule() {
                     {isBusinessLoading ? (
                       <>
                         <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                        <span className="text-sm sm:text-base">Saving...</span>
+                        <span className="text-base sm:text-lg">Saving...</span>
                       </>
                     ) : (
                       <>
                         <Save className="h-4 w-4 mr-2" />
-                        <span className="text-sm sm:text-base">Save Changes</span>
+                        <span className="text-base sm:text-lg">Save Changes</span>
                       </>
                     )}
                   </Button>
@@ -720,78 +720,78 @@ export function SettingsModule() {
           <TabsContent value="staff" className="space-y-3 sm:space-y-4 md:space-y-6">
             <Card className="p-3 sm:p-4 md:p-6 bg-gradient-to-br from-white to-slate-50 border-0 shadow-lg">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 sm:mb-4 space-y-3 sm:space-y-0">
-                <h3 className="text-base sm:text-lg md:text-xl font-semibold text-slate-900">Staff Management</h3>
+                <h3 className="text-lg sm:text-xl md:text-2xl font-semibold text-slate-900">Staff Management</h3>
                 <Button
                   onClick={handleAddStaff}
                   className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white w-full sm:w-auto"
                   disabled={isStaffLoading}
                 >
                   <UserPlus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                  <span className="text-xs sm:text-sm">Add Staff Member</span>
+                  <span className="text-sm sm:text-base">Add Staff Member</span>
                 </Button>
               </div>
 
-              {/* ADDED: Loading state for staff section - Reason: Show backend data loading progress */}
+              {/* FIXED: Loading state for staff section with consistent layout - Reason: Match business/security section stability */}
               {isStaffLoading && staff.length === 0 ? (
                 <div className="flex items-center justify-center p-6 sm:p-8">
                   <RefreshCw className="h-4 w-4 animate-spin mr-2" />
-                  <span className="text-sm sm:text-base">Loading staff members...</span>
+                  <span className="text-base sm:text-lg">Loading staff members...</span>
                 </div>
               ) : (
-                <div className="space-y-3 sm:space-y-4">
+                <div className="space-y-4 sm:space-y-6">
                   {staff.length === 0 ? (
                     <div className="text-center p-6 sm:p-8 text-slate-500">
-                      <p className="text-sm sm:text-base">No staff members found. Click "Add Staff Member" to get started.</p>
+                      <p className="text-base sm:text-lg">No staff members found. Click "Add Staff Member" to get started.</p>
                     </div>
                   ) : (
-                    staff.map((member) => (
-                      <div key={member.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-3 sm:space-y-0">
-                        <div className="flex items-center space-x-3 sm:space-x-4 w-full sm:w-auto">
-                          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-sm sm:text-base">
-                            {member.name.split(' ').map(n => n[0]).join('')}
-                          </div>
-                          <div className="flex-1 min-w-0">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                      {staff.map((member) => (
+                        <div key={member.id} className="p-3 sm:p-4 bg-slate-50 rounded-lg border border-slate-200 flex flex-col">
+                          {/* Staff Member Info */}
+                          {/* Staff Member Info - Avatar removed */}
+                          <div className="mb-3 sm:mb-4">
                             <div className="flex items-center gap-2 mb-1">
-                              <div className="font-medium text-slate-900 text-sm sm:text-base truncate">{member.name}</div>
+                              <div className="font-medium text-slate-900 text-base sm:text-lg truncate">{member.name}</div>
                               <Badge
                                 variant={member.status === "active" ? "default" : "destructive"}
                                 className={`text-xs font-medium px-2 py-1 ${member.status === "active"
-                                  ? "bg-green-100 text-green-800 border-green-200"
-                                  : "bg-red-100 text-red-800 border-red-200"
+                                    ? "bg-green-100 text-green-800 border-green-200"
+                                    : "bg-red-100 text-red-800 border-red-200"
                                   }`}
                               >
                                 {member.status === "active" ? "Active" : "Inactive"}
                               </Badge>
                             </div>
-                            <div className="text-xs sm:text-sm text-slate-600">{member.role}</div>
-                            <div className="text-xs text-slate-500 truncate">{member.email} • {member.phone}</div>
+                            <div className="text-sm sm:text-base text-slate-600 mb-1">{member.role}</div>
+                            <div className="text-sm text-slate-500 truncate">{member.email}</div>
+                            <div className="text-sm text-slate-500 truncate">{member.phone}</div>
+                          </div>
+
+                          {/* FIXED: Action Buttons with smaller size to prevent overflow in tablet view */}
+                          <div className="flex flex-row gap-1 sm:gap-2 mt-auto">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleEditStaff(member)}
+                              disabled={isStaffLoading}
+                              className="border-blue-500 text-blue-600 hover:bg-blue-50 hover:text-blue-700 focus:ring-2 focus:ring-blue-400 transition-colors flex-1 px-2 py-1"
+                            >
+                              <Edit className="h-3 w-3 mr-1" />
+                              <span className="text-xs">Edit</span>
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => handleDeleteStaff(member.id!)}
+                              className="bg-red-600 hover:bg-red-700 text-white flex-1 px-2 py-1"
+                              disabled={isStaffLoading}
+                            >
+                              <Trash2 className="h-3 w-3 mr-1" />
+                              <span className="text-xs">Delete</span>
+                            </Button>
                           </div>
                         </div>
-
-                        {/* Action Buttons */}
-                        <div className="flex space-x-2 w-full sm:w-auto">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleEditStaff(member)}
-                            disabled={isStaffLoading}
-                            className="border-blue-500 text-blue-600 hover:bg-blue-50 hover:text-blue-700 focus:ring-2 focus:ring-blue-400 transition-colors flex-1 sm:flex-none"
-                          >
-                            <Edit className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                            <span className="text-xs sm:text-sm">Edit</span>
-                          </Button>
-                          <Button
-                            size="sm"
-                            onClick={() => handleDeleteStaff(member.id!)}
-                            className="bg-red-600 hover:bg-red-700 text-white flex-1 sm:flex-none"
-                            disabled={isStaffLoading}
-                          >
-                            <Trash2 className="h-3 w-3 sm:mr-1" />
-                            <span className="text-xs sm:text-sm sm:inline">Delete</span>
-                          </Button>
-                        </div>
-                      </div>
-                    ))
+                      ))}
+                    </div>
                   )}
                 </div>
               )}
@@ -801,20 +801,20 @@ export function SettingsModule() {
           {/* Security Settings */}
           <TabsContent value="security" className="space-y-3 sm:space-y-4 md:space-y-6">
             <Card className="p-3 sm:p-4 md:p-6 bg-gradient-to-br from-white to-slate-50 border-0 shadow-lg">
-              <h3 className="text-base sm:text-lg md:text-xl font-semibold text-slate-900 mb-3 sm:mb-4">Security & Access</h3>
+              <h3 className="text-lg sm:text-xl md:text-2xl font-semibold text-slate-900 mb-3 sm:mb-4">Security & Access</h3>
               <div className="space-y-4 sm:space-y-6">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="currentPassword" className="text-sm font-medium text-slate-700">Current Password</Label>
-                    <Input id="currentPassword" type="password" placeholder="Enter current password" className="text-sm" />
+                    <Label htmlFor="currentPassword" className="text-base font-medium text-slate-700">Current Password</Label>
+                    <Input id="currentPassword" type="password" placeholder="Enter current password" className="text-base" />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="newPassword" className="text-sm font-medium text-slate-700">New Password</Label>
-                    <Input id="newPassword" type="password" placeholder="Enter new password" className="text-sm" />
+                    <Label htmlFor="newPassword" className="text-base font-medium text-slate-700">New Password</Label>
+                    <Input id="newPassword" type="password" placeholder="Enter new password" className="text-base" />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="confirmPassword" className="text-sm font-medium text-slate-700">Confirm New Password</Label>
-                    <Input id="confirmPassword" type="password" placeholder="Confirm new password" className="text-sm" />
+                    <Label htmlFor="confirmPassword" className="text-base font-medium text-slate-700">Confirm New Password</Label>
+                    <Input id="confirmPassword" type="password" placeholder="Confirm new password" className="text-base" />
                   </div>
                 </div>
                 <Separator />
@@ -824,14 +824,14 @@ export function SettingsModule() {
                 <Separator />
 
                 <div className="space-y-3 sm:space-y-4">
-                  <h4 className="font-medium text-slate-900 text-sm sm:text-base">Role Permissions</h4>
+                  <h4 className="font-medium text-slate-900 text-base sm:text-lg">Role Permissions</h4>
                   <div className="space-y-2 sm:space-y-3">
                     <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200">
-                      <span className="text-xs sm:text-sm text-slate-900">Admin Access</span>
+                      <span className="text-sm sm:text-base text-slate-900">Admin Access</span>
                       <Badge className="bg-green-100 text-green-800 border-green-200">Full Access</Badge>
                     </div>
                     <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200">
-                      <span className="text-xs sm:text-sm text-slate-900">Staff Access</span>
+                      <span className="text-sm sm:text-base text-slate-900">Staff Access</span>
                       <Badge variant="secondary" className="bg-blue-100 text-blue-800 border-blue-200">Limited Access</Badge>
                     </div>
                   </div>
@@ -840,7 +840,7 @@ export function SettingsModule() {
               <div className="flex justify-center sm:justify-end mt-4 sm:mt-6">
                 <Button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-2 w-full sm:w-auto">
                   <Save className="h-4 w-4 mr-2" />
-                  <span className="text-sm sm:text-base">Update Security</span>
+                  <span className="text-base sm:text-lg">Update Security</span>
                 </Button>
               </div>
             </Card>

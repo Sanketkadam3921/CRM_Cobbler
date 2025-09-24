@@ -849,33 +849,33 @@ export default function InventoryManager() {
                 </div>
               </div>
 
-              <div className="flex flex-col md:flex-row gap-2 mt-4">
+              <div className="flex flex-row gap-1 mt-4">
                 <Button
                   variant="outline"
                   size="sm"
-                  className="flex-1 md:flex-none"
+                  className="flex-1 px-1 py-1"
                   onClick={() => openUpdateForm(item)}
                 >
                   <Edit className="h-3 w-3 mr-1" />
-                  Update
+                  <span className="text-xs">Update</span>
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="flex-1 md:flex-none"
+                  className="flex-1 px-1 py-1"
                   onClick={() => setShowHistoryModal(item)}
                 >
                   <History className="h-3 w-3 mr-1" />
-                  History
+                  <span className="text-xs">History</span>
                 </Button>
                 <Button
                   variant="destructive"
                   size="sm"
-                  className="flex-1 md:flex-none"
+                  className="flex-1 px-1 py-1"
                   onClick={() => handleDeleteItem(item.id, item.name)}
                 >
                   <Trash2 className="h-3 w-3 mr-1" />
-                  Delete
+                  <span className="text-xs">Delete</span>
                 </Button>
               </div>
             </Card>
