@@ -830,54 +830,54 @@ export function BillingModule() {
       </div>
 
       {/* Stats - UPDATED: Now using API stats instead of localStorage calculations */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-5 bg-gradient-card border-0 shadow-soft flex items-center justify-between h-28">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <Card className="p-3 sm:p-4 bg-white border shadow-sm">
           <div>
-            <div className="text-lg sm:text-2xl font-bold text-foreground">
+            <div className="text-lg sm:text-2xl font-bold text-gray-900">
               {statsLoading ? "..." : stats.pendingBilling}
             </div>
-            <div className="text-xs sm:text-sm text-muted-foreground">
+            <div className="text-xs sm:text-sm text-gray-500">
               Pending Billing
             </div>
           </div>
         </Card>
 
-        <Card className="p-5 bg-gradient-card border-0 shadow-soft flex items-center justify-between h-28">
+        <Card className="p-3 sm:p-4 bg-white border shadow-sm">
           <div>
-            <div className="text-lg sm:text-2xl font-bold text-foreground">
+            <div className="text-lg sm:text-2xl font-bold text-gray-900">
               {statsLoading ? "..." : stats.invoicesGenerated}
             </div>
-            <div className="text-xs sm:text-sm text-muted-foreground">
+            <div className="text-xs sm:text-sm text-gray-500">
               Invoices Generated
             </div>
           </div>
         </Card>
 
-        <Card className="p-5 bg-gradient-card border-0 shadow-soft flex items-center justify-between h-28">
+        <Card className="p-3 sm:p-4 bg-white border shadow-sm">
           <div>
-            <div className="text-lg sm:text-2xl font-bold text-foreground">
-
+            <div className="text-lg sm:text-2xl font-bold text-gray-900">
               {statsLoading
                 ? "..."
                 : Number(stats.totalBilled || 0).toLocaleString("en-IN")}
             </div>
-            <div className="text-xs sm:text-sm text-muted-foreground">
+            <div className="text-xs sm:text-sm text-gray-500">
               Total Billed
             </div>
           </div>
         </Card>
 
-        <Card className="p-5 bg-gradient-card border-0 shadow-soft flex items-center justify-between h-28">
+        <Card className="p-3 sm:p-4 bg-white border shadow-sm">
           <div>
-            <div className="text-lg sm:text-2xl font-bold text-foreground">
+            <div className="text-lg sm:text-2xl font-bold text-gray-900">
               {statsLoading ? "..." : stats.invoicesSent}
             </div>
-            <div className="text-xs sm:text-sm text-muted-foreground">
+            <div className="text-xs sm:text-sm text-gray-500">
               Invoices Sent
             </div>
           </div>
         </Card>
       </div>
+
 
 
       {/* Search */}
