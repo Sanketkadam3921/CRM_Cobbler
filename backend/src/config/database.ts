@@ -180,12 +180,29 @@ export const createTables = async (): Promise<void> => {
         current_stage ENUM('enquiry', 'pickup', 'service', 'billing', 'delivery', 'completed') DEFAULT 'enquiry',
         quoted_amount DECIMAL(10,2) NULL,
         final_amount DECIMAL(10,2) NULL,
+        pickup_date DATE NULL,
+        delivery_date DATE NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         INDEX idx_status (status),
         INDEX idx_current_stage (current_stage),
         INDEX idx_date (date),
-        INDEX idx_customer_name (customer_name)
+        INDEX idx_customer_name (customer_name),
+        INDEX idx_pickup_date (pickup_date),
+        INDEX idx_delivery_date (delivery_date)
+      )`,
+
+      // Enquiry Products table for multiple products per enquiry
+      `CREATE TABLE IF NOT EXISTS enquiry_products (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        enquiry_id INT NOT NULL,
+        product ENUM('Bag', 'Shoe', 'Wallet', 'Belt', 'All type furniture') NOT NULL,
+        quantity INT NOT NULL DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (enquiry_id) REFERENCES enquiries(id) ON DELETE CASCADE,
+        INDEX idx_enquiry_id (enquiry_id),
+        INDEX idx_product (product)
       )`,
 
       // Pickup stage details - Enhanced for proper pickup workflow
@@ -233,8 +250,10 @@ export const createTables = async (): Promise<void> => {
       `CREATE TABLE IF NOT EXISTS service_types (
         id INT PRIMARY KEY AUTO_INCREMENT,
         enquiry_id INT NOT NULL,
-        service_type ENUM('Sole Replacement', 'Zipper Repair', 'Cleaning & Polish', 'Stitching', 'Leather Treatment', 'Hardware Repair') NOT NULL,
+        service_type ENUM('Repairing', 'Cleaning', 'Dyeing') NOT NULL,
         status ENUM('pending', 'in-progress', 'done') DEFAULT 'pending',
+        product ENUM('Bag', 'Shoe', 'Wallet', 'Belt', 'All type furniture') NULL,
+        item_index INT NULL,
         department VARCHAR(255) NULL,
         assigned_to VARCHAR(255) NULL,
         started_at DATETIME NULL,
@@ -244,7 +263,8 @@ export const createTables = async (): Promise<void> => {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (enquiry_id) REFERENCES enquiries(id) ON DELETE CASCADE,
         INDEX idx_enquiry_id (enquiry_id),
-        INDEX idx_status (status)
+        INDEX idx_status (status),
+        INDEX idx_product_item (product, item_index)
       )`,
 
       // Photos storage - Enhanced with proper constraints and types
@@ -257,6 +277,9 @@ export const createTables = async (): Promise<void> => {
         notes TEXT NULL,
         service_type_id INT NULL,
         service_detail_id INT NULL,
+        product ENUM('Bag', 'Shoe', 'Wallet', 'Belt', 'All type furniture') NULL,
+        item_index INT NULL,
+        slot_index TINYINT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (enquiry_id) REFERENCES enquiries(id) ON DELETE CASCADE,
         FOREIGN KEY (service_type_id) REFERENCES service_types(id) ON DELETE CASCADE,
@@ -264,6 +287,7 @@ export const createTables = async (): Promise<void> => {
         INDEX idx_enquiry_id (enquiry_id),
         INDEX idx_stage (stage),
         INDEX idx_photo_type (photo_type),
+        INDEX idx_product_item (product, item_index),
         INDEX idx_service_type_id (service_type_id),
         INDEX idx_service_detail_id (service_detail_id)
       )`,

@@ -187,6 +187,26 @@ export class PickupApiService {
     }
   }
 
+  // New: Mark multiple product items received with multiple photos
+  static async markReceivedMulti(id: number, items: Array<{ product: string; itemIndex: number; photos: string[]; notes?: string }>, notes?: string, estimatedCost?: number): Promise<Enquiry> {
+    try {
+      const response = await apiClient.patch<ApiResponse<Enquiry>>(`/pickup/enquiries/${id}/receive`, {
+        items,
+        notes,
+        estimatedCost
+      });
+
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to mark items as received');
+      }
+
+      return response.data!;
+    } catch (error) {
+      console.error(`Failed to mark items ${id} as received:`, error);
+      throw error;
+    }
+  }
+
   // Update pickup status
   static async updateStatus(id: number, status: string, additionalData?: any): Promise<Enquiry> {
     try {

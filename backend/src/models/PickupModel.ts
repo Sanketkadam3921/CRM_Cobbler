@@ -3,17 +3,40 @@ import { logDatabase } from '../utils/logger';
 import {
   Enquiry,
   DatabaseEnquiry,
+  DatabaseEnquiryProduct,
   DatabasePickupDetails,
   DatabaseServiceDetails,
   DatabasePhoto,
   PickupStatus,
-  WorkflowStage
+  WorkflowStage,
+  ProductItem
 } from '../types';
 
 export class PickupModel {
 
+  // Get products for an enquiry
+  private static async getEnquiryProducts(enquiryId: number): Promise<ProductItem[]> {
+    try {
+      const query = `
+        SELECT product, quantity 
+        FROM enquiry_products 
+        WHERE enquiry_id = ?
+        ORDER BY id
+      `;
+
+      const rows = await executeQuery<DatabaseEnquiryProduct>(query, [enquiryId]);
+      return rows.map(row => ({
+        product: row.product,
+        quantity: row.quantity
+      }));
+    } catch (error) {
+      logDatabase.error('Failed to get enquiry products', error);
+      return [];
+    }
+  }
+
   // Convert database row to Enquiry object with pickup details
-  private static mapDatabaseToEnquiry(dbEnquiry: DatabaseEnquiry, pickupDetails?: DatabasePickupDetails): Enquiry {
+  private static mapDatabaseToEnquiry(dbEnquiry: DatabaseEnquiry, pickupDetails?: DatabasePickupDetails, products: ProductItem[] = []): Enquiry {
     return {
       id: dbEnquiry.id,
       customerName: dbEnquiry.customer_name,
@@ -23,6 +46,7 @@ export class PickupModel {
       inquiryType: dbEnquiry.inquiry_type,
       product: dbEnquiry.product,
       quantity: dbEnquiry.quantity,
+      products: products,
       date: dbEnquiry.date,
       status: dbEnquiry.status,
       contacted: dbEnquiry.contacted,
@@ -188,8 +212,12 @@ export class PickupModel {
         }
       });
 
-      const enquiries = Array.from(enquiryMap.values()).map(({ enquiry, pickupDetails }) =>
-        this.mapDatabaseToEnquiry(enquiry, pickupDetails)
+      // Fetch products for each enquiry
+      const enquiries = await Promise.all(
+        Array.from(enquiryMap.values()).map(async ({ enquiry, pickupDetails }) => {
+          const products = await this.getEnquiryProducts(enquiry.id);
+          return this.mapDatabaseToEnquiry(enquiry, pickupDetails, products);
+        })
       );
 
       logDatabase.success('Retrieved pickup enquiries successfully', {
@@ -276,7 +304,9 @@ export class PickupModel {
         };
       }
 
-      const result = this.mapDatabaseToEnquiry(enquiry, pickupDetails);
+      // Fetch products for the enquiry
+      const products = await this.getEnquiryProducts(enquiry.id);
+      const result = this.mapDatabaseToEnquiry(enquiry, pickupDetails, products);
 
       logDatabase.success('Retrieved pickup enquiry successfully', { id });
 
@@ -442,8 +472,9 @@ export class PickupModel {
 
       logDatabase.success('Item marked as received and moved to service successfully', { enquiryId });
 
-      // Return the original enquiry since we've successfully processed it
-      return enquiry;
+      // Return updated enquiry in pickup stage response format (still in pickup controller); frontend will refetch service list
+      const updated = await this.getPickupEnquiry(enquiryId);
+      return updated || enquiry;
 
     } catch (error) {
       // Rollback transaction on error
@@ -452,6 +483,79 @@ export class PickupModel {
       throw error;
     } finally {
       // Release connection
+      connection.release();
+    }
+  }
+
+  // New: Mark multiple product items as received with multiple photos (up to 4 per item)
+  static async markReceivedMulti(
+    enquiryId: number,
+    items: Array<{ product: string; itemIndex: number; photos: string[]; notes?: string }>,
+    notes?: string,
+    estimatedCost?: number
+  ): Promise<Enquiry | null> {
+    const connection = await getConnection();
+
+    try {
+      logDatabase.connection('Marking multiple items as received and moving to service', { enquiryId, items: items.length });
+
+      const enquiry = await this.getPickupEnquiry(enquiryId);
+      if (!enquiry) {
+        logDatabase.success('Enquiry not found for receipt marking', { enquiryId });
+        return null;
+      }
+
+      await connection.beginTransaction();
+
+      // Ensure service_details exists and set estimated cost
+      const [serviceInsert] = await connection.execute(
+        `INSERT INTO service_details (enquiry_id, estimated_cost, received_notes, created_at, updated_at)
+         VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+         ON DUPLICATE KEY UPDATE estimated_cost = VALUES(estimated_cost), received_notes = VALUES(received_notes), updated_at = CURRENT_TIMESTAMP`,
+        [enquiryId, estimatedCost || enquiry.quotedAmount || 0, notes || '']
+      ) as any;
+
+      // Insert photos for each product item
+      for (const item of items) {
+        const product = item.product as any;
+        const idx = item.itemIndex;
+        const photos = Array.isArray(item.photos) ? item.photos.slice(0, 4) : [];
+        let slot = 1;
+        for (const photo of photos) {
+          await connection.execute(
+            `INSERT INTO photos (enquiry_id, stage, photo_type, photo_data, notes, product, item_index, slot_index, created_at)
+             VALUES (?, 'pickup', 'before_photo', ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+            [enquiryId, photo, item.notes || 'Received condition photo', product, idx, slot]
+          );
+          slot++;
+        }
+      }
+
+      // Upsert pickup_details to received
+      await connection.execute(
+        `INSERT INTO pickup_details (enquiry_id, status, received_notes, created_at, updated_at)
+         VALUES (?, 'received', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+         ON DUPLICATE KEY UPDATE status='received', received_notes = VALUES(received_notes), updated_at = CURRENT_TIMESTAMP`,
+        [enquiryId, notes || '']
+      );
+
+      // Move enquiry to service stage
+      await connection.execute(
+        `UPDATE enquiries SET current_stage = 'service', updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+        [enquiryId]
+      );
+
+      await connection.commit();
+
+      logDatabase.success('Items marked as received and moved to service successfully', { enquiryId });
+      // Return updated enquiry (for pickup context); service list will reflect via service endpoints
+      const updated = await this.getPickupEnquiry(enquiryId);
+      return updated || enquiry;
+    } catch (error) {
+      await connection.rollback();
+      logDatabase.error('Failed to mark items as received', error);
+      throw error;
+    } finally {
       connection.release();
     }
   }

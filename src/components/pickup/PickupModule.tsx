@@ -37,8 +37,11 @@ import { stringUtils } from "@/utils";
 export function PickupModule() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null); // legacy single photo
   const [receivedNotes, setReceivedNotes] = useState("");
+  // New UI state for multi-photo capture per product item
+  const [multiPhotos, setMultiPhotos] = useState<Record<string, string[]>>({}); // key: `${product}-${index}` -> string[] of photos
+  const [selectedProductKey, setSelectedProductKey] = useState<string | null>(null);
 
   // Use pickup API hooks with 2-second polling
   const {
@@ -174,53 +177,101 @@ export function PickupModule() {
     }
   };
 
-  const handleItemReceived = async (enquiryId: number) => {
-    if (!selectedImage) {
-      toast({
-        title: "Photo Required",
-        description: "Please upload a received condition photo",
-        variant: "destructive",
-        duration: 3000, // 3 seconds
-
-      });
-      return;
+  // New: handle per product-item photo uploads (up to 4)
+  const handleItemPhotoUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+    product: string,
+    itemIndex: number
+  ) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      try {
+        const thumbnailData = await imageUploadHelper.handleImageUpload(file);
+        const key = `${product}-${itemIndex}`;
+        setMultiPhotos(prev => {
+          const existing = prev[key] || [];
+          // limit to 4 photos
+          const updated = [...existing, thumbnailData].slice(0, 4);
+          return { ...prev, [key]: updated };
+        });
+        setSelectedProductKey(prev => prev || key);
+      } catch (error) {
+        console.error('Failed to process image:', error);
+        toast({
+          title: "Error",
+          description: "Failed to process image. Please try again.",
+          variant: "destructive",
+          duration: 3000,
+        });
+      }
     }
+  };
 
+  const handleItemReceived = async (enquiryId: number) => {
     try {
       const enquiry = enquiries.find((e) => e.id === enquiryId);
       const estimatedCost = enquiry?.quotedAmount || 0;
 
-      await markReceived(enquiryId, selectedImage, receivedNotes, estimatedCost);
+      // Build multi-photo payload: for each product and quantity, expect up to 4 photos per item
+      const itemsPayload: Array<{ product: string; itemIndex: number; photos: string[]; notes?: string }> = [];
+      const products = enquiry?.products && enquiry.products.length > 0
+        ? enquiry.products
+        : [{ product: enquiry?.product || '', quantity: enquiry?.quantity || 1 } as any];
 
-      // Reset form
-      setSelectedImage(null);
-      setReceivedNotes("");
-
-      toast({
-        title: "Item Received!",
-        description: "Item has been received and moved to service department",
-        className: "bg-green-50 border-green-200 text-green-800",
-        duration: 3000, // 3 seconds
-
+      products.forEach(p => {
+        for (let i = 1; i <= (p.quantity || 1); i++) {
+          const key = `${p.product}-${i}`;
+          const photos = multiPhotos[key] || [];
+          itemsPayload.push({ product: p.product, itemIndex: i, photos, notes: receivedNotes });
+        }
       });
 
-      // Send WhatsApp notification (simulated)
+      const hasAnyPhotos = itemsPayload.some(it => (it.photos?.length || 0) > 0);
+
+      if (!hasAnyPhotos) {
+        toast({
+          title: "Photos Required",
+          description: "Please upload up to 4 photos for each product item.",
+          variant: "destructive",
+          duration: 3000,
+        });
+        return;
+      }
+
+      // Always send structured multi-item photos payload
+      // Call underlying API directly to ensure correct payload shape
+      await (await import('@/services/pickupApiService')).PickupApiService.markReceivedMulti(
+        enquiryId,
+        itemsPayload,
+        receivedNotes,
+        estimatedCost
+      );
+
+      setSelectedImage(null);
+      setReceivedNotes("");
+      setMultiPhotos({});
+
+      toast({
+        title: "Items Received!",
+        description: "All items have been received and moved to service",
+        className: "bg-green-50 border-green-200 text-green-800",
+        duration: 3000,
+      });
+
       if (enquiry) {
         toast({
           title: "WhatsApp Notification",
-          description: `WhatsApp message sent to ${enquiry.customerName}: "We have received your ${enquiry.product} and it has been moved to service department."`,
+          description: `WhatsApp message sent to ${enquiry.customerName}: "We have received your items and moved them to service."`,
           className: "bg-blue-50 border-blue-200 text-blue-800",
-          duration: 3000, // 3 seconds
-
+          duration: 3000,
         });
       }
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to mark item as received",
+        description: "Failed to mark items as received",
         variant: "destructive",
-        duration: 3000, // 3 seconds
-
+        duration: 3000,
       });
     }
   };
@@ -350,12 +401,28 @@ export function PickupModule() {
                 </div>
 
                 <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
-                      Quantity: {enquiry.quantity}
+                  {/* Display multiple products if available, otherwise fallback to single product */}
+                  {enquiry.products && enquiry.products.length > 0 ? (
+                    <div className="space-y-2">
+                      <span className="text-xs text-gray-500 font-medium">Products:</span>
+                      <div className="flex flex-wrap gap-2">
+                        {enquiry.products.map((product, index) => (
+                          <div key={index} className="flex items-center space-x-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                            <Package className="h-3 w-3" />
+                            <span>{product.product}</span>
+                            <span>({product.quantity})</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                    <span className="text-gray-500 text-sm">{enquiry.product}</span>
-                  </div>
+                  ) : (
+                    <div className="flex items-center space-x-2">
+                      <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                        Quantity: {enquiry.quantity}
+                      </div>
+                      <span className="text-gray-500 text-sm">{enquiry.product}</span>
+                    </div>
+                  )}
                   <div className="flex items-start space-x-2">
                     <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                     <span className="text-sm text-foreground break-words">
@@ -408,40 +475,71 @@ export function PickupModule() {
                         </DialogHeader>
                         <div className="space-y-4">
                           <div className="space-y-2">
-                            <Label>Received Condition Photo</Label>
-                            <div className="flex flex-col sm:flex-row gap-2">
-                              <Input
-                                type="file"
-                                accept="image/*"
-                                onChange={handleImageUpload}
-                                className="hidden"
-                                id={`received-photo-${enquiry.id}`}
-                              />
-                              <Label
-                                htmlFor={`received-photo-${enquiry.id}`}
-                                className="cursor-pointer flex items-center justify-center space-x-2 border border-input bg-background px-3 py-2 text-sm ring-offset-background hover:bg-accent hover:text-accent-foreground rounded-md flex-1"
-                              >
-                                <Camera className="h-4 w-4" />
-                                <span>Take Photo</span>
-                              </Label>
+                            <Label>Per-Item Photos (up to 4 per item)</Label>
+                            {/* Item selector */}
+                            <div className="flex items-center gap-2">
+                              <Label className="text-xs">Select Item</Label>
+                              <Select value={selectedProductKey || undefined} onValueChange={(v) => setSelectedProductKey(v)}>
+                                <SelectTrigger className="h-8 w-48">
+                                  <SelectValue placeholder="Choose item" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {(enquiry.products && enquiry.products.length > 0 ? enquiry.products : [{ product: enquiry.product, quantity: enquiry.quantity } as any]).flatMap((p: any) => (
+                                    Array.from({ length: p.quantity || 1 }).map((_, idx) => {
+                                      const key = `${p.product}-${idx + 1}`;
+                                      return (
+                                        <SelectItem key={key} value={key}>{p.product} — #{idx + 1}</SelectItem>
+                                      );
+                                    })
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </div>
-                            {selectedImage && (
-                              <div className="mt-2">
-                                <img
-                                  src={selectedImage}
-                                  alt="Received item condition"
-                                  className="w-full max-h-48 object-contain rounded-md border bg-gray-50"
-                                  loading="eager"
-                                  decoding="sync"
-                                  style={{
-                                    imageRendering: "crisp-edges",
-                                    transform: "translateZ(0)",
-                                    backfaceVisibility: "hidden",
-                                    WebkitBackfaceVisibility: "hidden",
-                                  } as React.CSSProperties}
-                                />
+                            {/* Multiple products support; fallback to single product/quantity */}
+                            {(enquiry.products && enquiry.products.length > 0 ? enquiry.products : [{ product: enquiry.product, quantity: enquiry.quantity } as any]).map((p, pIdx) => (
+                              <div key={`product-${pIdx}`} className="space-y-2 border rounded-md p-2">
+                                <div className="text-sm font-medium">{p.product} × {p.quantity || 1}</div>
+                                <div className="space-y-2">
+                                  {Array.from({ length: p.quantity || 1 }).map((_, idx) => {
+                                    const itemIndex = idx + 1;
+                                    const key = `${p.product}-${itemIndex}`;
+                                    const photos = multiPhotos[key] || [];
+                                    const remaining = Math.max(0, 4 - photos.length);
+                                    return (
+                                      <div key={`item-${itemIndex}`} className={`space-y-2 ${selectedProductKey && selectedProductKey !== key ? 'opacity-50' : ''}`}>
+                                        <div className="text-xs text-muted-foreground">Item #{itemIndex}</div>
+                                        <div className="grid grid-cols-4 gap-2">
+                                          {photos.map((ph, i) => (
+                                            <img key={`ph-${i}`} src={ph} alt={`Item ${itemIndex} photo ${i + 1}`} className="h-16 w-full object-cover rounded border bg-gray-50" />
+                                          ))}
+                                          {Array.from({ length: remaining }).map((__, addIdx) => {
+                                            const inputId = `item-photo-${enquiry.id}-${p.product}-${itemIndex}-${addIdx}`;
+                                            return (
+                                              <div key={`add-${addIdx}`} className="flex items-center justify-center">
+                                                <Input
+                                                  type="file"
+                                                  accept="image/*"
+                                                  onChange={(e) => handleItemPhotoUpload(e, p.product, itemIndex)}
+                                                  className="hidden"
+                                                  id={inputId}
+                                                />
+                                                <Label
+                                                  htmlFor={inputId}
+                                                  className="cursor-pointer flex items-center justify-center space-x-1 border border-dashed border-input bg-background px-2 py-1 text-xs ring-offset-background hover:bg-accent hover:text-accent-foreground rounded-md w-full h-16"
+                                                >
+                                                  <Camera className="h-3 w-3" />
+                                                  <span>Add</span>
+                                                </Label>
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
                               </div>
-                            )}
+                            ))}
                           </div>
 
                           <div className="space-y-2">
@@ -458,14 +556,14 @@ export function PickupModule() {
                           <Button
                             onClick={() => handleItemReceived(enquiry.id)}
                             className="w-full bg-green-600 hover:bg-green-700"
-                            disabled={!selectedImage}
+                            disabled={Object.values(multiPhotos).every(arr => (arr?.length || 0) === 0)}
                           >
                             <Send className="h-4 w-4 mr-2" />
                             Item Received - Send to Service
                           </Button>
-                          {!selectedImage && (
+                          {Object.values(multiPhotos).every(arr => (arr?.length || 0) === 0) && (
                             <p className="text-xs text-muted-foreground text-center">
-                              Please upload a received condition photo
+                              Please upload up to 4 photos for each product item
                             </p>
                           )}
                         </div>

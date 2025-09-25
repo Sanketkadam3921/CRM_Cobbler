@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Plus,
   Search,
@@ -36,7 +37,7 @@ import {
   Calendar
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Enquiry } from "@/types";
+import { Enquiry, ProductItem, ProductType } from "@/types";
 import { useEnquiriesWithPolling, useCrmStats } from "@/services/enquiryApiService";
 import { Card as Card1, CardContent, Stack, Box, Button as Button1 } from "@mui/material";
 
@@ -124,6 +125,8 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
   const [showConvertDialog, setShowConvertDialog] = useState(false);
   const [convertingEnquiry, setConvertingEnquiry] = useState<Enquiry | null>(null);
   const [quotedAmount, setQuotedAmount] = useState<string>("");
+  const [pickupDate, setPickupDate] = useState<string>("");
+  const [deliveryDate, setDeliveryDate] = useState<string>("");
 
   const [formData, setFormData] = useState({
     name: "",
@@ -131,12 +134,50 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
     location: "",
     message: "",
     enquiryType: "",
-    product: "",
-    quantity: ""
+    products: [] as ProductItem[]
   });
   const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
   const [editErrors, setEditErrors] = useState<{ [key: string]: string }>({});
   const [showSuccess, setShowSuccess] = useState(false);
+
+  // Product types list
+  const productTypes: ProductType[] = ["Bag", "Shoe", "Wallet", "Belt", "All type furniture"];
+
+  // Helper functions for managing products
+  const addProduct = (productType: ProductType) => {
+    const existingProduct = formData.products.find(p => p.product === productType);
+    if (!existingProduct) {
+      setFormData({
+        ...formData,
+        products: [...formData.products, { product: productType, quantity: 1 }]
+      });
+    }
+  };
+
+  const removeProduct = (productType: ProductType) => {
+    setFormData({
+      ...formData,
+      products: formData.products.filter(p => p.product !== productType)
+    });
+  };
+
+  const updateProductQuantity = (productType: ProductType, quantity: number) => {
+    setFormData({
+      ...formData,
+      products: formData.products.map(p =>
+        p.product === productType ? { ...p, quantity } : p
+      )
+    });
+  };
+
+  const isProductSelected = (productType: ProductType) => {
+    return formData.products.some(p => p.product === productType);
+  };
+
+  const getProductQuantity = (productType: ProductType) => {
+    const product = formData.products.find(p => p.product === productType);
+    return product ? product.quantity : 1;
+  };
 
   // Use stats from API instead of calculating locally
   const calculatedStats = stats || {
@@ -217,23 +258,11 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
         }
         break;
 
-      case 'product':
-        if (!value) {
-          return "Please select a product type";
+      case 'products':
+        if (!value || (Array.isArray(value) && value.length === 0)) {
+          return "Please select at least one product type";
         }
         break;
-
-      case 'quantity': {
-        const numValue = parseInt(value);
-        if (!value || value.trim() === "") {
-          return "Quantity is required";
-        } else if (isNaN(numValue)) {
-          return "Quantity must be a valid number";
-        } else if (numValue < 1) {
-          return "Quantity must be at least 1";
-        }
-        break;
-      }
     }
     return "";
   };
@@ -242,11 +271,24 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
     const errors: { [key: string]: string } = {};
 
     // Validate only required fields
-    const requiredFields = ['name', 'number', 'enquiryType', 'product', 'quantity'];
+    const requiredFields = ['name', 'number', 'enquiryType'];
     requiredFields.forEach(field => {
-      const error = validateField(field, formData[field as keyof typeof formData]);
+      const value = formData[field as keyof typeof formData];
+      const error = validateField(field, typeof value === 'string' ? value : '');
       if (error) {
         errors[field] = error;
+      }
+    });
+
+    // Validate products separately
+    if (!formData.products || formData.products.length === 0) {
+      errors.products = "Please select at least one product type";
+    }
+
+    // Validate individual product quantities
+    formData.products.forEach((product, index) => {
+      if (product.quantity < 1) {
+        errors[`product_${index}_quantity`] = "Quantity must be at least 1";
       }
     });
 
@@ -265,15 +307,22 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
     const fieldsToValidate = [
       { key: 'customerName', formKey: 'name' },
       { key: 'phone', formKey: 'number' },
-      { key: 'product', formKey: 'product' },
-      { key: 'quantity', formKey: 'quantity' }
+      { key: 'products', formKey: 'products' }
     ];
 
     fieldsToValidate.forEach(({ key, formKey }) => {
       const value = editData[key] !== undefined ? editData[key] : currentEnquiry[key];
-      const error = validateField(formKey, String(value || ''));
+      const error = validateField(formKey, value);
       if (error) {
         errors[key] = error;
+      }
+    });
+
+    // Validate individual product quantities
+    const products = editData.products ?? currentEnquiry.products ?? [];
+    products.forEach((product, index) => {
+      if (product.quantity < 1) {
+        errors[`product_${index}_quantity`] = "Quantity must be at least 1";
       }
     });
 
@@ -288,8 +337,7 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
         name: "Customer Name",
         number: "Phone Number",
         enquiryType: "Enquiry Source",
-        product: "Product Type",
-        quantity: "Quantity",
+        products: "Product Types",
       };
 
       const errorList = Object.keys(formErrors).map(
@@ -322,15 +370,11 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
         phone: formData.number.replace(/\D/g, ""),
         address: formData.location?.trim() || "N/A",
         message: formData.message?.trim() || "No message",
-
         inquiryType: formData.enquiryType as "Instagram" | "Facebook" | "WhatsApp",
-        product: formData.product as
-          | "Bag"
-          | "Shoe"
-          | "Wallet"
-          | "Belt"
-          | "All type furniture",
-        quantity: parseInt(formData.quantity) || 1,
+        // For backward compatibility, use first product or default
+        product: formData.products.length > 0 ? formData.products[0].product : "Bag",
+        quantity: formData.products.length > 0 ? formData.products[0].quantity : 1,
+        products: formData.products,
         date: new Date().toISOString().split("T")[0],
         status: "new",
         contacted: false,
@@ -348,8 +392,7 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
         location: "",
         message: "",
         enquiryType: "",
-        product: "",
-        quantity: "1",
+        products: [],
       });
       setFormErrors({});
       setShowSuccess(true);
@@ -461,6 +504,8 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
   const markAsConverted = (enquiry: Enquiry) => {
     setConvertingEnquiry(enquiry);
     setQuotedAmount(""); // Clear previous quoted amount
+    setPickupDate(""); // Clear previous pickup date
+    setDeliveryDate(""); // Clear previous delivery date
     setShowConvertDialog(true);
   };
 
@@ -543,6 +588,46 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
     }
   };
 
+  // Date validation functions
+  const validatePickupDate = (date: string): string => {
+    if (!date) {
+      return "Pickup date is required";
+    }
+
+    const selectedDate = new Date(date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time to start of day
+
+    if (selectedDate < today) {
+      return "Pickup date cannot be in the past";
+    }
+
+    return "";
+  };
+
+  const validateDeliveryDate = (deliveryDate: string, pickupDate: string): string => {
+    if (!deliveryDate) {
+      return "Delivery date is required";
+    }
+
+    if (!pickupDate) {
+      return "Please select pickup date first";
+    }
+
+    const selectedDeliveryDate = new Date(deliveryDate);
+    const selectedPickupDate = new Date(pickupDate);
+
+    // Calculate difference in days
+    const timeDiff = selectedDeliveryDate.getTime() - selectedPickupDate.getTime();
+    const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+
+    if (daysDiff < 15) {
+      return "Delivery date must be at least 15 days after pickup date";
+    }
+
+    return "";
+  };
+
   const filteredEnquiries = enquiries
     .filter(enquiry =>
       enquiry.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -562,8 +647,7 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
       return dateB.getTime() - dateA.getTime(); // Newer date first
     });
 
-  const showReviewSection = formData.product && parseInt(formData.quantity) > 0;
-
+  const showReviewSection = formData.products.length > 0;
   return (
     <div className="space-y-4 sm:space-y-6 animate-fade-in p-2 sm:p-0">
       {/* Header */}
@@ -722,64 +806,55 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                 </Select>
                 {formErrors.enquiryType && <p className="text-red-500 text-xs mt-1">{formErrors.enquiryType}</p>}
               </div>
-              <div>
-                <Label htmlFor="product" className="text-sm font-medium text-gray-700">Product Type *</Label>
-                <Select
-                  value={formData.product}
-                  onValueChange={(value) => {
-                    setFormData({ ...formData, product: value });
-                    if (formErrors.product) {
-                      setFormErrors({ ...formErrors, product: "" });
-                    }
-                    // Validate on change for select fields
-                    const error = validateField('product', value);
-                    if (error) {
-                      setFormErrors({ ...formErrors, product: error });
-                    }
-                  }}
-                >
-                  <SelectTrigger className={`mt-1 ${formErrors.product ? 'border-red-500 focus:border-red-500' : ''}`}>
-                    <SelectValue placeholder="Select product" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Bag">Bag</SelectItem>
-                    <SelectItem value="Shoe">Shoe</SelectItem>
-                    <SelectItem value="Wallet">Wallet</SelectItem>
-                    <SelectItem value="Belt">Belt</SelectItem>
-                    <SelectItem value="All type furniture">All type furniture</SelectItem>
-                  </SelectContent>
-                </Select>
-                {formErrors.product && <p className="text-red-500 text-xs mt-1">{formErrors.product}</p>}
-              </div>
             </div>
 
-            {/* Product Quantity */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="quantity" className="text-sm font-medium text-gray-700">Product Quantity *</Label>
-                <Input
-                  id="quantity"
-                  type="text"
-                  value={formData.quantity}
-                  onChange={(e) => {
-                    // Only allow numbers
-                    const value = e.target.value.replace(/[^0-9]/g, '');
-                    setFormData({ ...formData, quantity: value });
-                    if (formErrors.quantity) {
-                      setFormErrors({ ...formErrors, quantity: "" });
-                    }
-                  }}
-                  onBlur={(e) => {
-                    const error = validateField('quantity', e.target.value);
-                    if (error) {
-                      setFormErrors({ ...formErrors, quantity: error });
-                    }
-                  }}
-                  placeholder="Enter quantity (e.g., 2)"
-                  className={`mt-1 ${formErrors.quantity ? 'border-red-500 focus:border-red-500' : ''}`}
-                />
-                {formErrors.quantity && <p className="text-red-500 text-xs mt-1">{formErrors.quantity}</p>}
+            {/* Product Selection with Checkboxes */}
+            <div>
+              <Label className="text-sm font-medium text-gray-700">Product Types *</Label>
+              <div className="mt-2 space-y-3">
+                {productTypes.map((productType) => (
+                  <div key={productType} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50">
+                    <Checkbox
+                      id={`product-${productType}`}
+                      checked={isProductSelected(productType)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          addProduct(productType);
+                        } else {
+                          removeProduct(productType);
+                        }
+                        if (formErrors.products) {
+                          setFormErrors({ ...formErrors, products: "" });
+                        }
+                      }}
+                    />
+                    <div className="flex-1 flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        {getProductIcon(productType)}
+                        <Label htmlFor={`product-${productType}`} className="text-sm font-medium text-gray-700 cursor-pointer">
+                          {productType}
+                        </Label>
+                      </div>
+                      {isProductSelected(productType) && (
+                        <div className="flex items-center space-x-2">
+                          <Label className="text-xs text-gray-500">Quantity:</Label>
+                          <Input
+                            type="number"
+                            min="1"
+                            value={getProductQuantity(productType)}
+                            onChange={(e) => {
+                              const quantity = parseInt(e.target.value) || 1;
+                              updateProductQuantity(productType, quantity);
+                            }}
+                            className="w-16 h-8 text-sm"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
+              {formErrors.products && <p className="text-red-500 text-xs mt-1">{formErrors.products}</p>}
             </div>
 
             {/* Address Field - Full Width */}
@@ -823,21 +898,25 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
             {showReviewSection && (
               <Card className="p-4 bg-blue-50 border border-blue-200">
                 <h4 className="text-sm font-semibold text-gray-900 mb-3">Review Selection</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-                  <div className="flex items-center space-x-2">
-                    <span className="font-medium text-gray-700">Product:</span>
-                    <span className="text-gray-900">{formData.product}</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="font-medium text-gray-700">Quantity:</span>
-                    <span className="text-gray-900 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
-                      {formData.quantity}
-                    </span>
-                  </div>
+                <div className="space-y-3">
                   <div className="flex items-center space-x-2">
                     {getEnquiryIcon(formData.enquiryType)}
                     <span className="font-medium text-gray-700">Source:</span>
                     <span className="text-gray-900">{formData.enquiryType}</span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700 text-sm">Selected Products:</span>
+                    <div className="mt-2 space-y-2">
+                      {formData.products.map((product, index) => (
+                        <div key={index} className="flex items-center space-x-2 bg-white p-2 rounded border">
+                          {getProductIcon(product.product)}
+                          <span className="text-sm text-gray-900">{product.product}</span>
+                          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">
+                            Qty: {product.quantity}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </Card>
@@ -1009,73 +1088,61 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                       )}
                     </div>
 
-                    {/* Product */}
-                    <div>
-                      <Label className="text-sm font-medium text-gray-700">
-                        Product Type *
-                      </Label>
-                      <Select
-                        value={editData.product ?? enquiry.product}
-                        onValueChange={(value) => {
-                          setEditData({ ...editData, product: value });
-                          if (editErrors.product) {
-                            setEditErrors({ ...editErrors, product: "" });
-                          }
-                          const error = validateField("product", value);
-                          if (error) {
-                            setEditErrors({ ...editErrors, product: error });
-                          }
-                        }}
-                      >
-                        <SelectTrigger
-                          className={`mt-1 ${editErrors.product ? "border-red-500 focus:border-red-500" : ""
-                            }`}
-                        >
-                          <SelectValue placeholder="Select product" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Bag">Bag</SelectItem>
-                          <SelectItem value="Shoe">Shoe</SelectItem>
-                          <SelectItem value="Wallet">Wallet</SelectItem>
-                          <SelectItem value="Belt">Belt</SelectItem>
-                          <SelectItem value="All type furniture">
-                            All type furniture
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                      {editErrors.product && (
-                        <p className="text-red-500 text-xs mt-1">{editErrors.product}</p>
-                      )}
-                    </div>
+                    {/* Products - Full Width */}
+                    <div className="col-span-2">
+                      <Label className="text-sm font-medium text-gray-700">Product Types *</Label>
+                      <div className="mt-2 space-y-3">
+                        {productTypes.map((productType) => {
+                          const isSelected = (editData.products ?? enquiry.products ?? []).some(p => p.product === productType);
+                          const currentQuantity = (editData.products ?? enquiry.products ?? []).find(p => p.product === productType)?.quantity ?? 1;
 
-                    {/* Quantity */}
-                    <div>
-                      <Label className="text-sm font-medium text-gray-700">
-                        Quantity *
-                      </Label>
-                      <Input
-                        type="text"
-                        value={editData.quantity ?? enquiry.quantity}
-                        onChange={(e) => {
-                          const val = e.target.value.replace(/[^0-9]/g, "");
-                          setEditData({ ...editData, quantity: parseInt(val) || '' });
-                          if (editErrors.quantity) {
-                            setEditErrors({ ...editErrors, quantity: "" });
-                          }
-                        }}
-                        onBlur={(e) => {
-                          const error = validateField("quantity", String(editData.quantity || enquiry.quantity));
-                          if (error) {
-                            setEditErrors({ ...editErrors, quantity: error });
-                          }
-                        }}
-                        placeholder="Enter quantity"
-                        className={`mt-1 ${editErrors.quantity ? "border-red-500 focus:border-red-500" : ""
-                          }`}
-                      />
-                      {editErrors.quantity && (
-                        <p className="text-red-500 text-xs mt-1">{editErrors.quantity}</p>
-                      )}
+                          return (
+                            <div key={productType} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50">
+                              <Checkbox
+                                id={`edit-product-${productType}`}
+                                checked={isSelected}
+                                onCheckedChange={(checked) => {
+                                  const currentProducts = editData.products ?? enquiry.products ?? [];
+                                  if (checked) {
+                                    const newProducts = [...currentProducts, { product: productType, quantity: 1 }];
+                                    setEditData({ ...editData, products: newProducts });
+                                  } else {
+                                    const newProducts = currentProducts.filter(p => p.product !== productType);
+                                    setEditData({ ...editData, products: newProducts });
+                                  }
+                                }}
+                              />
+                              <div className="flex-1 flex items-center justify-between">
+                                <div className="flex items-center space-x-2">
+                                  {getProductIcon(productType)}
+                                  <Label htmlFor={`edit-product-${productType}`} className="text-sm font-medium text-gray-700 cursor-pointer">
+                                    {productType}
+                                  </Label>
+                                </div>
+                                {isSelected && (
+                                  <div className="flex items-center space-x-2">
+                                    <Label className="text-xs text-gray-500">Quantity:</Label>
+                                    <Input
+                                      type="number"
+                                      min="1"
+                                      value={currentQuantity}
+                                      onChange={(e) => {
+                                        const quantity = parseInt(e.target.value) || 1;
+                                        const currentProducts = editData.products ?? enquiry.products ?? [];
+                                        const newProducts = currentProducts.map(p =>
+                                          p.product === productType ? { ...p, quantity } : p
+                                        );
+                                        setEditData({ ...editData, products: newProducts });
+                                      }}
+                                      className="w-16 h-8 text-sm"
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
 
                     {/* Status */}
@@ -1195,11 +1262,22 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                             <span className="text-sm">{enquiry.inquiryType}</span>
                           </div>
 
-                          <div className="flex items-center space-x-2">
-                            <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
-                              Quantity: {enquiry.quantity}
-                            </div>
-                            <span className="text-gray-500 text-sm">{enquiry.product}</span>
+                          <div className="flex flex-wrap items-center gap-2">
+                            {enquiry.products && enquiry.products.length > 0 ? (
+                              enquiry.products.map((product, index) => (
+                                <div key={index} className="flex items-center space-x-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                                  {getProductIcon(product.product)}
+                                  <span>{product.product}</span>
+                                  <span>({product.quantity})</span>
+                                </div>
+                              ))
+                            ) : (
+                              <div className="flex items-center space-x-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                                {getProductIcon(enquiry.product)}
+                                <span>{enquiry.product}</span>
+                                <span>({enquiry.quantity})</span>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1308,7 +1386,7 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
 
       {/* Convert Enquiry Dialog */}
       <Dialog open={showConvertDialog} onOpenChange={setShowConvertDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Convert Enquiry</DialogTitle>
           </DialogHeader>
@@ -1321,39 +1399,103 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                     {convertingEnquiry.customerName}
                   </h4>
                   <p className="text-sm text-gray-600">{convertingEnquiry.message}</p>
-                  <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
-                    <span>Quantity: {convertingEnquiry.quantity}</span>
-
-                    <span>•</span>
-                    <span>{convertingEnquiry.product}</span>
-
+                  <div className="mt-2">
+                    {convertingEnquiry.products && convertingEnquiry.products.length > 0 ? (
+                      <div className="space-y-1">
+                        <span className="text-xs text-gray-500">Products:</span>
+                        {convertingEnquiry.products.map((product, index) => (
+                          <div key={index} className="flex items-center gap-2 text-xs text-gray-500">
+                            {getProductIcon(product.product)}
+                            <span>{product.product} (Qty: {product.quantity})</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                        <span>Quantity: {convertingEnquiry.quantity}</span>
+                        <span>•</span>
+                        <span>{convertingEnquiry.product}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label
-                    htmlFor="quotedAmount"
-                    className="text-sm font-medium text-gray-700"
-                  >
-                    Approx Amount (₹)
-                  </Label>
-                  <Input
-                    id="quotedAmount"
-                    type="text"
-                    placeholder="1.00"
-                    value={quotedAmount}
-                    onChange={(e) => {
-                      let value = e.target.value;
-                      if (value === "" || /^\d*\.?\d{0,2}$/.test(value)) {
-                        if (/^0\d+/.test(value)) return;
-                        setQuotedAmount(value);
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="quotedAmount"
+                      className="text-sm font-medium text-gray-700"
+                    >
+                      Approx Amount (₹) *
+                    </Label>
+                    <Input
+                      id="quotedAmount"
+                      type="text"
+                      placeholder="1.00"
+                      value={quotedAmount}
+                      onChange={(e) => {
+                        let value = e.target.value;
+                        if (value === "" || /^\d*\.?\d{0,2}$/.test(value)) {
+                          if (/^0\d+/.test(value)) return;
+                          setQuotedAmount(value);
+                        }
+                      }}
+                      className="w-full"
+                    />
+                    <p className="text-xs text-gray-500">
+                      Enter amount in format: 1.00 (must be 1 or greater)
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="pickupDate"
+                      className="text-sm font-medium text-gray-700"
+                    >
+                      Pickup Date *
+                    </Label>
+                    <Input
+                      id="pickupDate"
+                      type="date"
+                      value={pickupDate}
+                      onChange={(e) => {
+                        setPickupDate(e.target.value);
+                        // Clear delivery date if pickup date changes
+                        if (deliveryDate) {
+                          setDeliveryDate("");
+                        }
+                      }}
+                      min={new Date().toISOString().split('T')[0]}
+                      className="w-full"
+                    />
+                    <p className="text-xs text-gray-500">
+                      Select pickup date (cannot be in the past)
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="deliveryDate"
+                      className="text-sm font-medium text-gray-700"
+                    >
+                      Delivery Date *
+                    </Label>
+                    <Input
+                      id="deliveryDate"
+                      type="date"
+                      value={deliveryDate}
+                      onChange={(e) => setDeliveryDate(e.target.value)}
+                      min={pickupDate ? new Date(new Date(pickupDate).getTime() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]}
+                      disabled={!pickupDate}
+                      className="w-full"
+                    />
+                    <p className="text-xs text-gray-500">
+                      {pickupDate
+                        ? `Select delivery date (must be at least 15 days after pickup: ${new Date(new Date(pickupDate).getTime() + 15 * 24 * 60 * 60 * 1000).toLocaleDateString()})`
+                        : "Please select pickup date first"
                       }
-                    }}
-                    className="w-full"
-                  />
-                  <p className="text-xs text-gray-500">
-                    Enter amount in format: 1.00 (must be 1 or greater)
-                  </p>
+                    </p>
+                  </div>
                 </div>
               </div>
             )}
@@ -1366,6 +1508,8 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                 setShowConvertDialog(false);
                 setConvertingEnquiry(null);
                 setQuotedAmount("");
+                setPickupDate("");
+                setDeliveryDate("");
               }}
               className="w-full sm:w-24 h-10 bg-red-500 text-white hover:bg-red-600 font-medium"
             >
@@ -1374,17 +1518,40 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
 
             <Button
               onClick={async () => {
-                if (convertingEnquiry && quotedAmount.trim()) {
+                if (convertingEnquiry && quotedAmount.trim() && pickupDate && deliveryDate) {
                   const amount = parseFloat(quotedAmount);
 
+                  // Validate amount
                   if (isNaN(amount) || amount < 1) {
                     toast({
                       title: "Invalid Amount",
-                      description:
-                        "Please enter a valid quoted amount of 1 or greater.",
+                      description: "Please enter a valid quoted amount of 1 or greater.",
                       variant: "destructive",
-                      duration: 3000, // 3 seconds
+                      duration: 3000,
+                    });
+                    return;
+                  }
 
+                  // Validate pickup date
+                  const pickupDateError = validatePickupDate(pickupDate);
+                  if (pickupDateError) {
+                    toast({
+                      title: "Invalid Pickup Date",
+                      description: pickupDateError,
+                      variant: "destructive",
+                      duration: 3000,
+                    });
+                    return;
+                  }
+
+                  // Validate delivery date
+                  const deliveryDateError = validateDeliveryDate(deliveryDate, pickupDate);
+                  if (deliveryDateError) {
+                    toast({
+                      title: "Invalid Delivery Date",
+                      description: deliveryDateError,
+                      variant: "destructive",
+                      duration: 3000,
                     });
                     return;
                   }
@@ -1398,6 +1565,8 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                     contacted: true,
                     contactedAt: formattedDateForDB,
                     quotedAmount: amount,
+                    pickupDate: pickupDate,
+                    deliveryDate: deliveryDate,
                   };
 
                   const result = await updateEnquiry(
@@ -1407,23 +1576,28 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                   if (result) {
                     toast({
                       title: "Enquiry Converted!",
-                      description: `${convertingEnquiry.customerName} has been marked as converted with quoted amount ₹${amount}.`,
+                      description: `${convertingEnquiry.customerName} has been marked as converted with quoted amount ₹${amount}. Pickup: ${new Date(pickupDate).toLocaleDateString()}, Delivery: ${new Date(deliveryDate).toLocaleDateString()}.`,
                       className: "bg-blue-50 border-blue-200 text-blue-800",
-                      duration: 3000, // 3 seconds
-
+                      duration: 3000,
                     });
                   }
 
                   setShowConvertDialog(false);
                   setConvertingEnquiry(null);
                   setQuotedAmount("");
+                  setPickupDate("");
+                  setDeliveryDate("");
                 } else {
+                  const missingFields = [];
+                  if (!quotedAmount.trim()) missingFields.push("quoted amount");
+                  if (!pickupDate) missingFields.push("pickup date");
+                  if (!deliveryDate) missingFields.push("delivery date");
+
                   toast({
                     title: "Missing Information",
-                    description: "Please enter a quoted amount of 1 or greater.",
+                    description: `Please provide: ${missingFields.join(", ")}.`,
                     variant: "destructive",
-                    duration: 3000, // 3 seconds
-
+                    duration: 3000,
                   });
                 }
               }}

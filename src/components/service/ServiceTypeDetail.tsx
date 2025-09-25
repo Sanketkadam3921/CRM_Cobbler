@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Camera, ArrowLeft, CheckCircle, Clock } from "lucide-react";
+import { Camera, ArrowLeft, CheckCircle } from "lucide-react";
 import { ServiceDetails, ServiceType } from "@/types";
 import { imageUploadHelper } from "@/utils/localStorage";
 import { serviceApiService } from "@/services/serviceApiService";
@@ -13,11 +13,13 @@ import { serviceApiService } from "@/services/serviceApiService";
 interface ServiceTypeDetailProps {
   enquiryId: number;
   serviceType: ServiceType;
+  // Target specific product item (optional)
+  productItemKey?: string; // format: `${product}-${itemIndex}`
   onBack: () => void;
   onServiceUpdated?: () => void;
 }
 
-export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpdated }: ServiceTypeDetailProps) {
+export function ServiceTypeDetail({ enquiryId, serviceType, productItemKey, onBack, onServiceUpdated }: ServiceTypeDetailProps) {
   const [serviceDetails, setServiceDetails] = useState<ServiceDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -67,7 +69,14 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
 
     try {
       // Find the service type ID
-      const serviceTypeData = serviceDetails.serviceTypes?.find(s => s.type === serviceType);
+      // If productItemKey provided, match service by product/itemIndex
+      const serviceTypeData = serviceDetails.serviceTypes?.find(s => {
+        if (s.type !== serviceType) return false;
+        if (!productItemKey) return true;
+        const [p, idxStr] = productItemKey.split('-');
+        const idx = parseInt(idxStr, 10);
+        return (s as any).product === p && (s as any).itemIndex === idx;
+      });
       if (!serviceTypeData?.id) {
         alert('Service type not found');
         return;
@@ -106,7 +115,13 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
 
     try {
       // Find the service type ID
-      const serviceTypeData = serviceDetails.serviceTypes?.find(s => s.type === serviceType);
+      const serviceTypeData = serviceDetails.serviceTypes?.find(s => {
+        if (s.type !== serviceType) return false;
+        if (!productItemKey) return true;
+        const [p, idxStr] = productItemKey.split('-');
+        const idx = parseInt(idxStr, 10);
+        return (s as any).product === p && (s as any).itemIndex === idx;
+      });
       if (!serviceTypeData?.id) {
         alert('Service type not found');
         return;
@@ -179,8 +194,14 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
     );
   }
 
-  // Find the specific service type
-  const serviceTypeData = serviceDetails.serviceTypes?.find(s => s.type === serviceType);
+  // Find the specific service type (match product/item if provided)
+  const serviceTypeData = serviceDetails.serviceTypes?.find(s => {
+    if (s.type !== serviceType) return false;
+    if (!productItemKey) return true;
+    const [p, idxStr] = productItemKey.split('-');
+    const idx = parseInt(idxStr, 10);
+    return (s as any).product === p && (s as any).itemIndex === idx;
+  });
 
   return (
     <div className="space-y-4 animate-fade-in p-2 sm:p-0">
@@ -234,122 +255,89 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
 
       {/* Photos Section - Mobile Optimized */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* Before Photo */}
-        {/* Before Photo */}
+        {/* Before Photos (thumbnails) */}
         <Card className="p-4 bg-gradient-card border-0 shadow-soft">
-          <h3 className="text-sm font-semibold text-foreground mb-2">Before Photo</h3>
-          {serviceTypeData?.photos?.beforePhoto ? (
-            <div className="space-y-2">
-              <img
-                src={serviceTypeData.photos.beforePhoto}
-                alt="Before service"
-                className="w-full h-48 sm:h-64 object-contain rounded-md border bg-black cursor-pointer"
-                loading="lazy"
-                onClick={() => setModalImage(serviceTypeData.photos.beforePhoto)}
-              />
-              {serviceTypeData.photos.beforeNotes && (
-                <p className="text-xs text-muted-foreground break-words">
-                  {serviceTypeData.photos.beforeNotes}
-                </p>
-              )}
-            </div>
-          ) : (
-            <label
-              htmlFor="before-photo"
-              className="flex flex-col items-center justify-center text-center py-8 sm:py-6 text-muted-foreground border-2 border-dashed rounded-md cursor-pointer hover:bg-accent/30 transition"
-            >
-              <Camera className="h-8 w-8 mb-2 opacity-50" />
-              <p className="text-xs">Click to upload before photo</p>
-              <Input
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="hidden"
-                id="before-photo"
-              />
-            </label>
-          )}
+          <h3 className="text-sm font-semibold text-foreground mb-2">Before Photos</h3>
+          {(() => {
+            const items = (serviceDetails as any).itemPhotos as Array<any> | undefined;
+            let beforeList: string[] = [];
+            if (items && items.length > 0) {
+              const sel = productItemKey
+                ? items.find(it => `${it.product}-${it.itemIndex}` === productItemKey)
+                : items[0];
+              if (sel) {
+                const legacy = Array.isArray((sel as any).photos) ? (sel as any).photos as string[] : undefined;
+                const grouped = !legacy ? ((sel as any).photos || {}) as { before?: string[] } : undefined;
+                beforeList = legacy || grouped?.before || [];
+              }
+            }
+            return beforeList.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {beforeList.map((src, idx) => (
+                  <img
+                    key={`bf-${idx}`}
+                    src={src}
+                    alt={`Before ${idx + 1}`}
+                    className="w-full h-32 object-cover rounded-md border bg-black cursor-pointer"
+                    loading="lazy"
+                    onClick={() => setModalImage(src)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-xs text-muted-foreground">No before photos</div>
+            );
+          })()}
         </Card>
 
-        {/* After Photo */}
+        {/* After Photo (upload and preview) */}
         <Card className="p-4 bg-gradient-card border-0 shadow-soft">
           <h3 className="text-sm font-semibold text-foreground mb-2">After Photo</h3>
-          {serviceTypeData?.photos?.afterPhoto ? (
+          {(serviceTypeData as any)?.photos?.after?.[0] ? (
             <div className="space-y-2">
               <img
-                src={serviceTypeData.photos.afterPhoto}
+                src={(serviceTypeData as any).photos.after[0]}
                 alt="After service"
                 className="w-full h-48 sm:h-64 object-contain rounded-md border bg-black cursor-pointer"
                 loading="lazy"
-                onClick={() => setModalImage(serviceTypeData.photos.afterPhoto)}
+                onClick={() => setModalImage((serviceTypeData as any).photos.after[0])}
               />
-              {serviceTypeData.photos.afterNotes && (
-                <p className="text-xs text-muted-foreground break-words">
-                  {serviceTypeData.photos.afterNotes}
-                </p>
-              )}
             </div>
           ) : (
-            <label
-              htmlFor="after-photo"
-              className="flex flex-col items-center justify-center text-center py-8 sm:py-6 text-muted-foreground border-2 border-dashed rounded-md cursor-pointer hover:bg-accent/30 transition"
-            >
-              <Camera className="h-8 w-8 mb-2 opacity-50" />
-              <p className="text-xs">Click to upload after photo</p>
-              <Input
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="hidden"
-                id="after-photo"
-              />
-            </label>
+            <>
+              <label
+                htmlFor="after-photo"
+                className="flex flex-col items-center justify-center text-center py-8 sm:py-6 text-muted-foreground border-2 border-dashed rounded-md cursor-pointer hover:bg-accent/30 transition"
+              >
+                <Camera className="h-8 w-8 mb-2 opacity-50" />
+                <p className="text-xs">Click to upload after photo</p>
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                  id="after-photo"
+                />
+              </label>
+              {previewImage && (
+                <div className="mt-2 flex items-center justify-center bg-gray-100 border rounded-md overflow-hidden">
+                  <img
+                    src={previewImage}
+                    alt="After photo preview"
+                    className="max-h-48 sm:max-h-64 w-auto object-contain rounded-md"
+                  />
+                </div>
+              )}
+            </>
           )}
         </Card>
-
       </div>
 
       {/* Action Section - Mobile Optimized */}
       <Card className="p-4 bg-gradient-card border-0 shadow-soft">
         <h3 className="text-sm font-semibold text-foreground mb-3">Actions</h3>
 
-        {serviceTypeData?.status === "pending" && (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              {previewImage && (
-                <div className="mt-2 flex items-center justify-center bg-gray-100 border rounded-md overflow-hidden">
-                  <img
-                    src={previewImage}
-                    alt="Before photo preview"
-                    className="max-h-48 sm:max-h-64 w-auto object-contain rounded-md"
-                  />
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-xs">Notes (Optional)</Label>
-              <Textarea
-                placeholder="Add notes..."
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows={3}
-                className="text-xs resize-none"
-              />
-            </div>
-
-            <Button
-              onClick={startService}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-sm"
-              disabled={!previewImage}
-            >
-              <Clock className="h-3 w-3 mr-1" />
-              Start Service
-            </Button>
-          </div>
-        )}
-
-        {serviceTypeData?.status === "in-progress" && (
+        {(serviceTypeData?.status === "pending" || serviceTypeData?.status === "in-progress") && (
           <div className="space-y-4">
             <div className="space-y-2">
               {previewImage && (

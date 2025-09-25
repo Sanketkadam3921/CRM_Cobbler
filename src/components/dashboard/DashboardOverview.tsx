@@ -6,6 +6,7 @@ import { useDeliveryEnquiries, DeliveryEnquiry } from "@/services/deliveryApiSer
 import { usePickupEnquiries } from "@/services/pickupApiService"; // Import pickup enquiries hook
 import { useServiceEnquiries } from "@/services/serviceApiService"; // Import service enquiries hook
 import { useInventoryItems } from "@/services/inventoryApiService";
+import { useEnquiriesWithPolling } from "@/services/enquiryApiService"; // Import enquiry hook for new date fields
 import { AllEnquiriesView } from './AllEnquiriesView';
 import { PendingPickupsView } from './PendingPickupsView';
 import { InServiceView } from './InServiceView';
@@ -81,6 +82,36 @@ const formatDeliveryDate = (dateString: string) => {
   }
 };
 
+// ✅ NEW: Helper function to format date for new pickupDate/deliveryDate fields
+const formatNewDeliveryDate = (dateString: string) => {
+  try {
+    const date = new Date(dateString);
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    // Reset time to start of day for comparison
+    const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const tomorrowOnly = new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate());
+
+    if (dateOnly.getTime() === todayOnly.getTime()) {
+      return "Today";
+    } else if (dateOnly.getTime() === tomorrowOnly.getTime()) {
+      return "Tomorrow";
+    } else {
+      return date.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+    }
+  } catch (error) {
+    console.warn('Error formatting date:', dateString, error);
+    return dateString; // Return original string if formatting fails
+  }
+};
+
 // Helper to convert "out-for-delivery" -> "Out For Delivery"
 const formatStatus = (status: string) => {
   return status
@@ -120,11 +151,58 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
   // ✅ Get service enquiries for ACCURATE in-service count
   const { enquiries: serviceEnquiries, loading: serviceLoading } = useServiceEnquiries(30000);
 
+  // ✅ Get all enquiries with new pickupDate and deliveryDate fields
+  const { enquiries: allEnquiries, loading: allEnquiriesLoading, error: allEnquiriesError } = useEnquiriesWithPolling(30000);
+
   // Get inventory items for low stock alerts
   const { items: inventoryItems, loading: inventoryLoading } = useInventoryItems();
 
-  // Get upcoming deliveries (next 5 scheduled or ready for delivery)
-  const upcomingDeliveries = deliveryEnquiries
+  // ✅ NEW: Get upcoming deliveries based on pickupDate/deliveryDate from enquiry API
+  // This replaces the old deliveryEnquiries logic with new date fields
+  const getUpcomingDeliveries = (enquiries: any[]) => {
+    const now = new Date();
+    const threeDaysFromNow = new Date(now.getTime() + (3 * 24 * 60 * 60 * 1000)); // 3 days in milliseconds
+
+    return enquiries
+      .filter(enquiry => {
+        // Use deliveryDate if available, fallback to pickupDate
+        // This ensures we show delivery dates when available, otherwise pickup dates
+        const targetDate = enquiry.deliveryDate || enquiry.pickupDate;
+
+        if (!targetDate) return false;
+
+        try {
+          const deliveryDate = new Date(targetDate);
+
+          // Check if date is valid and within next 3 days
+          if (isNaN(deliveryDate.getTime())) return false;
+
+          // Include today and next 3 days (inclusive)
+          // Reset time to start of day for accurate comparison
+          const dateOnly = new Date(deliveryDate.getFullYear(), deliveryDate.getMonth(), deliveryDate.getDate());
+          const nowOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          const threeDaysOnly = new Date(threeDaysFromNow.getFullYear(), threeDaysFromNow.getMonth(), threeDaysFromNow.getDate());
+
+          return dateOnly >= nowOnly && dateOnly <= threeDaysOnly;
+        } catch (error) {
+          console.warn('Invalid date format for enquiry:', enquiry.id, targetDate);
+          return false;
+        }
+      })
+      .sort((a, b) => {
+        // Sort by deliveryDate (or pickupDate fallback) - earliest first
+        const aDate = new Date(a.deliveryDate || a.pickupDate || '');
+        const bDate = new Date(b.deliveryDate || b.pickupDate || '');
+        return aDate.getTime() - bDate.getTime();
+      })
+      .slice(0, 5); // Limit to 5 upcoming deliveries for dashboard display
+  };
+
+  // Get upcoming deliveries using new date fields
+  const upcomingDeliveries = getUpcomingDeliveries(allEnquiries);
+
+  // Keep old logic as fallback for backward compatibility (can be removed later)
+  const legacyUpcomingDeliveries = deliveryEnquiries
     .filter(enquiry =>
       enquiry.deliveryDetails?.status === 'scheduled' ||
       enquiry.deliveryDetails?.status === 'ready-for-delivery' ||
@@ -251,7 +329,7 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
 
         {/* API Status and Refresh */}
         <div className="flex items-center gap-2">
-          {(loading || deliveryLoading || pickupLoading || serviceLoading) && (
+          {(loading || deliveryLoading || pickupLoading || serviceLoading || allEnquiriesLoading) && (
             <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           )}
           {error && (
@@ -357,16 +435,16 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
         </div>
 
 
-        {deliveryLoading ? (
+        {(deliveryLoading || allEnquiriesLoading) ? (
           <div className="flex items-center justify-center py-10">
             <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
             <span className="ml-3 text-sm text-gray-600">Loading upcoming deliveries...</span>
           </div>
-        ) : deliveryError ? (
+        ) : (deliveryError || allEnquiriesError) ? (
           <div className="flex flex-col items-center justify-center py-10 text-center">
             <AlertTriangle className="h-12 w-12 text-red-300 mb-3" />
             <p className="text-sm text-red-600 font-medium">Unable to load deliveries</p>
-            <p className="text-xs text-red-500 mt-1">{deliveryError}</p>
+            <p className="text-xs text-red-500 mt-1">{deliveryError || allEnquiriesError}</p>
             <button
               onClick={() => window.location.reload()}
               className="text-xs text-red-700 underline hover:text-red-800 mt-3"
@@ -375,33 +453,17 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
             </button>
           </div>
         ) : (() => {
-          // Filter for next 3 days
-          const isWithinNext3Days = (dateString: string) => {
-            const now = new Date();
-            const deliveryDate = new Date(dateString);
-            const diffInMs = deliveryDate.getTime() - now.getTime();
-            const diffInDays = diffInMs / (1000 * 60 * 60 * 24);
-            return diffInDays >= 0 && diffInDays <= 3;
-          };
-
-          const next3DaysDeliveries = upcomingDeliveries
-            .filter(
-              (enquiry) =>
-                enquiry.deliveryDetails?.scheduledTime &&
-                isWithinNext3Days(enquiry.deliveryDetails.scheduledTime)
-            )
-            .sort(
-              (a, b) =>
-                new Date(a.deliveryDetails.scheduledTime).getTime() -
-                new Date(b.deliveryDetails.scheduledTime).getTime()
-            );
-
+          // ✅ NEW: Use upcomingDeliveries from new date fields (already filtered for next 3 days)
           // Group deliveries by date in DD/MM/YYYY format
-          const groupedDeliveries: Record<string, typeof next3DaysDeliveries> = {};
-          next3DaysDeliveries.forEach((enquiry) => {
-            const date = new Date(enquiry.deliveryDetails!.scheduledTime).toLocaleDateString("en-GB");
-            if (!groupedDeliveries[date]) groupedDeliveries[date] = [];
-            groupedDeliveries[date].push(enquiry);
+          const groupedDeliveries: Record<string, typeof upcomingDeliveries> = {};
+          upcomingDeliveries.forEach((enquiry) => {
+            // Use deliveryDate if available, fallback to pickupDate
+            const targetDate = enquiry.deliveryDate || enquiry.pickupDate;
+            if (targetDate) {
+              const date = new Date(targetDate).toLocaleDateString("en-GB");
+              if (!groupedDeliveries[date]) groupedDeliveries[date] = [];
+              groupedDeliveries[date].push(enquiry);
+            }
           });
 
           return Object.keys(groupedDeliveries).length > 0 ? (
@@ -430,33 +492,34 @@ export function DashboardOverview({ onNavigate }: DashboardOverviewProps) {
                                 {enquiry.customerName}
                               </p>
                               <span
-                                className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${getDeliveryStatusColor(
-                                  enquiry.deliveryDetails?.status || ""
-                                )}`}
+                                className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${enquiry.deliveryDate
+                                    ? 'text-green-600 bg-green-50 border-green-200'
+                                    : 'text-blue-600 bg-blue-50 border-blue-200'
+                                  }`}
                               >
-                                {formatStatus(enquiry.deliveryDetails?.status || "Pending")}
+                                {enquiry.deliveryDate ? 'Delivery' : 'Pickup'}
                               </span>
                             </div>
 
                             <div className="flex items-center space-x-4 mt-1 text-xs text-gray-500">
-                              {enquiry.deliveryDetails?.scheduledTime && (
+                              {(enquiry.deliveryDate || enquiry.pickupDate) && (
                                 <div className="flex items-center">
                                   <Clock className="h-3 w-3 mr-1" />
-                                  {formatDeliveryDate(enquiry.deliveryDetails.scheduledTime)}
+                                  {formatNewDeliveryDate(enquiry.deliveryDate || enquiry.pickupDate)}
                                 </div>
                               )}
 
-                              {enquiry.deliveryDetails?.deliveryMethod && (
+                              {enquiry.address && (
                                 <div className="flex items-center">
                                   <MapPin className="h-3 w-3 mr-1" />
-                                  {enquiry.deliveryDetails.deliveryMethod === "home-delivery"
-                                    ? "Home Delivery"
-                                    : "Pickup"}
+                                  <span className="truncate max-w-32">{enquiry.address}</span>
                                 </div>
                               )}
 
-                              {enquiry.deliveryDetails?.assignedTo && (
-                                <div>Assigned: {enquiry.deliveryDetails.assignedTo}</div>
+                              {enquiry.quotedAmount && (
+                                <div className="text-green-600 font-medium">
+                                  ₹{enquiry.quotedAmount}
+                                </div>
                               )}
                             </div>
                           </div>

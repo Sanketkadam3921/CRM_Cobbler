@@ -94,7 +94,7 @@ export class ServiceController {
   // Assign services to an enquiry
   static async assignServices(req: Request, res: Response): Promise<void> {
     try {
-      const { enquiryId, serviceTypes }: ServiceAssignmentRequest = req.body;
+      const { enquiryId, serviceTypes, product, itemIndex }: ServiceAssignmentRequest = req.body;
 
       if (!enquiryId || !serviceTypes || !Array.isArray(serviceTypes) || serviceTypes.length === 0) {
         res.status(400).json({
@@ -105,12 +105,12 @@ export class ServiceController {
         return;
       }
 
-      await ServiceModel.assignServices(enquiryId, serviceTypes);
+      await ServiceModel.assignServices(enquiryId, serviceTypes, product as any, itemIndex as any);
 
       res.status(200).json({
         success: true,
         message: 'Services assigned successfully',
-        data: { enquiryId, serviceTypes }
+        data: { enquiryId, serviceTypes, product: product || null, itemIndex: itemIndex || null }
       });
     } catch (error) {
       console.error('Error assigning services:', error);

@@ -19,7 +19,7 @@ export function ServiceModule() {
   const { toast } = useToast();
 
   // API hooks with 2-second polling for real-time updates
-  const { enquiries, loading: enquiriesLoading, error: enquiriesError, refetch } = useServiceEnquiries(200000);
+  const { enquiries, loading: enquiriesLoading, error: enquiriesError, refetch } = useServiceEnquiries(5000);
   const { stats, loading: statsLoading, error: statsError } = useServiceStats();
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -29,13 +29,12 @@ export function ServiceModule() {
   const [selectedServiceTypes, setSelectedServiceTypes] = useState<ServiceType[]>([]);
   const [showServiceAssignment, setShowServiceAssignment] = useState<number | null>(null);
   const [selectedServiceDetail, setSelectedServiceDetail] = useState<{ enquiryId: number; serviceType: ServiceType } | null>(null);
+  // Per-enquiry selected item key: `${product}-${index}`
+  const [selectedItemByEnquiry, setSelectedItemByEnquiry] = useState<Record<number, string | null>>({});
 
   // Overall photo management
-  const [overallBeforePhoto, setOverallBeforePhoto] = useState<string | null>(null);
   const [overallAfterPhoto, setOverallAfterPhoto] = useState<string | null>(null);
-  const [showOverallPhotoDialog, setShowOverallPhotoDialog] = useState<number | null>(null);
   const [showFinalPhotoDialog, setShowFinalPhotoDialog] = useState<number | null>(null);
-  const [overallPhotoNotes, setOverallPhotoNotes] = useState("");
   const [finalPhotoNotes, setFinalPhotoNotes] = useState("");
   const [isProcessingPhoto, setIsProcessingPhoto] = useState(false);
   // Add this alongside your other state declarations
@@ -92,19 +91,6 @@ export function ServiceModule() {
     }
   };
 
-  const handleOverallPhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      try {
-        const thumbnailData = await imageUploadHelper.handleImageUpload(file);
-        setOverallBeforePhoto(thumbnailData);
-      } catch (error) {
-        console.error('Failed to process image:', error);
-        alert('Failed to process image. Please try again.');
-      }
-    }
-  };
-
   const handleFinalPhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -138,7 +124,7 @@ export function ServiceModule() {
         return;
       }
 
-      await serviceApiService.startService(serviceTypeData.id, selectedImage || '', workNotes);
+      await serviceApiService.startService(enquiryId, serviceTypeData.id, selectedImage || '', workNotes);
       console.log('✅ Service started successfully');
 
       // Reset form
@@ -196,7 +182,7 @@ export function ServiceModule() {
         return;
       }
 
-      await serviceApiService.completeService(serviceTypeData.id, selectedImage || '', workNotes);
+      await serviceApiService.completeService(enquiryId, serviceTypeData.id, selectedImage || '', workNotes);
       console.log('✅ Service marked as done successfully');
 
       // Reset form
@@ -379,10 +365,25 @@ export function ServiceModule() {
         servicesToAssign = newlyAddedServices;
       }
 
-      console.log('🔄 Assigning services:', { enquiryId, serviceTypes: servicesToAssign });
+      // Determine selected item (required when there are itemPhotos)
+      const items = enquiries.find(e => e.enquiryId === enquiryId)?.itemPhotos || [] as any[];
+      let product: string | undefined;
+      let itemIndex: number | undefined;
+      if (items.length > 0) {
+        const selKey = selectedItemByEnquiry[enquiryId] || (items[0] ? `${items[0].product}-${items[0].itemIndex}` : undefined);
+        if (!selKey) {
+          toast({ title: 'Select Item', description: 'Please select a product item to assign services for.', variant: 'destructive', duration: 3000 });
+          return;
+        }
+        const [p, idxStr] = selKey.split('-');
+        product = p;
+        itemIndex = parseInt(idxStr, 10);
+      }
+
+      console.log('🔄 Assigning services:', { enquiryId, serviceTypes: servicesToAssign, product, itemIndex });
 
       // This now correctly sends either the full list (initial) or just the new ones (re-assign)
-      await serviceApiService.assignServices(enquiryId, servicesToAssign);
+      await serviceApiService.assignServices(enquiryId, servicesToAssign, { product, itemIndex });
       console.log('✅ Services assigned successfully');
 
       // Reset form
@@ -426,44 +427,7 @@ export function ServiceModule() {
       });
     }
   };
-  const updateOverallBeforePhoto = async (enquiryId: number) => {
-    try {
-      if (!overallBeforePhoto) {
-        console.log('⚠️ No photo selected for overall before photo');
-        return;
-      }
 
-      console.log('📸 Saving overall before photo for enquiry:', enquiryId);
-      console.log('Photo data length:', overallBeforePhoto.length);
-
-      // Note: Overall before photo comes from pickup, so this might not be needed
-      // But keeping for consistency with current UX
-
-      // Reset form immediately for better UX
-      setOverallBeforePhoto(null);
-      setOverallPhotoNotes("");
-      setShowOverallPhotoDialog(null);
-
-      console.log('✅ Overall before photo saved successfully');
-
-      toast({
-        title: "Photo Saved!",
-        description: "Overall before photo has been saved",
-        className: "bg-green-50 border-green-200 text-green-800",
-        duration: 3000, // 3 seconds
-
-      });
-    } catch (error) {
-      console.error('❌ Failed to save overall before photo:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save photo. Please try again.",
-        variant: "destructive",
-        duration: 3000, // 3 seconds
-
-      });
-    }
-  };
 
   const updateFinalPhoto = async (enquiryId: number) => {
     try {
@@ -563,6 +527,7 @@ export function ServiceModule() {
       <ServiceTypeDetail
         enquiryId={selectedServiceDetail.enquiryId}
         serviceType={selectedServiceDetail.serviceType}
+        productItemKey={(window as any).__serviceDetailItemKey as string | undefined}
         onBack={() => setSelectedServiceDetail(null)}
         onServiceUpdated={() => refetch()}
       />
@@ -728,12 +693,15 @@ export function ServiceModule() {
                             size="sm"
                             variant="outline"
                             className="text-xs w-full sm:w-auto"
-                            onClick={() =>
+                            onClick={() => {
+                              // Pass selected item to detail via global state + key param in route-less usage
+                              const selKey = selectedItemByEnquiry[enquiry.enquiryId] || (enquiry.itemPhotos && enquiry.itemPhotos[0] ? `${enquiry.itemPhotos[0].product}-${enquiry.itemPhotos[0].itemIndex}` : undefined);
+                              (window as any).__serviceDetailItemKey = selKey; // simple temp handoff
                               setSelectedServiceDetail({
                                 enquiryId: enquiry.enquiryId,
                                 serviceType: service.type,
-                              })
-                            }
+                              });
+                            }}
                           >
                             <Eye className="h-3 w-3 mr-1" />
                             View
@@ -748,28 +716,62 @@ export function ServiceModule() {
                   )}
                 </div>
 
-                {/* Overall Photos */}
+                {/* Item Selector and Overall Photos */}
                 <div className="space-y-2">
                   <h4 className="text-sm font-medium text-foreground">Overall Photos:</h4>
+                  {/* Item dropdown */}
+                  {enquiry.itemPhotos && enquiry.itemPhotos.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <Label className="text-xs">Select Item</Label>
+                      <Select
+                        value={selectedItemByEnquiry[enquiry.enquiryId] || undefined}
+                        onValueChange={(v) => setSelectedItemByEnquiry(prev => ({ ...prev, [enquiry.enquiryId]: v }))}
+                      >
+                        <SelectTrigger className="h-8 w-56">
+                          <SelectValue placeholder="Choose product item" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {enquiry.itemPhotos.map((it, idx) => {
+                            const key = `${it.product}-${it.itemIndex}`;
+                            return (
+                              <SelectItem key={key} value={key}>{it.product} — #{it.itemIndex}</SelectItem>
+                            );
+                          })}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                   <div className="grid grid-cols-2 gap-2">
                     {/* Before Photo */}
                     <div className="text-center">
                       <p className="text-sm font-semibold text-muted-foreground mb-1">
                         Before
                       </p>
-                      {enquiry.overallPhotos?.beforePhoto ? (
-                        <img
-                          src={enquiry.overallPhotos.beforePhoto}
-                          alt="Before service"
-                          className="h-20 w-full object-contain rounded border bg-gray-50"
-                        />
-                      ) : (
-                        <div className="h-20 bg-muted rounded flex items-center justify-center border">
-                          <span className="text-xs text-muted-foreground text-center px-1">
-                            No before photo
-                          </span>
-                        </div>
-                      )}
+                      {(() => {
+                        const beforeSrc: string | undefined = (() => {
+                          if (enquiry.overallPhotos?.beforePhoto) return enquiry.overallPhotos.beforePhoto;
+                          if (!enquiry.itemPhotos || enquiry.itemPhotos.length === 0) return undefined;
+                          const selKey = selectedItemByEnquiry[enquiry.enquiryId];
+                          const item = selKey ? enquiry.itemPhotos.find(it => `${it.product}-${it.itemIndex}` === selKey) : enquiry.itemPhotos[0];
+                          if (!item) return undefined;
+                          const legacy = Array.isArray((item as any).photos) ? (item as any).photos as string[] : undefined;
+                          const grouped = !legacy ? ((item as any).photos || {}) as { before?: string[] } : undefined;
+                          return legacy ? legacy[0] : (grouped?.before || [])[0];
+                        })();
+                        return beforeSrc ? (
+                          <img
+                            src={beforeSrc}
+                            alt="Before service"
+                            className="h-20 w-full object-contain rounded border bg-gray-50"
+                          />
+                        ) : (
+                          <div className="h-20 bg-muted rounded flex items-center justify-center border">
+                            <span className="text-xs text-muted-foreground text-center px-1">
+                              No before photo
+                            </span>
+                          </div>
+                        );
+                      })()}
                     </div>
                     {/* After Photo */}
                     <div className="text-center">
@@ -791,6 +793,46 @@ export function ServiceModule() {
                       )}
                     </div>
                   </div>
+                  {/* Per-Item Before Photos captured at pickup */}
+                  {enquiry.itemPhotos && enquiry.itemPhotos.length > 0 && (
+                    <div className="space-y-2 mt-2">
+                      <h4 className="text-sm font-medium text-foreground">Before Photos (by Item):</h4>
+                      <div className="space-y-3">
+                        {(selectedItemByEnquiry[enquiry.enquiryId]
+                          ? enquiry.itemPhotos.filter(it => `${it.product}-${it.itemIndex}` === selectedItemByEnquiry[enquiry.enquiryId])
+                          : enquiry.itemPhotos
+                        ).map((item, idx) => {
+                          const legacy = Array.isArray((item as any).photos) ? (item as any).photos as string[] : undefined;
+                          const grouped = !legacy ? ((item as any).photos || {}) as { before?: string[]; after?: string[]; received?: string[]; other?: string[] } : undefined;
+                          const beforeList = legacy || grouped?.before || [];
+                          return (
+                            <div key={`item-photo-${idx}`} className="space-y-1">
+                              <div className="text-xs text-muted-foreground">
+                                {item.product} — Item #{item.itemIndex}
+                              </div>
+                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                {beforeList.slice(0, 4).map((photo, pIdx) => (
+                                  <img
+                                    key={`photo-${pIdx}`}
+                                    src={photo}
+                                    alt={`${item.product} #${item.itemIndex} before ${pIdx + 1}`}
+                                    className="h-20 w-full object-cover rounded border bg-gray-50"
+                                  />
+                                ))}
+                                {beforeList.length === 0 && (
+                                  <div className="col-span-2 sm:col-span-4 h-20 bg-muted rounded flex items-center justify-center border">
+                                    <span className="text-xs text-muted-foreground text-center px-1">
+                                      No before photos
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -827,21 +869,10 @@ export function ServiceModule() {
                     </Button>
                   )}
 
-                {enquiry.serviceTypes && enquiry.serviceTypes.length > 0 &&
-                  !enquiry.overallPhotos?.beforePhoto && (
-                    <Button
-                      size="sm"
-                      className="bg-orange-600 hover:bg-orange-700 text-xs sm:text-sm"
-                      onClick={() => setShowOverallPhotoDialog(enquiry.enquiryId)}
-                    >
-                      <Camera className="h-3 w-3 mr-1" />
-                      Take Overall Before Photo
-                    </Button>
-                  )}
+                {/* Removed: taking overall before photo in service stage. Before photos come from pickup multi-photos */}
 
                 {enquiry.serviceTypes && enquiry.serviceTypes.length > 0 &&
                   enquiry.serviceTypes.every(service => service.status === "done") &&
-                  enquiry.overallPhotos?.beforePhoto &&
                   !enquiry.overallPhotos?.afterPhoto && (
                     <Button
                       size="sm"
@@ -855,7 +886,6 @@ export function ServiceModule() {
 
                 {enquiry.serviceTypes && enquiry.serviceTypes.length > 0 &&
                   enquiry.serviceTypes.every(service => service.status === "done") &&
-                  enquiry.overallPhotos?.beforePhoto &&
                   enquiry.overallPhotos?.afterPhoto && (
                     <Button
                       size="sm"
@@ -880,18 +910,37 @@ export function ServiceModule() {
                     {(() => {
                       const alreadyAssignedTypes = enquiry.serviceTypes?.map(s => s.type) || [];
                       const isReassigning = alreadyAssignedTypes.length > 0;
+                      const items = enquiry.itemPhotos || [];
+                      const selKey = selectedItemByEnquiry[enquiry.enquiryId] || (items[0] ? `${items[0].product}-${items[0].itemIndex}` : undefined);
 
                       return (
                         <div className="space-y-4">
                           <div className="space-y-2">
                             <Label>Select Service Types</Label>
+                            {/* Select product item */}
+                            {items.length > 0 && (
+                              <div className="flex items-center gap-2">
+                                <Label className="text-xs">For Item</Label>
+                                <Select value={selKey} onValueChange={(v) => setSelectedItemByEnquiry(prev => ({ ...prev, [enquiry.enquiryId]: v }))}>
+                                  <SelectTrigger className="h-8 w-56">
+                                    <SelectValue placeholder="Choose item" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {items.map((it) => {
+                                      const key = `${it.product}-${it.itemIndex}`;
+                                      return <SelectItem key={key} value={key}>{it.product} — #{it.itemIndex}</SelectItem>;
+                                    })}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            )}
                             {isReassigning && (
                               <div className="text-xs text-blue-700 bg-blue-50 p-2 rounded border border-blue-200">
                                 <strong>Note:</strong> Assigned services are locked. You can add new services to this enquiry.
                               </div>
                             )}
                             <div className="space-y-2 pt-2">
-                              {["Sole Replacement", "Zipper Repair", "Cleaning & Polish", "Stitching", "Leather Treatment", "Hardware Repair"].map((serviceType) => {
+                              {["Repairing", "Cleaning", "Dyeing"].map((serviceType) => {
                                 const isAlreadyAssigned = alreadyAssignedTypes.includes(serviceType as ServiceType);
                                 return (
                                   <div key={serviceType} className="flex items-center space-x-2">
@@ -937,82 +986,7 @@ export function ServiceModule() {
                 </Dialog>
               )}
 
-              {/* Overall Before Photo Dialog */}
-              {showOverallPhotoDialog === enquiry.enquiryId && (
-                <Dialog open={showOverallPhotoDialog === enquiry.enquiryId} onOpenChange={() => setShowOverallPhotoDialog(null)}>
-                  <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>Take Overall Before Photo</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label>Overall Before Photo</Label>
-                        <div className="flex flex-col sm:flex-row gap-2">
-                          <Input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleOverallPhotoUpload}
-                            className="hidden"
-                            id={`overall-before-photo-${enquiry.enquiryId}`}
-                          />
-                          <Label
-                            htmlFor={`overall-before-photo-${enquiry.enquiryId}`}
-                            className="cursor-pointer flex items-center justify-center space-x-2 border border-input bg-background px-3 py-2 text-sm ring-offset-background hover:bg-accent hover:text-accent-foreground rounded-md flex-1"
-                          >
-                            <Camera className="h-4 w-4" />
-                            <span>Take Photo</span>
-                          </Label>
-                        </div>
-                        {overallBeforePhoto && (
-                          <div className="mt-2">
-                            <img
-                              src={overallBeforePhoto}
-                              alt="Overall before photo"
-                              className="w-full max-h-48 object-contain rounded-md border bg-gray-50"
-                              loading="eager"
-                              decoding="sync"
-                              style={{
-                                imageRendering: 'crisp-edges',
-                                transform: 'translateZ(0)',
-                                backfaceVisibility: 'hidden',
-                                WebkitBackfaceVisibility: 'hidden'
-                              } as React.CSSProperties}
-                            />
-                          </div>
-                        )}
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="overall-notes">Notes (Optional)</Label>
-                        <Textarea
-                          id="overall-notes"
-                          placeholder="Add notes about the overall condition"
-                          value={overallPhotoNotes}
-                          onChange={(e) => setOverallPhotoNotes(e.target.value)}
-                          rows={3}
-                        />
-                      </div>
-                      <div className="flex space-x-2">
-                        <Button
-                          onClick={() => updateOverallBeforePhoto(enquiry.enquiryId)}
-                          className="flex-1 bg-blue-600 hover:bg-blue-700"
-                          disabled={!overallBeforePhoto}
-                        >
-                          <Camera className="h-4 w-4 mr-2" />
-                          Save Photo
-                        </Button>
-                        <Button
-                          variant="outline"
-                          onClick={() => setShowOverallPhotoDialog(null)}
-                          className="w-24 h-10 bg-red-500 text-white hover:bg-red-600 hover:text-white font-medium"
-
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              )}
+              {/* Removed Overall Before Photo Dialog - before photos come from pickup stage */}
 
               {/* Final Photo Dialog */}
               {showFinalPhotoDialog === enquiry.enquiryId && (
@@ -1120,4 +1094,4 @@ export function ServiceModule() {
       </div>
     </div>
   );
-}
+} 

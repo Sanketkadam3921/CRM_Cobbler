@@ -81,6 +81,9 @@ export interface ServiceDetails {
     beforeNotes?: string;
     afterNotes?: string;
   };
+  // New: aggregated before-photos captured per product item during pickup
+  // Each entry represents one item instance (e.g., product "Shoe" item #1) with up to 4 photos
+  itemPhotos?: Array<{ product: string; itemIndex: number; photos: string[]; notes?: string; finalPhoto?: string }>;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -182,6 +185,8 @@ export interface ServiceStage {
     beforeNotes?: string;
     afterNotes?: string;
   };
+  // New: list of per-item before photos (captured at pickup stage)
+  itemPhotos?: Array<{ product: string; itemIndex: number; photos: string[]; notes?: string; finalPhoto?: string }>;
   serviceTypes: ServiceTypeStatus[];
   estimatedCost?: number;
   actualCost?: number;
@@ -204,6 +209,11 @@ export interface DeliveryStage {
   deliveredAt?: string;
 }
 
+export interface ProductItem {
+  product: ProductType;
+  quantity: number;
+}
+
 export interface Enquiry {
   name: string;
   location: string;
@@ -215,8 +225,9 @@ export interface Enquiry {
   address: string;
   message: string;
   inquiryType: InquiryType;
-  product: ProductType;
-  quantity: number;
+  product: ProductType; // Keep for backward compatibility
+  quantity: number; // Keep for backward compatibility
+  products: ProductItem[]; // New field for multiple products
   date: string;
   status: EnquiryStatus;
   contacted: boolean;
@@ -234,7 +245,9 @@ export interface Enquiry {
   quotedAmount?: number;
   finalAmount?: number;
 
-
+  // Date fields for conversion
+  pickupDate?: string;
+  deliveryDate?: string;
 }
 
 export interface ServiceOrder {
@@ -398,7 +411,7 @@ export type WorkflowStage = "enquiry" | "pickup" | "service" | "billing" | "deli
 
 // Stage-specific statuses
 export type PickupStatus = "scheduled" | "assigned" | "collected" | "received";
-export type ServiceType = "Sole Replacement" | "Zipper Repair" | "Cleaning & Polish" | "Stitching" | "Leather Treatment" | "Hardware Repair";
+export type ServiceType = "Repairing" | "Cleaning" | "Dyeing";
 export type ServiceStatus = "pending" | "in-progress" | "done";
 export type DeliveryStatus = "ready" | "scheduled" | "out-for-delivery" | "delivered";
 export type DeliveryMethod = "customer-pickup" | "home-delivery";

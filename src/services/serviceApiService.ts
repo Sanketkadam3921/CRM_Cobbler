@@ -137,11 +137,13 @@ export class ServiceApiService {
   }
 
   // Assign services to an enquiry
-  static async assignServices(enquiryId: number, serviceTypes: ServiceType[]): Promise<void> {
+  static async assignServices(enquiryId: number, serviceTypes: ServiceType[], opts?: { product?: string; itemIndex?: number }): Promise<void> {
     try {
       const response = await apiClient.post<ApiResponse<any>>(`/services/enquiries/${enquiryId}/assign`, {
         enquiryId,
-        serviceTypes
+        serviceTypes,
+        product: opts?.product,
+        itemIndex: opts?.itemIndex
       });
 
       if (!response.success) {

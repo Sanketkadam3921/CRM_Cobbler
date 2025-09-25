@@ -240,7 +240,7 @@ export class PickupController {
     }
   }
 
-  // PATCH /api/pickup/enquiries/:id/receive - Mark item as received and move to service
+  // PATCH /api/pickup/enquiries/:id/receive - Mark items as received with multi-photos and move to service
   static async markReceived(req: Request, res: Response): Promise<void> {
     const startTime = Date.now();
 
@@ -248,7 +248,7 @@ export class PickupController {
       logApi.request(req.method, req.url, req.ip || 'unknown', req.get('User-Agent') || 'unknown');
 
       const { id } = req.params;
-      const { receivedPhoto, notes, estimatedCost } = req.body;
+      const { receivedPhoto, notes, estimatedCost, items } = req.body;
 
       const enquiryId = Number(id);
 
@@ -261,11 +261,35 @@ export class PickupController {
         return;
       }
 
+      // New payload: items[] per product-item with up to 4 photos
+      if (Array.isArray(items) && items.length > 0) {
+        const updatedEnquiry = await PickupModel.markReceivedMulti(enquiryId, items, notes, estimatedCost);
+        if (!updatedEnquiry) {
+          res.status(404).json({
+            success: false,
+            error: 'Enquiry not found',
+            message: `Enquiry with ID ${enquiryId} not found`
+          });
+          return;
+        }
+
+        const duration = Date.now() - startTime;
+        logApi.response(req.method, req.url, 200, duration);
+
+        res.json({
+          success: true,
+          data: updatedEnquiry,
+          message: 'Items received and moved to service successfully'
+        });
+        return;
+      }
+
+      // Backward compatibility: single receivedPhoto
       if (!receivedPhoto) {
         res.status(400).json({
           success: false,
-          error: 'Missing received photo',
-          message: 'Received condition photo is required'
+          error: 'Missing received photo(s)',
+          message: 'Provide items[] with photos or a receivedPhoto'
         });
         return;
       }
