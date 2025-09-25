@@ -32,13 +32,16 @@ export interface PickupStage {
 export interface ServiceTypeStatus {
   type: ServiceType;
   status: ServiceStatus;
+  // Optional per-item targeting
+  product?: ProductType;
+  itemIndex?: number;
 
-  // Photos for this specific service
-  photos: {
-    beforePhoto?: string;
-    afterPhoto?: string;
-    beforeNotes?: string;
-    afterNotes?: string;
+  // Photos for this specific service - support multiple images per bucket
+  photos?: {
+    before?: string[];
+    after?: string[];
+    received?: string[];
+    other?: string[];
   };
 
   // Work details
