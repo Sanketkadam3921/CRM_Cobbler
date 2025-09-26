@@ -290,7 +290,6 @@ export function PendingPickupsView({ onNavigate, onBack }: PendingPickupsViewPro
                                                 <div className="flex flex-wrap gap-1">
                                                     {enquiry.products.map((product, index) => (
                                                         <div key={index} className="flex items-center space-x-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
-                                                            <Package className="h-3 w-3" />
                                                             <span>{product.product}</span>
                                                             <span>({product.quantity})</span>
                                                         </div>
@@ -360,7 +359,6 @@ export function PendingPickupsView({ onNavigate, onBack }: PendingPickupsViewPro
                                         className="p-1 text-muted-foreground hover:text-green-600 transition-colors"
                                         title="Manage Pickup"
                                     >
-                                        <Package className="h-4 w-4" />
                                     </button>
                                 </div>
                             </Card>
@@ -420,7 +418,6 @@ export function PendingPickupsView({ onNavigate, onBack }: PendingPickupsViewPro
                                                             <div className="flex flex-wrap gap-1">
                                                                 {enquiry.products.map((product, index) => (
                                                                     <div key={index} className="flex items-center space-x-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
-                                                                        <Package className="h-3 w-3" />
                                                                         <span>{product.product}</span>
                                                                         <span>({product.quantity})</span>
                                                                     </div>
@@ -477,7 +474,6 @@ export function PendingPickupsView({ onNavigate, onBack }: PendingPickupsViewPro
                                                         className="p-1 text-muted-foreground hover:text-green-600 transition-colors"
                                                         title="Manage Pickup"
                                                     >
-                                                        <Package className="h-4 w-4" />
                                                     </button>
                                                 </div>
                                             </td>
@@ -569,7 +565,6 @@ export function PendingPickupsView({ onNavigate, onBack }: PendingPickupsViewPro
                                             <div className="mt-2 space-y-2">
                                                 {selectedEnquiry.products.map((product, index) => (
                                                     <div key={index} className="flex items-center space-x-2 bg-blue-50 p-3 rounded-lg border">
-                                                        <Package className="h-4 w-4 text-blue-600" />
                                                         <div className="flex-1">
                                                             <div className="font-medium text-foreground">{product.product}</div>
                                                             <div className="text-sm text-muted-foreground">Quantity: {product.quantity}</div>
@@ -579,7 +574,6 @@ export function PendingPickupsView({ onNavigate, onBack }: PendingPickupsViewPro
                                             </div>
                                         ) : (
                                             <div className="mt-2 flex items-center space-x-2 bg-blue-50 p-3 rounded-lg border">
-                                                <Package className="h-4 w-4 text-blue-600" />
                                                 <div className="flex-1">
                                                     <div className="font-medium text-foreground">{selectedEnquiry.product}</div>
                                                     <div className="text-sm text-muted-foreground">Quantity: {selectedEnquiry.quantity}</div>

@@ -247,65 +247,64 @@ export function BillingModule() {
 
   // Unified validation and form update system
   const validateAndUpdateField = (
-    fieldType: 'price' | 'gstRate' | 'discount',
+    fieldType: "price" | "gstRate" | "discount",
     value: string,
     index?: number
   ) => {
     let error = "";
     let numValue = 0;
-    let fieldKey = "";
 
-    if (fieldType === 'price') {
-      fieldKey = `item-${index}-originalAmount`;
-      if (value.trim() === '') {
-        numValue = 0;
+    // Map fieldType → key and validation logic
+    const fieldConfig = {
+      price: {
+        key: `item-${index}-originalAmount`,
+        validate: (val: number) =>
+          val < 0 ? "Price must be greater than or equal to ₹0.00" : "",
+        fieldName: "originalAmount",
+      },
+      gstRate: {
+        key: `item-${index}-gstRate`,
+        validate: (val: number) =>
+          val < 0 || val > 100 ? "GST rate must be between 0% and 100%" : "",
+        fieldName: "gstRate",
+      },
+      discount: {
+        key: `item-${index}-discountValue`,
+        validate: (val: number) =>
+          val < 0 || val > 100 ? "Discount must be between 0% and 100%" : "",
+        fieldName: "discountValue",
+      },
+    } as const;
+
+    const config = fieldConfig[fieldType];
+
+    // Empty string = default 0
+    if (value.trim() === "") {
+      numValue = 0;
+    } else {
+      const parsed = parseFloat(value);
+      if (isNaN(parsed)) {
+        error = "Please enter a valid number";
       } else {
-        const parsed = parseFloat(value);
-        if (isNaN(parsed) || parsed < 0) {
-          error = "Price must be greater than or equal to ₹0.00";
-        } else {
-          numValue = parsed;
-        }
-      }
-    } else if (fieldType === 'gstRate') {
-      fieldKey = `item-${index}-gstRate`;
-      if (value.trim() === '') {
-        numValue = 0;
-      } else {
-        const parsed = parseFloat(value);
-        if (isNaN(parsed) || parsed < 0 || parsed > 100) {
-          error = "GST rate must be between 0% and 100%";
-        } else {
-          numValue = parsed;
-        }
-      }
-    } else if (fieldType === 'discount') {
-      fieldKey = `item-${index}-discountValue`;
-      if (value.trim() === '') {
-        numValue = 0;
-      } else {
-        const parsed = parseFloat(value);
-        if (isNaN(parsed) || parsed < 0 || parsed > 100) {
-          error = "Discount must be between 0% and 100%";
-        } else {
-          numValue = parsed;
-        }
+        numValue = parsed;
+        error = config.validate(numValue);
       }
     }
 
-    setValidationErrors(prev => ({
+    // Update validation errors
+    setValidationErrors((prev) => ({
       ...prev,
-      [fieldKey]: error
+      [config.key]: error,
     }));
 
+    // If valid, update the service item
     if (!error && index !== undefined) {
-      const fieldName = fieldType === 'price' ? 'originalAmount' :
-        fieldType === 'gstRate' ? 'gstRate' : 'discountValue';
-      updateServiceItem(index, fieldName as keyof BillingItem, numValue);
+      updateServiceItem(index, config.fieldName as keyof BillingItem, numValue);
     }
 
     return { isValid: !error, numValue, error };
   };
+
 
   console.log('🔍 BillingModule - enquiries:', enquiries);
   console.log('🔍 BillingModule - enquiriesLoading:', enquiriesLoading);
@@ -1273,17 +1272,27 @@ export function BillingModule() {
                         {/* Pricing Grid */}
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                           {/* Original Amount */}
+                          {/* Original Amount */}
                           <div>
                             <Label htmlFor={`originalAmount-${index}`}>Price (₹) *</Label>
                             <Input
                               id={`originalAmount-${index}`}
                               type="text"
-                              value={rawInputValues[`item-${index}-originalAmount`] !== undefined ? rawInputValues[`item-${index}-originalAmount`] : (item.originalAmount || '')}
-                              onChange={(e) => updateServiceItem(index, 'originalAmount', e.target.value, true)}
-                              onBlur={(e) => validateAndUpdateField('price', e.target.value, index)}
+                              value={
+                                rawInputValues[`item-${index}-originalAmount`] !== undefined
+                                  ? rawInputValues[`item-${index}-originalAmount`]
+                                  : item.originalAmount || ""
+                              }
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (/^\d*\.?\d*$/.test(val) || val === "") {
+                                  updateServiceItem(index, "originalAmount", val, true);
+                                }
+                              }}
+                              onBlur={(e) => validateAndUpdateField("price", e.target.value, index)}
                               onKeyDown={(e) => {
-                                if (e.key === 'Tab' || e.key === 'Enter') {
-                                  validateAndUpdateField('price', e.currentTarget.value, index);
+                                if (e.key === "Tab" || e.key === "Enter") {
+                                  validateAndUpdateField("price", e.currentTarget.value, index);
                                 }
                               }}
                               placeholder="0"
@@ -1291,7 +1300,9 @@ export function BillingModule() {
                               className="text-right"
                             />
                             {validationErrors[`item-${index}-originalAmount`] && (
-                              <p className="text-xs text-red-500 mt-1">{validationErrors[`item-${index}-originalAmount`]}</p>
+                              <p className="text-xs text-red-500 mt-1">
+                                {validationErrors[`item-${index}-originalAmount`]}
+                              </p>
                             )}
                           </div>
 
@@ -1301,19 +1312,30 @@ export function BillingModule() {
                             <Input
                               id={`gstRate-${index}`}
                               type="text"
-                              value={rawInputValues[`item-${index}-gstRate`] !== undefined ? rawInputValues[`item-${index}-gstRate`] : (item.gstRate || '')}
-                              onChange={(e) => updateServiceItem(index, 'gstRate', e.target.value, true)}
-                              onBlur={(e) => validateAndUpdateField('gstRate', e.target.value, index)}
+                              value={
+                                rawInputValues[`item-${index}-gstRate`] !== undefined
+                                  ? rawInputValues[`item-${index}-gstRate`]
+                                  : item.gstRate || ""
+                              }
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (/^\d*\.?\d*$/.test(val) || val === "") {
+                                  updateServiceItem(index, "gstRate", val, true);
+                                }
+                              }}
+                              onBlur={(e) => validateAndUpdateField("gstRate", e.target.value, index)}
                               onKeyDown={(e) => {
-                                if (e.key === 'Tab' || e.key === 'Enter') {
-                                  validateAndUpdateField('gstRate', e.currentTarget.value, index);
+                                if (e.key === "Tab" || e.key === "Enter") {
+                                  validateAndUpdateField("gstRate", e.currentTarget.value, index);
                                 }
                               }}
                               placeholder="0"
                               className="text-right"
                             />
                             {validationErrors[`item-${index}-gstRate`] && (
-                              <p className="text-xs text-red-500 mt-1">{validationErrors[`item-${index}-gstRate`]}</p>
+                              <p className="text-xs text-red-500 mt-1">
+                                {validationErrors[`item-${index}-gstRate`]}
+                              </p>
                             )}
                           </div>
 
@@ -1323,21 +1345,33 @@ export function BillingModule() {
                             <Input
                               id={`discountValue-${index}`}
                               type="text"
-                              value={rawInputValues[`item-${index}-discountValue`] !== undefined ? rawInputValues[`item-${index}-discountValue`] : (item.discountValue || '')}
-                              onChange={(e) => updateServiceItem(index, 'discountValue', e.target.value, true)}
-                              onBlur={(e) => validateAndUpdateField('discount', e.target.value, index)}
+                              value={
+                                rawInputValues[`item-${index}-discountValue`] !== undefined
+                                  ? rawInputValues[`item-${index}-discountValue`]
+                                  : item.discountValue || ""
+                              }
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (/^\d*\.?\d*$/.test(val) || val === "") {
+                                  updateServiceItem(index, "discountValue", val, true);
+                                }
+                              }}
+                              onBlur={(e) => validateAndUpdateField("discount", e.target.value, index)}
                               onKeyDown={(e) => {
-                                if (e.key === 'Tab' || e.key === 'Enter') {
-                                  validateAndUpdateField('discount', e.currentTarget.value, index);
+                                if (e.key === "Tab" || e.key === "Enter") {
+                                  validateAndUpdateField("discount", e.currentTarget.value, index);
                                 }
                               }}
                               placeholder="0"
                               className="text-right"
                             />
                             {validationErrors[`item-${index}-discountValue`] && (
-                              <p className="text-xs text-red-500 mt-1">{validationErrors[`item-${index}-discountValue`]}</p>
+                              <p className="text-xs text-red-500 mt-1">
+                                {validationErrors[`item-${index}-discountValue`]}
+                              </p>
                             )}
                           </div>
+
 
                           {/* Service Total */}
                           <div>
@@ -1379,7 +1413,7 @@ export function BillingModule() {
                 </h4>
                 {Object.values(validationErrors).some(error => error !== "") ? (
                   <div className="text-center py-4">
-                    <div className="text-red-500 font-medium mb-2">⚠️ Validation Errors Present</div>
+                    <div className="text-red-500 font-medium mb-2"> Validation Errors Present</div>
                     <div className="text-sm text-muted-foreground">Please fix all validation errors to see totals</div>
                   </div>
                 ) : (
