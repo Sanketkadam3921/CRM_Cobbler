@@ -285,7 +285,7 @@ export function DeliveryModule() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-2 gap-3 sm:gap-4">
           {/* Ready for Delivery */}
           <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
             <div className="flex items-center justify-between">
@@ -300,19 +300,7 @@ export function DeliveryModule() {
             </div>
           </Card>
 
-          {/* Scheduled Deliveries */}
-          <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-lg sm:text-2xl font-bold text-foreground">
-                  {statsLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : scheduledDeliveries}
-                </div>
-                <div className="text-xs sm:text-sm text-muted-foreground">
-                  Scheduled
-                </div>
-              </div>
-            </div>
-          </Card>
+
 
           {/* Out for Delivery */}
           <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">

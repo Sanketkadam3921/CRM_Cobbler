@@ -27,6 +27,9 @@ import {
   CheckCircle,
   Loader2,
   Phone,
+  X,
+  ImageIcon,
+  AlertCircle,
 } from "lucide-react";
 import { Enquiry, PickupStatus, ServiceType } from "@/types";
 import { imageUploadHelper } from "@/utils/localStorage";
@@ -37,15 +40,13 @@ import { stringUtils } from "@/utils";
 export function PickupModule() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedImage, setSelectedImage] = useState<string | null>(null); // legacy single photo
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [receivedNotes, setReceivedNotes] = useState("");
-  // New UI state for multi-photo capture per product item
-  const [multiPhotos, setMultiPhotos] = useState<Record<string, string[]>>({}); // key: `${product}-${index}` -> string[] of photos
+  const [multiPhotos, setMultiPhotos] = useState<Record<string, string[]>>({});
   const [selectedProductKey, setSelectedProductKey] = useState<string | null>(null);
-  // Dialog state management - added from teammate's version
   const [openDialogId, setOpenDialogId] = useState<number | null>(null);
+  const [uploadingPhotos, setUploadingPhotos] = useState<Record<string, boolean>>({});
 
-  // Use pickup API hooks with 2-second polling
   const {
     enquiries,
     loading: enquiriesLoading,
@@ -62,7 +63,6 @@ export function PickupModule() {
     error: statsError
   } = usePickupStats();
 
-  // Use stats from API instead of calculating locally
   const calculatedStats = stats || {
     scheduledPickups: 0,
     assignedPickups: 0,
@@ -111,50 +111,6 @@ export function PickupModule() {
     }
   };
 
-  const handleMarkCollected = async (enquiryId: number) => {
-    if (!selectedImage) {
-      toast({
-        title: "Photo Required",
-        description: "Please upload a collection proof photo",
-        variant: "destructive",
-        duration: 3000,
-      });
-      return;
-    }
-
-    try {
-      await markCollected(enquiryId, selectedImage);
-
-      // Reset form
-      setSelectedImage(null);
-
-      toast({
-        title: "Pickup Collected!",
-        description: "Pickup has been marked as collected successfully",
-        className: "bg-green-50 border-green-200 text-green-800",
-        duration: 3000,
-      });
-
-      // Send WhatsApp notification (simulated)
-      const enquiry = enquiries.find((e) => e.id === enquiryId);
-      if (enquiry) {
-        toast({
-          title: "WhatsApp Notification",
-          description: `WhatsApp message sent to ${enquiry.customerName}: "Your ${enquiry.product} has been successfully collected."`,
-          className: "bg-blue-50 border-blue-200 text-blue-800",
-          duration: 3000,
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to mark pickup as collected",
-        variant: "destructive",
-        duration: 3000,
-      });
-    }
-  };
-
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -173,7 +129,6 @@ export function PickupModule() {
     }
   };
 
-  // New: handle per product-item photo uploads (up to 4)
   const handleItemPhotoUpload = async (
     event: React.ChangeEvent<HTMLInputElement>,
     product: string,
@@ -181,26 +136,96 @@ export function PickupModule() {
   ) => {
     const file = event.target.files?.[0];
     if (file) {
+      const key = `${product}-${itemIndex}`;
+
+      // Check if already at limit
+      const existing = multiPhotos[key] || [];
+      if (existing.length >= 4) {
+        toast({
+          title: "Photo Limit Reached",
+          description: "Maximum 4 photos allowed per item",
+          variant: "destructive",
+          duration: 3000,
+        });
+        return;
+      }
+
+      // Set uploading state
+      setUploadingPhotos(prev => ({ ...prev, [key]: true }));
+
       try {
         const thumbnailData = await imageUploadHelper.handleImageUpload(file);
-        const key = `${product}-${itemIndex}`;
+
         setMultiPhotos(prev => {
-          const existing = prev[key] || [];
-          // limit to 4 photos
           const updated = [...existing, thumbnailData].slice(0, 4);
           return { ...prev, [key]: updated };
         });
-        setSelectedProductKey(prev => prev || key);
+
+        // Auto-select this product key if none selected
+        if (!selectedProductKey) {
+          setSelectedProductKey(key);
+        }
+
+        toast({
+          title: "Photo Uploaded",
+          description: `Photo ${existing.length + 1}/4 uploaded for ${product} #${itemIndex}`,
+          className: "bg-green-50 border-green-200 text-green-800",
+          duration: 2000,
+        });
       } catch (error) {
         console.error('Failed to process image:', error);
         toast({
-          title: "Error",
+          title: "Upload Failed",
           description: "Failed to process image. Please try again.",
           variant: "destructive",
           duration: 3000,
         });
+      } finally {
+        setUploadingPhotos(prev => ({ ...prev, [key]: false }));
       }
     }
+
+    // Reset the input value so the same file can be selected again if needed
+    event.target.value = '';
+  };
+
+  const removePhoto = (productKey: string, photoIndex: number) => {
+    setMultiPhotos(prev => {
+      const existing = prev[productKey] || [];
+      const updated = existing.filter((_, idx) => idx !== photoIndex);
+
+      if (updated.length === 0) {
+        const { [productKey]: removed, ...rest } = prev;
+        return rest;
+      }
+
+      return { ...prev, [productKey]: updated };
+    });
+
+    toast({
+      title: "Photo Removed",
+      description: "Photo has been removed successfully",
+      className: "bg-blue-50 border-blue-200 text-blue-800",
+      duration: 2000,
+    });
+  };
+
+  const getProductPhotosCount = (product: string, quantity: number) => {
+    let totalPhotos = 0;
+    for (let i = 1; i <= quantity; i++) {
+      const key = `${product}-${i}`;
+      totalPhotos += (multiPhotos[key] || []).length;
+    }
+    return totalPhotos;
+  };
+
+  const resetDialog = () => {
+    setSelectedImage(null);
+    setReceivedNotes("");
+    setMultiPhotos({});
+    setSelectedProductKey(null);
+    setUploadingPhotos({});
+    setOpenDialogId(null);
   };
 
   const handleItemReceived = async (enquiryId: number) => {
@@ -208,17 +233,22 @@ export function PickupModule() {
       const enquiry = enquiries.find((e) => e.id === enquiryId);
       const estimatedCost = enquiry?.quotedAmount || 0;
 
-      // Build multi-photo payload: for each product and quantity, expect up to 4 photos per item
-      const itemsPayload: Array<{ product: string; itemIndex: number; photos: string[]; notes?: string }> = [];
       const products = enquiry?.products && enquiry.products.length > 0
         ? enquiry.products
         : [{ product: enquiry?.product || '', quantity: enquiry?.quantity || 1 } as any];
+
+      const itemsPayload: Array<{ product: string; itemIndex: number; photos: string[]; notes?: string }> = [];
 
       products.forEach(p => {
         for (let i = 1; i <= (p.quantity || 1); i++) {
           const key = `${p.product}-${i}`;
           const photos = multiPhotos[key] || [];
-          itemsPayload.push({ product: p.product, itemIndex: i, photos, notes: receivedNotes });
+          itemsPayload.push({
+            product: p.product,
+            itemIndex: i,
+            photos,
+            notes: receivedNotes
+          });
         }
       });
 
@@ -227,14 +257,13 @@ export function PickupModule() {
       if (!hasAnyPhotos) {
         toast({
           title: "Photos Required",
-          description: "Please upload up to 4 photos for each product item.",
+          description: "Please upload at least one photo for any product item.",
           variant: "destructive",
           duration: 3000,
         });
         return;
       }
 
-      // Use the optimistic update function from the hook
       await markReceivedMulti(
         enquiryId,
         itemsPayload,
@@ -242,11 +271,7 @@ export function PickupModule() {
         estimatedCost
       );
 
-      setSelectedImage(null);
-      setReceivedNotes("");
-      setMultiPhotos({});
-      setSelectedProductKey(null);
-      setOpenDialogId(null); // Close the dialog - added from teammate's version
+      resetDialog();
 
       toast({
         title: "Items Received!",
@@ -271,19 +296,6 @@ export function PickupModule() {
         duration: 3000,
       });
     }
-  };
-
-  const sendInvoice = (enquiry: Enquiry) => {
-    // Here you would typically send invoice via WhatsApp/Email
-    console.log(
-      `Sending invoice to ${enquiry.customerName} at ${enquiry.phone}`
-    );
-    toast({
-      title: "Invoice Sent!",
-      description: `Invoice sent to ${enquiry.customerName}`,
-      className: "bg-green-50 border-green-200 text-green-800",
-      duration: 3000,
-    });
   };
 
   return (
@@ -333,7 +345,7 @@ export function PickupModule() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
-            placeholder="Search pickups"
+            placeholder="Search pickups by customer name, address, or product..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -348,22 +360,29 @@ export function PickupModule() {
         </h2>
 
         {enquiriesLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-            <span className="ml-2 text-gray-600">Loading pickup enquiries</span>
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-3" />
+              <p className="text-gray-600 font-medium">Loading pickup enquiries</p>
+              <p className="text-sm text-gray-500">Please wait...</p>
+            </div>
           </div>
         ) : enquiriesError ? (
-          <div className="flex items-center justify-center py-8">
+          <div className="flex items-center justify-center py-12">
             <div className="text-center">
-              <p className="text-red-600 mb-2">Error loading pickup enquiries</p>
+              <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-3" />
+              <p className="text-red-600 font-medium mb-2">Error loading pickup enquiries</p>
               <p className="text-sm text-gray-500">{enquiriesError}</p>
             </div>
           </div>
         ) : filteredEnquiries.length === 0 ? (
-          <div className="flex items-center justify-center py-8">
+          <div className="flex items-center justify-center py-12">
             <div className="text-center">
-              <p className="text-gray-600 mb-2">No pickup enquiries found</p>
-              <p className="text-sm text-gray-500">Try adjusting your search or check if enquiries are in pickup stage</p>
+              <Package className="h-8 w-8 text-gray-400 mx-auto mb-3" />
+              <p className="text-gray-600 font-medium mb-2">No pickup enquiries found</p>
+              <p className="text-sm text-gray-500">
+                {searchTerm ? "Try adjusting your search terms" : "Check if enquiries are in pickup stage"}
+              </p>
             </div>
           </div>
         ) : (
@@ -397,7 +416,6 @@ export function PickupModule() {
                 </div>
 
                 <div className="space-y-3">
-                  {/* Display multiple products if available, otherwise fallback to single product */}
                   {enquiry.products && enquiry.products.length > 0 ? (
                     <div className="space-y-2">
                       <span className="text-xs text-gray-500 font-medium">Products:</span>
@@ -419,6 +437,7 @@ export function PickupModule() {
                       <span className="text-gray-500 text-sm">{enquiry.product}</span>
                     </div>
                   )}
+
                   <div className="flex items-start space-x-2">
                     <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                     <span className="text-sm text-foreground break-words">
@@ -455,16 +474,14 @@ export function PickupModule() {
                   )}
 
                   {enquiry.pickupDetails?.status === "assigned" && (
-                    <Dialog open={openDialogId === enquiry.id} onOpenChange={(open) => {
-                      if (!open) {
-                        setOpenDialogId(null);
-                        // Reset form state when dialog closes - added from teammate's version
-                        setSelectedImage(null);
-                        setReceivedNotes("");
-                        setMultiPhotos({});
-                        setSelectedProductKey(null);
-                      }
-                    }}>
+                    <Dialog
+                      open={openDialogId === enquiry.id}
+                      onOpenChange={(open) => {
+                        if (!open) {
+                          resetDialog();
+                        }
+                      }}
+                    >
                       <DialogTrigger asChild>
                         <Button
                           size="sm"
@@ -475,116 +492,181 @@ export function PickupModule() {
                           Item Received
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+                      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
-                          <DialogTitle>Item Received - Move to Service</DialogTitle>
+                          <DialogTitle className="flex items-center space-x-2">
+                            <span>Item Received - Move to Service</span>
+                          </DialogTitle>
+                          <p className="text-sm text-muted-foreground">
+                            Upload photos for each item and add any relevant notes before moving to service workflow.
+                          </p>
                         </DialogHeader>
-                        <div className="space-y-4">
+
+                        <div className="space-y-6">
+                          {/* Product Selection and Photo Upload */}
                           <div className="space-y-4">
-                            <Label>Per-Item Photos (up to 4 per item)</Label>
+                            <div className="flex items-center space-x-2">
+                              <Label className="text-sm font-medium">Per-Item Photos (up to 4 per item)</Label>
+                            </div>
 
-                            {/* Multiple products support; fallback to single product/quantity */}
+                            {/* Products List */}
                             {(enquiry.products && enquiry.products.length > 0 ? enquiry.products : [{ product: enquiry.product, quantity: enquiry.quantity } as any]).map((p, pIdx) => (
-                              <div key={`product-${pIdx}`} className="space-y-3 border rounded-md p-3">
-                                <div className="text-sm font-medium text-foreground">{p.product} × {p.quantity || 1}</div>
+                              <div key={`product-${pIdx}`} className="border rounded-lg p-4 bg-gray-50/50">
+                                <div className="flex items-center justify-between mb-3">
+                                  <div className="flex items-center space-x-2">
+                                    <span className="font-medium text-foreground">{p.product}</span>
+                                    <Badge variant="secondary" className="text-xs">
+                                      {p.quantity || 1} item{(p.quantity || 1) > 1 ? 's' : ''}
+                                    </Badge>
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {getProductPhotosCount(p.product, p.quantity || 1)} photos uploaded
+                                  </div>
+                                </div>
 
-                                {/* Item selector for this product - improved from teammate's version */}
-                                <div className="flex items-center gap-2">
-                                  <Label className="text-xs text-muted-foreground">Select Item to Upload Photos</Label>
+                                {/* Item Selector */}
+                                <div className="flex items-center gap-3 mb-3">
+                                  <Label className="text-xs text-muted-foreground min-w-fit">
+                                    Select Item:
+                                  </Label>
                                   <Select
-                                    value={selectedProductKey && selectedProductKey.startsWith(p.product) ? selectedProductKey : undefined}
+                                    value={selectedProductKey && selectedProductKey.startsWith(p.product) ? selectedProductKey : ""}
                                     onValueChange={(v) => setSelectedProductKey(v)}
                                   >
-                                    <SelectTrigger className="h-8 w-48">
-                                      <SelectValue placeholder="Choose item" />
+                                    <SelectTrigger className="h-9 flex-1">
+                                      <SelectValue placeholder={`Choose ${p.product} item to upload photos`} />
                                     </SelectTrigger>
                                     <SelectContent>
                                       {Array.from({ length: p.quantity || 1 }).map((_, idx) => {
                                         const key = `${p.product}-${idx + 1}`;
+                                        const photoCount = (multiPhotos[key] || []).length;
                                         return (
-                                          <SelectItem key={key} value={key}>{p.product} — #{idx + 1}</SelectItem>
+                                          <SelectItem key={key} value={key} className="flex items-center justify-between">
+                                            <span>{p.product} — {idx + 1}</span>
+                                            {photoCount > 0 && (
+                                              <Badge variant="secondary" className="ml-2 text-xs">
+                                                {photoCount}/4 photos
+                                              </Badge>
+                                            )}
+                                          </SelectItem>
                                         );
                                       })}
                                     </SelectContent>
                                   </Select>
                                 </div>
 
-                                {/* Photo upload section - only show for selected item - improved from teammate's version */}
+                                {/* Photo Upload Grid - Show for selected item */}
                                 {selectedProductKey && selectedProductKey.startsWith(p.product) && (
-                                  <div className="space-y-2">
-                                    <div className="text-xs text-muted-foreground">
-                                      Upload photos for {selectedProductKey.split('-')[0]} — #{selectedProductKey.split('-')[1]}
+                                  <div className="space-y-3 bg-white rounded-md p-3 border">
+                                    <div className="flex items-center justify-between">
+                                      <div className="text-sm font-medium text-foreground">
+                                        Upload photos for {selectedProductKey.split('-')[0]} — Item {selectedProductKey.split('-')[1]}
+                                      </div>
+                                      <div className="text-xs text-muted-foreground">
+                                        {(multiPhotos[selectedProductKey] || []).length}/4 photos
+                                      </div>
                                     </div>
-                                    {(() => {
-                                      const itemIndex = parseInt(selectedProductKey.split('-')[1]);
-                                      const key = selectedProductKey;
-                                      const photos = multiPhotos[key] || [];
-                                      const remaining = Math.max(0, 4 - photos.length);
 
-                                      return (
-                                        <div className="grid grid-cols-4 gap-2">
-                                          {photos.map((ph, i) => (
-                                            <img
-                                              key={`ph-${i}`}
-                                              src={ph}
-                                              alt={`Item ${itemIndex} photo ${i + 1}`}
-                                              className="h-16 w-full object-cover rounded border bg-gray-50"
-                                            />
-                                          ))}
-                                          {Array.from({ length: remaining }).map((__, addIdx) => {
-                                            const inputId = `item-photo-${enquiry.id}-${p.product}-${itemIndex}-${addIdx}`;
-                                            return (
-                                              <div key={`add-${addIdx}`} className="flex items-center justify-center">
-                                                <Input
-                                                  type="file"
-                                                  accept="image/*"
-                                                  onChange={(e) => handleItemPhotoUpload(e, p.product, itemIndex)}
-                                                  className="hidden"
-                                                  id={inputId}
-                                                />
-                                                <Label
-                                                  htmlFor={inputId}
-                                                  className="cursor-pointer flex items-center justify-center space-x-1 border border-dashed border-input bg-background px-2 py-1 text-xs ring-offset-background hover:bg-accent hover:text-accent-foreground rounded-md w-full h-16"
-                                                >
-                                                  <Camera className="h-3 w-3" />
-                                                  <span>Add</span>
-                                                </Label>
+                                    <div className="grid grid-cols-4 gap-3">
+                                      {Array.from({ length: 4 }).map((__, slotIndex) => {
+                                        const photos = multiPhotos[selectedProductKey] || [];
+                                        const hasPhotoInSlot = slotIndex < photos.length;
+                                        const itemIndex = parseInt(selectedProductKey.split('-')[1]);
+                                        const inputId = `item-photo-${enquiry.id}-${p.product}-${itemIndex}-${slotIndex}`;
+                                        const isUploading = uploadingPhotos[selectedProductKey];
+
+                                        if (hasPhotoInSlot) {
+                                          return (
+                                            <div key={`photo-${slotIndex}`} className="relative group">
+                                              <img
+                                                src={photos[slotIndex]}
+                                                alt={`Item ${itemIndex} photo ${slotIndex + 1}`}
+                                                className="h-20 w-full object-cover rounded-md border-2 border-gray-200 group-hover:border-blue-300 transition-colors"
+                                              />
+                                              <Button
+                                                size="sm"
+                                                variant="destructive"
+                                                className="absolute -top-2 -right-2 h-6 w-6 p-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                                onClick={() => removePhoto(selectedProductKey, slotIndex)}
+                                              >
+                                                <X className="h-3 w-3" />
+                                              </Button>
+                                              <div className="absolute bottom-1 left-1 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded">
+                                                {slotIndex + 1}
                                               </div>
-                                            );
-                                          })}
-                                        </div>
-                                      );
-                                    })()}
+                                            </div>
+                                          );
+                                        } else {
+                                          return (
+                                            <div key={`upload-${slotIndex}`} className="relative">
+                                              <Input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={(e) => handleItemPhotoUpload(e, p.product, itemIndex)}
+                                                className="hidden"
+                                                id={inputId}
+                                                disabled={isUploading}
+                                              />
+                                              <Label
+                                                htmlFor={inputId}
+                                                className={`cursor-pointer flex flex-col items-center justify-center space-y-1 border-2 border-dashed border-gray-300 hover:border-blue-400 bg-gray-50 hover:bg-blue-50 rounded-md h-20 w-full transition-all ${isUploading ? 'pointer-events-none opacity-50' : ''
+                                                  }`}
+                                              >
+                                                {isUploading ? (
+                                                  <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                                                ) : (
+                                                  <Camera className="h-4 w-4 text-gray-500" />
+                                                )}
+                                                <span className="text-xs text-gray-600 font-medium">
+                                                  {isUploading ? 'Uploading...' : 'Add Photo'}
+                                                </span>
+                                              </Label>
+                                            </div>
+                                          );
+                                        }
+                                      })}
+                                    </div>
                                   </div>
                                 )}
                               </div>
                             ))}
                           </div>
 
-                          <div className="space-y-2">
-                            <Label htmlFor="notes">Notes / Remarks (Optional)</Label>
+                          {/* Notes Section */}
+                          <div className="space-y-3">
+                            <Label htmlFor="notes" className="text-sm font-medium">
+                              Additional Notes / Remarks (Optional)
+                            </Label>
                             <Textarea
                               id="notes"
-                              placeholder="Add any notes about the received item"
+                              placeholder="Add any notes about the received items, their condition, or other relevant details..."
                               value={receivedNotes}
                               onChange={(e) => setReceivedNotes(e.target.value)}
                               rows={3}
+                              className="resize-none"
                             />
                           </div>
 
-                          <Button
-                            onClick={() => handleItemReceived(enquiry.id)}
-                            className="w-full bg-green-600 hover:bg-green-700"
-                            disabled={Object.values(multiPhotos).every(arr => (arr?.length || 0) === 0)}
-                          >
-                            <Send className="h-4 w-4 mr-2" />
-                            Item Received - Send to Service
-                          </Button>
-                          {Object.values(multiPhotos).every(arr => (arr?.length || 0) === 0) && (
-                            <p className="text-xs text-muted-foreground text-center">
-                              Please upload up to 4 photos for each product item
-                            </p>
-                          )}
+                          {/* Submit Button */}
+                          <div className="pt-2 border-t">
+                            <Button
+                              onClick={() => handleItemReceived(enquiry.id)}
+                              className="w-full bg-green-600 hover:bg-green-700 h-11"
+                              disabled={Object.values(multiPhotos).every(arr => (arr?.length || 0) === 0)}
+                            >
+                              <Send className="h-4 w-4 mr-2" />
+                              Move to Service
+                            </Button>
+
+                            {Object.values(multiPhotos).every(arr => (arr?.length || 0) === 0) && (
+                              <div className="flex items-center justify-center mt-3 text-amber-600 bg-amber-50 rounded-md p-2">
+                                <AlertCircle className="h-4 w-4 mr-2" />
+                                <p className="text-xs font-medium">
+                                  Please upload at least one photo for any product item to continue
+                                </p>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </DialogContent>
                     </Dialog>
