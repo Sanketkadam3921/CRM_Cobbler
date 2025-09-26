@@ -823,7 +823,7 @@ export default function ExpenseManagementSystem() {
                       htmlFor="expenseTitle"
                       className="text-slate-700 font-medium text-sm"
                     >
-                      Expense Title <span className="text-gray-600">*</span>
+                      Expense Title<span className="text-gray-600">*</span>
                     </Label>
                     <Input
                       id="expenseTitle"
@@ -848,7 +848,7 @@ export default function ExpenseManagementSystem() {
                       htmlFor="expenseAmount"
                       className="text-slate-700 font-medium text-sm"
                     >
-                      Amount (₹) <span className="text-gray-600">*</span>
+                      Amount (₹)<span className="text-gray-600">*</span>
                     </Label>
                     <Input
                       id="expenseAmount"
@@ -882,7 +882,7 @@ export default function ExpenseManagementSystem() {
                       htmlFor="expenseCategory"
                       className="text-slate-700 font-medium text-sm"
                     >
-                      Category <span className="text-gray-600">*</span>
+                      Category<span className="text-gray-600">*</span>
                     </Label>
                     <Select
                       value={expenseFormData.category}
@@ -910,7 +910,7 @@ export default function ExpenseManagementSystem() {
                       htmlFor="expenseDate"
                       className="text-slate-700 font-medium text-sm"
                     >
-                      Date <span className="text-gray-600">*</span>
+                      Date<span className="text-gray-600">*</span>
                     </Label>
                     <Input
                       id="expenseDate"
@@ -1017,7 +1017,7 @@ export default function ExpenseManagementSystem() {
                     htmlFor="expenseDescription"
                     className="text-slate-700 font-medium text-sm"
                   >
-                    Description <span className="text-gray-600">*</span>
+                    Description<span className="text-gray-600">*</span>
                   </Label>
                   <Textarea
                     id="expenseDescription"
@@ -1096,7 +1096,7 @@ export default function ExpenseManagementSystem() {
                       htmlFor="employeeName"
                       className="text-slate-700 font-medium text-sm"
                     >
-                      Employee Name <span className="text-gray-600">*</span>
+                      Employee Name<span className="text-gray-600">*</span>
                     </Label>
                     <Input
                       id="employeeName"
@@ -1118,7 +1118,7 @@ export default function ExpenseManagementSystem() {
                       htmlFor="employeeRole"
                       className="text-slate-700 font-medium text-sm"
                     >
-                      Role <span className="text-gray-600">*</span>
+                      Role<span className="text-gray-600">*</span>
                     </Label>
                     <Input
                       id="employeeRole"
@@ -1144,7 +1144,7 @@ export default function ExpenseManagementSystem() {
                       htmlFor="monthlySalary"
                       className="text-slate-700 font-medium text-sm"
                     >
-                      Monthly Salary (₹) <span className="text-gray-600">*</span>
+                      Monthly Salary (₹)<span className="text-gray-600">*</span>
                     </Label>
                     <Input
                       id="monthlySalary"
@@ -1171,7 +1171,7 @@ export default function ExpenseManagementSystem() {
                       htmlFor="dateAdded"
                       className="text-slate-700 font-medium text-sm"
                     >
-                      Date Added <span className="text-gray-600">*</span>
+                      Date Added<span className="text-gray-600">*</span>
                     </Label>
                     <Input
                       id="dateAdded"

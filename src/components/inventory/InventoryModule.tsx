@@ -400,7 +400,7 @@ export default function InventoryManager() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Item Name <span className="text-500">*</span>
+                    Item Name<span className="text-500">*</span>
                   </label>
                   <Input
                     value={formData.name}
@@ -423,7 +423,7 @@ export default function InventoryManager() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Category <span className="text-500">*</span>
+                    Category<span className="text-500">*</span>
                   </label>
                   <Input
                     value={formData.category}
@@ -447,7 +447,7 @@ export default function InventoryManager() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Unit Type <span className="text-500">*</span>
+                    Unit Type<span className="text-500">*</span>
                   </label>
                   <Input
                     value={formData.unit}
@@ -471,7 +471,7 @@ export default function InventoryManager() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Current Stock <span className="text-500">*</span>
+                      Current Stock<span className="text-500">*</span>
                     </label>
                     <Input
                       type="number"
@@ -493,7 +493,7 @@ export default function InventoryManager() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Purchase Price <span className="text-500">*</span>
+                      Purchase Price<span className="text-500">*</span>
                     </label>
                     <Input
                       type="number"
@@ -517,7 +517,7 @@ export default function InventoryManager() {
                 <div className="grid grid-cols-1 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Selling Price <span className="text-500">*</span>
+                      Selling Price<span className="text-500">*</span>
                     </label>
                     <Input
                       type="number"
@@ -618,7 +618,7 @@ export default function InventoryManager() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-900 mb-1">
-                    Updated By <span className="text-red-500">*</span>
+                    Updated By<span className="text-500">*</span>
                   </label>
                   <Input
                     type="text"

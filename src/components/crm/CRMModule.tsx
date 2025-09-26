@@ -722,7 +722,7 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="name" className="text-sm font-medium text-gray-700">
-                  Customer Name *
+                  Customer Name*
                 </Label>
                 <Input
                   id="name"
@@ -761,7 +761,7 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
 
               <div>
                 <Label htmlFor="number" className="text-sm font-medium text-gray-700">
-                  Phone Number *
+                  Phone Number*
                 </Label>
                 <Input
                   id="number"
@@ -830,7 +830,7 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
 
             {/* Product Selection with Checkboxes */}
             <div>
-              <Label className="text-sm font-medium text-gray-700">Product Types *</Label>
+              <Label className="text-sm font-medium text-gray-700">Product Type*</Label>
               <div className="mt-2 space-y-3">
                 {productTypes.map((productType) => (
                   <div key={productType} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50">
