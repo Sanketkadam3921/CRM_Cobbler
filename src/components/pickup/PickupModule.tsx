@@ -422,7 +422,6 @@ export function PickupModule() {
                       <div className="flex flex-wrap gap-2">
                         {enquiry.products.map((product, index) => (
                           <div key={index} className="flex items-center space-x-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
-                            <Package className="h-3 w-3" />
                             <span>{product.product}</span>
                             <span>({product.quantity})</span>
                           </div>
@@ -648,25 +647,41 @@ export function PickupModule() {
                           </div>
 
                           {/* Submit Button */}
+                          {/* Submit Button */}
                           <div className="pt-2 border-t">
                             <Button
                               onClick={() => handleItemReceived(enquiry.id)}
                               className="w-full bg-green-600 hover:bg-green-700 h-11"
-                              disabled={Object.values(multiPhotos).every(arr => (arr?.length || 0) === 0)}
+                              disabled={
+                                // Disabled if any product item has 0 photos
+                                (enquiry.products || [{ product: enquiry.product, quantity: enquiry.quantity }]).some(
+                                  (p) =>
+                                    !Array.from({ length: p.quantity || 1 }).every(
+                                      (_, idx) => (multiPhotos[`${p.product}-${idx + 1}`]?.length || 0) > 0
+                                    )
+                                )
+                              }
                             >
                               <Send className="h-4 w-4 mr-2" />
                               Move to Service
                             </Button>
 
-                            {Object.values(multiPhotos).every(arr => (arr?.length || 0) === 0) && (
-                              <div className="flex items-center justify-center mt-3 text-amber-600 bg-amber-50 rounded-md p-2">
-                                <AlertCircle className="h-4 w-4 mr-2" />
-                                <p className="text-xs font-medium">
-                                  Please upload at least one photo for any product item to continue
-                                </p>
-                              </div>
-                            )}
+                            {/* Validation Message */}
+                            {(enquiry.products || [{ product: enquiry.product, quantity: enquiry.quantity }]).some(
+                              (p) =>
+                                !Array.from({ length: p.quantity || 1 }).every(
+                                  (_, idx) => (multiPhotos[`${p.product}-${idx + 1}`]?.length || 0) > 0
+                                )
+                            ) && (
+                                <div className="flex items-center justify-center mt-3 text-amber-600 bg-amber-50 rounded-md p-2">
+                                  <AlertCircle className="h-4 w-4 mr-2" />
+                                  <p className="text-xs font-medium">
+                                    Please upload at least one photo for each product item to continue
+                                  </p>
+                                </div>
+                              )}
                           </div>
+
                         </div>
                       </DialogContent>
                     </Dialog>
