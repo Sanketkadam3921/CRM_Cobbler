@@ -23,7 +23,6 @@ import {
   Phone,
   IndianRupee,
   ReceiptIndianRupee,
-  Package,
   Loader2,
   Eye
 } from "lucide-react";
@@ -984,43 +983,12 @@ export function BillingModule() {
                   </div>
 
                   {/* Item dropdown to scope the entire card */}
-                  {itemsWithServices.length > 0 && (
-                    <div className="flex items-center gap-2">
-                      <Label className="text-xs">Select Item</Label>
-                      <Select
-                        value={selectedItem || undefined}
-                        onValueChange={(v) => setSelectedItemByEnquiry(prev => ({ ...prev, [enquiry.id.toString()]: v }))}
-                      >
-                        <SelectTrigger className="h-8 w-56">
-                          <SelectValue placeholder="Choose item" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {itemsWithServices.map((item) => (
-                            <SelectItem key={item.itemKey} value={item.itemKey}>
-                              <div className="flex items-center justify-between w-full">
-                                <span>{item.product} — #{item.itemIndex}</span>
-                                {item.services.length > 0 && (
-                                  <Badge className="ml-2 bg-green-100 text-green-800 text-xs">
-                                    {item.services.length} service{item.services.length > 1 ? 's' : ''}
-                                  </Badge>
-                                )}
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
+
                 </div>
 
                 <div className="space-y-3">
                   {/* Product info */}
-                  <div className="flex flex-row items-center space-x-2">
-                    <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium w-fit">
-                      Quantity: {enquiry.quantity}
-                    </div>
-                    <span className="text-gray-500 text-sm">{enquiry.product}</span>
-                  </div>
+
 
                   {/* Products display like CRMModule */}
                   {enquiry.products && enquiry.products.length > 0 && (
@@ -1039,7 +1007,33 @@ export function BillingModule() {
                       Estimated: ₹{safeToFixed(enquiry.serviceDetails?.estimatedCost)}
                     </span>
                   </div>
-
+                  {itemsWithServices.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <Label className="text-xs">Select Item</Label>
+                      <Select
+                        value={selectedItem || undefined}
+                        onValueChange={(v) => setSelectedItemByEnquiry(prev => ({ ...prev, [enquiry.id.toString()]: v }))}
+                      >
+                        <SelectTrigger className="h-8 w-56">
+                          <SelectValue placeholder="Choose item" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {itemsWithServices.map((item) => (
+                            <SelectItem key={item.itemKey} value={item.itemKey}>
+                              <div className="flex items-center justify-between w-full">
+                                <span>{item.product} — {item.itemIndex}</span>
+                                {item.services.length > 0 && (
+                                  <Badge className="ml-2 bg-green-100 text-green-800 text-xs">
+                                    {item.services.length} service{item.services.length > 1 ? 's' : ''}
+                                  </Badge>
+                                )}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                   {/* Current Billing Status */}
                   {enquiry.serviceDetails?.billingDetails && (
                     <div className="space-y-2 p-3 bg-green-50 rounded border border-green-200">
@@ -1082,7 +1076,7 @@ export function BillingModule() {
                         <div className="text-xs text-muted-foreground">
                           {(() => {
                             const [product, itemIndex] = selectedItem.split('-');
-                            return `${product} #${itemIndex}`;
+                            return `${product} ${itemIndex}`;
                           })()}
                         </div>
                       )}
@@ -1122,8 +1116,7 @@ export function BillingModule() {
                         {itemsWithServices.map((item) => (
                           <div key={item.itemKey} className="flex items-center justify-between p-2 bg-muted/30 rounded text-xs">
                             <div className="flex items-center gap-2">
-                              <Package className="h-3 w-3 text-blue-500" />
-                              <span className="font-medium">{item.product} #{item.itemIndex}</span>
+                              <span className="font-medium">{item.product} {item.itemIndex}</span>
                             </div>
                             <Badge
                               className={`text-xs ${item.services.length > 0
@@ -1139,31 +1132,7 @@ export function BillingModule() {
                   )}
 
                   {/* All Services Overview - Show each service as separate item */}
-                  <div className="space-y-2">
-                    <h4 className="text-sm font-medium text-foreground">All Completed Services:</h4>
-                    {enquiry.serviceDetails?.serviceTypes && enquiry.serviceDetails.serviceTypes.length > 0 ? (
-                      <div className="space-y-2">
-                        {enquiry.serviceDetails.serviceTypes.map((service, index) => (
-                          <div key={index} className="p-2 bg-green-50 rounded border border-green-200">
-                            <div className="text-xs font-medium text-green-800 mb-1 flex items-center gap-2">
-                              <Package className="h-3 w-3" />
-                              {enquiry.product} - {service.type} #{index + 1}
-                            </div>
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="text-green-700">{service.type}</span>
-                              <Badge className="bg-green-500 text-white text-xs">
-                                Completed
-                              </Badge>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-sm text-muted-foreground">
-                        No services found
-                      </div>
-                    )}
-                  </div>
+
                 </div>
 
                 {/* Action buttons */}
@@ -1294,9 +1263,8 @@ export function BillingModule() {
                               {item.serviceType}
                             </Badge>
                             <div className="flex items-center space-x-2 text-sm text-blue-700">
-                              <Package className="h-4 w-4" />
                               <span className="font-medium">
-                                {item.productName} #{item.itemIndex}
+                                {item.productName} {item.itemIndex}
                               </span>
                             </div>
                           </div>
@@ -1329,7 +1297,7 @@ export function BillingModule() {
 
                           {/* Individual GST Rate */}
                           <div>
-                            <Label htmlFor={`gstRate-${index}`}>GST Rate (%) *</Label>
+                            <Label htmlFor={`gstRate-${index}`}>GST Rate (%) </Label>
                             <Input
                               id={`gstRate-${index}`}
                               type="text"
@@ -1341,8 +1309,7 @@ export function BillingModule() {
                                   validateAndUpdateField('gstRate', e.currentTarget.value, index);
                                 }
                               }}
-                              placeholder="18"
-                              required
+                              placeholder="0"
                               className="text-right"
                             />
                             {validationErrors[`item-${index}-gstRate`] && (
@@ -1394,7 +1361,7 @@ export function BillingModule() {
                             id={`description-${index}`}
                             value={item.description || ''}
                             onChange={(e) => updateServiceItem(index, 'description', e.target.value)}
-                            placeholder="Add service-specific notes..."
+                            placeholder="Add service-specific notes"
                             rows={2}
                             className="text-sm"
                           />
@@ -1408,7 +1375,6 @@ export function BillingModule() {
               {/* Calculation Summary */}
               <Card className="p-4 bg-gradient-to-r from-blue-50 to-green-50 border-2 border-blue-200">
                 <h4 className="text-lg font-medium text-foreground mb-4 flex items-center">
-                  <Calculator className="h-5 w-5 mr-2" />
                   Overall Calculation Summary
                 </h4>
                 {Object.values(validationErrors).some(error => error !== "") ? (
@@ -1423,7 +1389,7 @@ export function BillingModule() {
                       {billingForm.items?.map((item, index) => (
                         <div key={index} className="bg-white p-3 rounded border">
                           <div className="text-sm font-medium text-blue-600 mb-2">
-                            {item.serviceType} - {item.productName} #{item.itemIndex}
+                            {item.serviceType} - {item.productName} {item.itemIndex}
                           </div>
                           <div className="space-y-1 text-xs">
                             <div className="flex justify-between">
@@ -1516,8 +1482,7 @@ export function BillingModule() {
                 </Button>
                 <Button
                   onClick={() => setShowBillingDialog(null)}
-                  variant="outline"
-                  className="px-6"
+                  className="w-24 h-10 bg-red-500 text-white hover:bg-red-600 font-medium"
                 >
                   Cancel
                 </Button>

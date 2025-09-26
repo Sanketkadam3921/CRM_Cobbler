@@ -590,7 +590,7 @@ export function DeliveryModule() {
                       className="bg-gradient-primary hover:opacity-90 text-xs sm:text-sm"
                       onClick={() => markOutForDelivery(enquiry.id, "Delivery Person")}
                     >
-                      <span className="mr-1">🚚</span>
+                      <span className="mr-1"></span>
                       Mark Out for Delivery
                     </Button>
                   )}
