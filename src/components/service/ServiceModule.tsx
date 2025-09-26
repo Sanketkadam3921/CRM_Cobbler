@@ -630,7 +630,7 @@ export function ServiceModule() {
                   {/* Item dropdown at top-right to scope the entire card */}
                   {items.length > 0 && (
                     <div className="flex items-center gap-2">
-                      <Label className="text-xs">Select Item</Label>
+                      <Label className="text-sm font-semibold text-foreground">Select Item</Label>
                       <Select
                         value={selectedItem || undefined}
                         onValueChange={(v) => setSelectedItemByEnquiry(prev => ({ ...prev, [enquiry.enquiryId]: v }))}
@@ -645,7 +645,7 @@ export function ServiceModule() {
                             return (
                               <SelectItem key={key} value={key}>
                                 <div className="flex items-center justify-between w-full">
-                                  <span>{it.product} — #{it.itemIndex}</span>
+                                  <span>{it.product} — {it.itemIndex}</span>
                                   {itemServices.length > 0 && (
                                     <Badge className="ml-2 bg-green-100 text-green-800 text-xs">
                                       {itemServices.length} service{itemServices.length > 1 ? 's' : ''}
@@ -662,7 +662,7 @@ export function ServiceModule() {
                   {/* Services for Selected Item */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-medium text-foreground">Services for Selected Item:</h4>
+                      <h4 className="text-sm font-semibold text-foreground">Services for Selected Item:</h4>
                       {selectedItem && !hasServicesAssigned(enquiry, selectedItem) && (
                         <Button
                           size="sm"
@@ -724,7 +724,7 @@ export function ServiceModule() {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="border-green-300 text-green-600 hover:bg-green-50 text-xs mt-2"
+                        className="border-blue-500 text-blue-600 hover:bg-blue-50 text-sm font-medium mt-2"
                         onClick={() => {
                           // Pre-populate with existing services for this item
                           const existingServices = getServicesForItem(enquiry, selectedItem).map(s => s.type);
@@ -732,9 +732,10 @@ export function ServiceModule() {
                           setShowServiceAssignment({ enquiryId: enquiry.enquiryId, itemKey: selectedItem });
                         }}
                       >
-                        <Settings className="h-3 w-3 mr-1" />
+                        <Settings className="h-4 w-4 mr-1 text-blue-600" />
                         Add More Services
                       </Button>
+
                     )}
                   </div>
 
@@ -748,7 +749,9 @@ export function ServiceModule() {
                           const itemServices = getServicesForItem(enquiry, itemKey);
                           return (
                             <div key={itemKey} className="flex items-center justify-between p-2 bg-muted/30 rounded text-xs">
-                              <span className="font-medium">{item.product} #{item.itemIndex}</span>
+                              <span className="font-medium">
+                                {item.product} <strong>({item.itemIndex + 1})</strong>
+                              </span>
                               <Badge
                                 className={`text-xs ${itemServices.length > 0
                                   ? 'bg-green-100 text-green-800'
@@ -763,13 +766,14 @@ export function ServiceModule() {
                     </div>
                   )}
 
+
                   {/* Overall Photos (use selected item) */}
                   <div className="space-y-2">
                     <h4 className="text-sm font-medium text-foreground">Overall Photos:</h4>
                     <div className="grid grid-cols-2 gap-2">
                       {/* Before Photo */}
                       <div className="text-center">
-                        <p className="text-sm font-semibold text-muted-foreground mb-1">
+                        <p className="text-sm font-semibold text-foreground">
                           Before
                         </p>
                         {(() => {
@@ -799,7 +803,7 @@ export function ServiceModule() {
                       </div>
                       {/* After Photo */}
                       <div className="text-center">
-                        <p className="text-sm font-semibold text-muted-foreground mb-1">
+                        <p className="text-sm font-semibold text-foreground">
                           After
                         </p>
                         {enquiry.overallPhotos?.afterPhoto ? (
@@ -915,8 +919,11 @@ export function ServiceModule() {
                             <div className="space-y-4">
                               {/* Item Info */}
                               <div className="bg-blue-50 p-3 rounded border border-blue-200">
-                                <div className="text-sm font-medium text-blue-900">
-                                  Assigning services to: <strong>{product} #{itemIndex}</strong>
+                                <div className="text-sm font-medium text-blue-900 flex items-center gap-2">
+                                  Assigning services to: <strong>{product}</strong>
+                                  <span className="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full">
+                                    {itemIndex + 1}
+                                  </span>
                                 </div>
                                 {isAddingMore && (
                                   <div className="text-xs text-blue-700 mt-1">
@@ -924,6 +931,7 @@ export function ServiceModule() {
                                   </div>
                                 )}
                               </div>
+
 
                               <div className="space-y-2">
                                 <Label>Select Service Types</Label>
