@@ -308,10 +308,19 @@ export function ServiceModule() {
 
   const assignServices = async (enquiryId: number, itemKey: string) => {
     try {
-      if (selectedServiceTypes.length === 0) {
+      // Get existing services for this item
+      const enquiry = enquiries.find(e => e.enquiryId === enquiryId);
+      const existingServices = getServicesForItem(enquiry!, itemKey).map(s => s.type);
+
+      // Filter out services that are already assigned
+      const newServicesToAssign = selectedServiceTypes.filter(
+        serviceType => !existingServices.includes(serviceType)
+      );
+
+      if (newServicesToAssign.length === 0) {
         toast({
-          title: "No Services Selected",
-          description: "Please select at least one service type",
+          title: "No New Services",
+          description: "All selected services are already assigned to this item",
           variant: "destructive",
           duration: 3000,
         });
@@ -322,15 +331,16 @@ export function ServiceModule() {
       const [product, itemIndexStr] = itemKey.split('-');
       const itemIndex = parseInt(itemIndexStr, 10);
 
-      console.log('🔄 Assigning services to specific item:', {
+      console.log('🔄 Assigning new services to specific item:', {
         enquiryId,
-        serviceTypes: selectedServiceTypes,
+        newServicesToAssign,
+        existingServices,
         product,
         itemIndex
       });
 
-      await serviceApiService.assignServices(enquiryId, selectedServiceTypes, { product, itemIndex });
-      console.log('✅ Services assigned successfully to item');
+      await serviceApiService.assignServices(enquiryId, newServicesToAssign, { product, itemIndex });
+      console.log('✅ New services assigned successfully to item');
 
       // Reset form
       setSelectedServiceTypes([]);
@@ -344,17 +354,16 @@ export function ServiceModule() {
       // Show success notification
       toast({
         title: "Services Assigned!",
-        description: `Services have been assigned to ${product} #${itemIndex} for enquiry #${enquiryId}`,
+        description: `${newServicesToAssign.length} new service${newServicesToAssign.length > 1 ? 's' : ''} assigned to ${product} #${itemIndex + 1}`,
         className: "bg-green-50 border-green-200 text-green-800",
         duration: 3000,
       });
 
       // Send WhatsApp notification (simulated)
-      const enquiry = enquiries.find((e) => e.enquiryId === enquiryId);
       if (enquiry) {
         toast({
           title: "WhatsApp Notification",
-          description: `WhatsApp message sent to ${enquiry.customerName}: "Services have been assigned for your ${product} item #${itemIndex}."`,
+          description: `WhatsApp message sent to ${enquiry.customerName}: "New services have been assigned for your ${product} item #${itemIndex + 1}."`,
           className: "bg-blue-50 border-blue-200 text-blue-800",
           duration: 3000,
         });
@@ -471,6 +480,13 @@ export function ServiceModule() {
   // Helper function to check if an item has any services assigned
   const hasServicesAssigned = (enquiry: ServiceDetails, itemKey: string) => {
     return getServicesForItem(enquiry, itemKey).length > 0;
+  };
+
+  // Helper function to get available services for an item (not already assigned)
+  const getAvailableServicesForItem = (enquiry: ServiceDetails, itemKey: string): ServiceType[] => {
+    const allServices: ServiceType[] = ["Repairing", "Cleaning", "Dyeing"];
+    const existingServices = getServicesForItem(enquiry, itemKey).map(s => s.type);
+    return allServices.filter(service => !existingServices.includes(service));
   };
 
   // Show service type detail view if selected
@@ -668,7 +684,10 @@ export function ServiceModule() {
                           size="sm"
                           variant="outline"
                           className="text-xs h-7 px-2"
-                          onClick={() => setShowServiceAssignment({ enquiryId: enquiry.enquiryId, itemKey: selectedItem })}
+                          onClick={() => {
+                            setSelectedServiceTypes([]);
+                            setShowServiceAssignment({ enquiryId: enquiry.enquiryId, itemKey: selectedItem });
+                          }}
                         >
                           <Plus className="h-3 w-3 mr-1" />
                           Assign Services
@@ -721,25 +740,30 @@ export function ServiceModule() {
 
                     {/* Add Services Button for existing items with services */}
                     {selectedItem && hasServicesAssigned(enquiry, selectedItem) && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="border-blue-500 text-blue-600 hover:bg-blue-50 text-sm font-medium mt-2"
-                        onClick={() => {
-                          // Pre-populate with existing services for this item
-                          const existingServices = getServicesForItem(enquiry, selectedItem).map(s => s.type);
-                          setSelectedServiceTypes(existingServices);
-                          setShowServiceAssignment({ enquiryId: enquiry.enquiryId, itemKey: selectedItem });
-                        }}
-                      >
-                        <Settings className="h-4 w-4 mr-1 text-blue-600" />
-                        Add More Services
-                      </Button>
-
+                      <div>
+                        {getAvailableServicesForItem(enquiry, selectedItem).length > 0 ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="border-blue-500 text-blue-600 hover:bg-blue-50 text-sm font-medium mt-2"
+                            onClick={() => {
+                              // Reset selected services when opening dialog for adding more
+                              setSelectedServiceTypes([]);
+                              setShowServiceAssignment({ enquiryId: enquiry.enquiryId, itemKey: selectedItem });
+                            }}
+                          >
+                            <Settings className="h-4 w-4 mr-1 text-blue-600" />
+                            Add More Services ({getAvailableServicesForItem(enquiry, selectedItem).length} available)
+                          </Button>
+                        ) : (
+                          <div className="text-xs text-muted-foreground bg-green-50 p-2 rounded border border-green-200 mt-2">
+                            All 3 services have been assigned to this item.
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
 
-                  {/* All Items Summary */}
                   {/* All Items Summary */}
                   {items.length > 1 && (
                     <div className="space-y-2 mt-4 pt-3 border-t border-muted">
@@ -766,9 +790,6 @@ export function ServiceModule() {
                       </div>
                     </div>
                   )}
-
-
-
 
                   {/* Overall Photos (use selected item) */}
                   <div className="space-y-2">
@@ -824,46 +845,6 @@ export function ServiceModule() {
                         )}
                       </div>
                     </div>
-                    {/* Per-Item Before Photos captured at pickup 
-                    {items && items.length > 0 && (
-                      <div className="space-y-2 mt-2">
-                        <h4 className="text-sm font-medium text-foreground">Before Photos (Selected Item):</h4>
-                        <div className="space-y-3">
-                          {(selectedItem
-                            ? items.filter(it => `${it.product}-${it.itemIndex}` === selectedItem)
-                            : items.slice(0, 1)
-                          ).map((item, idx) => {
-                            const legacy = Array.isArray((item as any).photos) ? (item as any).photos as string[] : undefined;
-                            const grouped = !legacy ? ((item as any).photos || {}) as { before?: string[]; after?: string[]; received?: string[]; other?: string[] } : undefined;
-                            const beforeList = legacy || grouped?.before || [];
-                            return (
-                              <div key={`item-photo-${idx}`} className="space-y-1">
-                                <div className="text-xs text-muted-foreground">
-                                  {item.product} — Item #{item.itemIndex}
-                                </div>
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                  {beforeList.slice(0, 4).map((photo, pIdx) => (
-                                    <img
-                                      key={`photo-${pIdx}`}
-                                      src={photo}
-                                      alt={`${item.product} #${item.itemIndex} before ${pIdx + 1}`}
-                                      className="h-20 w-full object-cover rounded border bg-gray-50"
-                                    />
-                                  ))}
-                                  {beforeList.length === 0 && (
-                                    <div className="col-span-2 sm:col-span-4 h-20 bg-muted rounded flex items-center justify-center border">
-                                      <span className="text-xs text-muted-foreground text-center px-1">
-                                        No before photos
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}*/}
                   </div>
                 </div>
 
@@ -916,6 +897,7 @@ export function ServiceModule() {
                           const [product, itemIndexStr] = showServiceAssignment.itemKey.split('-');
                           const itemIndex = parseInt(itemIndexStr, 10);
                           const existingServices = getServicesForItem(enquiry, showServiceAssignment.itemKey).map(s => s.type);
+                          const availableServices = getAvailableServicesForItem(enquiry, showServiceAssignment.itemKey);
                           const isAddingMore = existingServices.length > 0;
 
                           return (
@@ -923,61 +905,83 @@ export function ServiceModule() {
                               {/* Item Info */}
                               <div className="bg-blue-50 p-3 rounded border border-blue-200">
                                 <div className="text-sm font-medium text-blue-900 flex items-center gap-2">
-                                  Assigning services to: <strong>{product}</strong>
+                                  {isAddingMore ? 'Adding services to:' : 'Assigning services to:'} <strong>{product}</strong>
                                   <span className="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full">
                                     {itemIndex + 1}
                                   </span>
                                 </div>
                                 {isAddingMore && (
                                   <div className="text-xs text-blue-700 mt-1">
-                                    Current services: {existingServices.join(', ')}
+                                    Current services: {existingServices.join(', ')} ({existingServices.length}/3)
+                                  </div>
+                                )}
+                                {availableServices.length === 0 && (
+                                  <div className="text-xs text-green-700 bg-green-50 border border-green-200 p-2 rounded mt-2">
+                                    All services (3/3) have been assigned to this item.
                                   </div>
                                 )}
                               </div>
 
-
-                              <div className="space-y-2">
-                                <Label>Select Service Types</Label>
-                                {isAddingMore && (
-                                  <div className="text-xs text-blue-700 bg-blue-50 p-2 rounded border border-blue-200">
-                                    <strong>Note:</strong> Existing services are locked. You can add new services to this item.
+                              {availableServices.length > 0 && (
+                                <div className="space-y-2">
+                                  <Label>Select Service Types</Label>
+                                  <div className="text-xs text-gray-600 mb-2">
+                                    Available services ({availableServices.length} remaining):
                                   </div>
-                                )}
-                                <div className="space-y-2 pt-2">
-                                  {["Repairing", "Cleaning", "Dyeing"].map((serviceType) => {
-                                    const isAlreadyAssigned = existingServices.includes(serviceType as ServiceType);
-                                    return (
-                                      <div key={serviceType} className="flex items-center space-x-2">
-                                        <Checkbox
-                                          id={`service-${enquiry.enquiryId}-${serviceType}`}
-                                          checked={isAlreadyAssigned || selectedServiceTypes.includes(serviceType as ServiceType)}
-                                          disabled={isAlreadyAssigned}
-                                          onCheckedChange={() => handleServiceTypeToggle(serviceType as ServiceType)}
-                                        />
-                                        <Label
-                                          htmlFor={`service-${enquiry.enquiryId}-${serviceType}`}
-                                          className={`text-sm ${isAlreadyAssigned ? 'text-muted-foreground cursor-not-allowed' : 'cursor-pointer'}`}
-                                        >
-                                          {serviceType}
-                                          {isAlreadyAssigned && (
-                                            <span className="ml-2 text-xs bg-green-100 text-green-800 px-1 rounded">
-                                              Assigned
-                                            </span>
-                                          )}
-                                        </Label>
-                                      </div>
-                                    );
-                                  })}
+                                  <div className="space-y-2 pt-2">
+                                    {["Repairing", "Cleaning", "Dyeing"].map((serviceType) => {
+                                      const isAlreadyAssigned = existingServices.includes(serviceType as ServiceType);
+                                      const isAvailable = availableServices.includes(serviceType as ServiceType);
+
+                                      return (
+                                        <div key={serviceType} className="flex items-center space-x-2">
+                                          <Checkbox
+                                            id={`service-${enquiry.enquiryId}-${serviceType}`}
+                                            checked={isAlreadyAssigned || selectedServiceTypes.includes(serviceType as ServiceType)}
+                                            disabled={isAlreadyAssigned || !isAvailable}
+                                            onCheckedChange={() => {
+                                              if (isAvailable) {
+                                                handleServiceTypeToggle(serviceType as ServiceType);
+                                              }
+                                            }}
+                                          />
+                                          <Label
+                                            htmlFor={`service-${enquiry.enquiryId}-${serviceType}`}
+                                            className={`text-sm ${isAlreadyAssigned
+                                                ? 'text-muted-foreground cursor-not-allowed'
+                                                : isAvailable
+                                                  ? 'cursor-pointer'
+                                                  : 'text-muted-foreground cursor-not-allowed'
+                                              }`}
+                                          >
+                                            {serviceType}
+                                            {isAlreadyAssigned && (
+                                              <span className="ml-2 text-xs bg-green-100 text-green-800 px-1 rounded">
+                                                Already Assigned
+                                              </span>
+                                            )}
+                                          </Label>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
                                 </div>
-                              </div>
+                              )}
+
                               <div className="flex space-x-2">
-                                <Button
-                                  onClick={() => assignServices(enquiry.enquiryId, showServiceAssignment.itemKey)}
-                                  className="flex-1 bg-blue-600 hover:bg-blue-700"
-                                  disabled={selectedServiceTypes.length === 0}
-                                >
-                                  {isAddingMore ? 'Add Services' : 'Assign Services'}
-                                </Button>
+                                {availableServices.length > 0 ? (
+                                  <Button
+                                    onClick={() => assignServices(enquiry.enquiryId, showServiceAssignment.itemKey)}
+                                    className="flex-1 bg-blue-600 hover:bg-blue-700"
+                                    disabled={selectedServiceTypes.length === 0}
+                                  >
+                                    {isAddingMore ? 'Add Selected Services' : 'Assign Selected Services'}
+                                  </Button>
+                                ) : (
+                                  <div className="flex-1 text-center text-sm text-muted-foreground py-2">
+                                    No more services can be added to this item.
+                                  </div>
+                                )}
                                 <Button
                                   onClick={() => {
                                     setShowServiceAssignment(null);
