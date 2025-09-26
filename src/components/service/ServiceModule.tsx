@@ -948,10 +948,10 @@ export function ServiceModule() {
                                           <Label
                                             htmlFor={`service-${enquiry.enquiryId}-${serviceType}`}
                                             className={`text-sm ${isAlreadyAssigned
-                                                ? 'text-muted-foreground cursor-not-allowed'
-                                                : isAvailable
-                                                  ? 'cursor-pointer'
-                                                  : 'text-muted-foreground cursor-not-allowed'
+                                              ? 'text-muted-foreground cursor-not-allowed'
+                                              : isAvailable
+                                                ? 'cursor-pointer'
+                                                : 'text-muted-foreground cursor-not-allowed'
                                               }`}
                                           >
                                             {serviceType}
