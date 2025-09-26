@@ -1,14 +1,10 @@
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import {
-    Package,
     Search,
     Plus,
     Eye,
-    Edit,
     Phone,
-    MapPin,
-    Clock,
     ChevronLeft,
     ChevronRight,
     RefreshCw,
@@ -16,9 +12,7 @@ import {
     ArrowLeft,
     User,
     Wrench,
-    CheckCircle,
-    PlayCircle,
-    PauseCircle
+
 } from "lucide-react";
 import { useServiceEnquiries, serviceApiService } from "@/services/serviceApiService";
 import { ServiceDetails, ServiceTypeStatus } from "@/types";
@@ -251,7 +245,6 @@ export function InServiceView({ onNavigate, onBack }: InServiceViewProps) {
                 </Card>
             ) : paginatedServices.length === 0 ? (
                 <Card className="p-8 sm:p-12 text-center">
-                    <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-foreground mb-2">No services found</h3>
                     <p className="text-muted-foreground mb-6">
                         {searchTerm || statusFilter !== "all"
@@ -324,7 +317,6 @@ export function InServiceView({ onNavigate, onBack }: InServiceViewProps) {
                                                 <div className="flex flex-wrap gap-1 mt-1">
                                                     {service.products.map((product, index) => (
                                                         <div key={index} className="flex items-center space-x-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
-                                                            <Package className="h-3 w-3" />
                                                             <span>{product.product}</span>
                                                             <span>({product.quantity})</span>
                                                         </div>
@@ -439,7 +431,6 @@ export function InServiceView({ onNavigate, onBack }: InServiceViewProps) {
                                                                 <div className="flex flex-wrap gap-1">
                                                                     {service.products.map((product, index) => (
                                                                         <div key={index} className="flex items-center space-x-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
-                                                                            <Package className="h-3 w-3" />
                                                                             <span>{product.product}</span>
                                                                             <span>({product.quantity})</span>
                                                                         </div>
@@ -610,7 +601,6 @@ export function InServiceView({ onNavigate, onBack }: InServiceViewProps) {
                                             <div className="mt-2 space-y-2">
                                                 {selectedService.products.map((product, index) => (
                                                     <div key={index} className="flex items-center space-x-2 bg-blue-50 p-3 rounded-lg border">
-                                                        <Package className="h-4 w-4 text-blue-600" />
                                                         <div className="flex-1">
                                                             <div className="font-medium text-foreground">{product.product}</div>
                                                             <div className="text-sm text-muted-foreground">Quantity: {product.quantity}</div>
@@ -620,7 +610,6 @@ export function InServiceView({ onNavigate, onBack }: InServiceViewProps) {
                                             </div>
                                         ) : (
                                             <div className="mt-2 flex items-center space-x-2 bg-blue-50 p-3 rounded-lg border">
-                                                <Package className="h-4 w-4 text-blue-600" />
                                                 <div className="flex-1">
                                                     <div className="font-medium text-foreground">{selectedService.product}</div>
                                                     <div className="text-sm text-muted-foreground">Quantity: {selectedService.quantity}</div>
