@@ -185,7 +185,6 @@ export function AllEnquiriesView({ onNavigate, onBack }: AllEnquiriesViewProps) 
                                 <th className="text-left p-3">ID</th>
                                 <th className="text-left p-3">Customer</th>
                                 <th className="text-left p-3">Contact</th>
-                                <th className="text-left p-3 hidden md:table-cell">Product</th>
                                 <th className="text-left p-3">Status</th>
                                 <th className="text-left p-3">Stage</th>
                                 <th className="text-left p-3 hidden md:table-cell">Created</th>
@@ -208,9 +207,7 @@ export function AllEnquiriesView({ onNavigate, onBack }: AllEnquiriesViewProps) 
                                                 : `+91 ${enquiry.phone}`}
                                         </div>
                                     </td>
-                                    <td className="p-3 hidden md:table-cell">
-                                        {enquiry.product}
-                                    </td>
+
                                     <td className="p-3">
                                         <span
                                             className={`inline-flex px-2 py-1 rounded-full text-xs border ${getStatusColor(

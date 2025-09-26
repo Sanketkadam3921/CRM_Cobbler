@@ -501,7 +501,7 @@ export function ServiceModule() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
           <div className="flex items-center justify-between">
             <div>
@@ -514,18 +514,7 @@ export function ServiceModule() {
             </div>
           </div>
         </Card>
-        <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-lg sm:text-2xl font-bold text-foreground">
-                {statsLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : stats.inProgressCount}
-              </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">
-                In Progress
-              </div>
-            </div>
-          </div>
-        </Card>
+
         <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
           <div className="flex items-center justify-between">
             <div>
@@ -610,6 +599,34 @@ export function ServiceModule() {
                       </span>
                     </div>
                   </div>
+
+                </div>
+
+                <div className="space-y-3">
+                  {/* Product info */}
+                  <div className="flex flex-col space-y-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {enquiry.products && enquiry.products.length > 0 ? (
+                        enquiry.products.map((product, index) => (
+                          <div key={index} className="flex items-center space-x-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                            <span>{product.product}</span>
+                            <span>({product.quantity})</span>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="flex items-center space-x-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                          <span>{enquiry.product}</span>
+                          <span>({enquiry.quantity})</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm font-semibold text-foreground">
+                      Estimated: ₹{enquiry.estimatedCost || 0}
+                    </span>
+                  </div>
                   {/* Item dropdown at top-right to scope the entire card */}
                   {items.length > 0 && (
                     <div className="flex items-center gap-2">
@@ -642,34 +659,6 @@ export function ServiceModule() {
                       </Select>
                     </div>
                   )}
-                </div>
-
-                <div className="space-y-3">
-                  {/* Product info */}
-                  <div className="flex flex-col space-y-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      {enquiry.products && enquiry.products.length > 0 ? (
-                        enquiry.products.map((product, index) => (
-                          <div key={index} className="flex items-center space-x-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
-                            <span>{product.product}</span>
-                            <span>({product.quantity})</span>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="flex items-center space-x-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
-                          <span>{enquiry.product}</span>
-                          <span>({enquiry.quantity})</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm font-semibold text-foreground">
-                      Estimated: ₹{enquiry.estimatedCost || 0}
-                    </span>
-                  </div>
-
                   {/* Services for Selected Item */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
@@ -828,7 +817,7 @@ export function ServiceModule() {
                         )}
                       </div>
                     </div>
-                    {/* Per-Item Before Photos captured at pickup */}
+                    {/* Per-Item Before Photos captured at pickup 
                     {items && items.length > 0 && (
                       <div className="space-y-2 mt-2">
                         <h4 className="text-sm font-medium text-foreground">Before Photos (Selected Item):</h4>
@@ -867,7 +856,7 @@ export function ServiceModule() {
                           })}
                         </div>
                       </div>
-                    )}
+                    )}*/}
                   </div>
                 </div>
 

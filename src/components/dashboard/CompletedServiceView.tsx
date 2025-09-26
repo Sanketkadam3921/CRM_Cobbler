@@ -180,54 +180,7 @@ export function CompletedServicesView({ onNavigate, onBack }: CompletedServicesV
                 </div>*/}
             </div>
 
-            {/* Statistics Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-                <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <div className="text-lg sm:text-2xl font-bold text-foreground">
-                                {statsLoading ? '...' : totalCompleted}
-                            </div>
-                            <div className="text-xs sm:text-sm text-muted-foreground">
-                                Total Completed
-                            </div>
-                        </div>
-                        <div className="h-6 w-6 sm:h-8 sm:w-8 text-success flex items-center justify-center">
-                            <CheckCircle className="h-full w-full" />
-                        </div>
-                    </div>
-                </Card>
-                <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <div className="text-lg sm:text-2xl font-bold text-foreground">
-                                {statsLoading ? '...' : completedThisWeek}
-                            </div>
-                            <div className="text-xs sm:text-sm text-muted-foreground">
-                                This Week
-                            </div>
-                        </div>
-                        <div className="h-6 w-6 sm:h-8 sm:w-8 text-blue-500 flex items-center justify-center">
-                            <Calendar className="h-full w-full" />
-                        </div>
-                    </div>
-                </Card>
-                <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <div className="text-lg sm:text-2xl font-bold text-foreground">
-                                ₹{statsLoading ? '...' : totalRevenue}
-                            </div>
-                            <div className="text-xs sm:text-sm text-muted-foreground">
-                                Total Revenue
-                            </div>
-                        </div>
-                        <div className="h-6 w-6 sm:h-8 sm:w-8 text-green-500 flex items-center justify-center">
-                            <DollarSign className="h-full w-full" />
-                        </div>
-                    </div>
-                </Card>
-            </div>
+
 
             {/* Error State - Updated to match CompletedModule pattern */}
             {(enquiriesError || statsError) && (

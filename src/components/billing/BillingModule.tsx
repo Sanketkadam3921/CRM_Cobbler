@@ -876,7 +876,6 @@ export function BillingModule() {
                 Pending Billing
               </div>
             </div>
-            <Receipt className="h-8 w-8 text-yellow-500" />
           </div>
         </Card>
 
@@ -890,7 +889,6 @@ export function BillingModule() {
                 Invoices Generated
               </div>
             </div>
-            <FileText className="h-8 w-8 text-blue-500" />
           </div>
         </Card>
 
@@ -906,7 +904,6 @@ export function BillingModule() {
                 Total Billed
               </div>
             </div>
-            <IndianRupee className="h-8 w-8 text-green-500" />
           </div>
         </Card>
 
@@ -920,7 +917,6 @@ export function BillingModule() {
                 Invoices Sent
               </div>
             </div>
-            <Send className="h-8 w-8 text-purple-500" />
           </div>
         </Card>
       </div>
