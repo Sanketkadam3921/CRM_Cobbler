@@ -96,6 +96,15 @@ export class ServiceController {
     try {
       const { enquiryId, serviceTypes, product, itemIndex }: ServiceAssignmentRequest = req.body;
 
+      console.log('🔍 ServiceController.assignServices received:', {
+        enquiryId,
+        serviceTypes,
+        product,
+        itemIndex,
+        productType: typeof product,
+        itemIndexType: typeof itemIndex
+      });
+
       if (!enquiryId || !serviceTypes || !Array.isArray(serviceTypes) || serviceTypes.length === 0) {
         res.status(400).json({
           success: false,

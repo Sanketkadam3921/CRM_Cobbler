@@ -1,39 +1,14 @@
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import {
   Search,
-  Camera,
-  Upload,
-  Send,
-  PenTool,
-  MapPin,
-  Package,
-  Clock,
-  User,
-  DollarSign,
   Phone,
   Loader2,
 } from "lucide-react";
-import { Enquiry, DeliveryStatus, DeliveryMethod } from "@/types";
+import { Enquiry, DeliveryStatus } from "@/types";
 import { stringUtils } from "@/utils";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -45,28 +20,6 @@ import {
 // REMOVED: localStorage-based imports
 // import { enquiriesStorage, workflowHelpers, imageUploadHelper } from "@/utils/localStorage";
 
-// ADDED: Image upload helper for backend API
-const imageUploadHelper = {
-  handleImageUpload: async (file: File): Promise<string> => {
-    console.log(
-      "📸 DELIVERY UI: Processing image upload for backend API:",
-      file.name
-    );
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = e.target?.result as string;
-        console.log("📸 DELIVERY UI: Image converted to base64 successfully");
-        resolve(result);
-      };
-      reader.onerror = (error) => {
-        console.error("❌ DELIVERY UI: Failed to process image:", error);
-        reject(error);
-      };
-      reader.readAsDataURL(file);
-    });
-  },
-};
 
 export function DeliveryModule() {
   // ADDED: Backend API hooks - replaces manual state management and localStorage
@@ -79,7 +32,6 @@ export function DeliveryModule() {
     enquiries,
     loading,
     error,
-    scheduleDelivery: apiScheduleDelivery,
     markOutForDelivery: apiMarkOutForDelivery,
     completeDelivery: apiCompleteDelivery,
   } = useDeliveryEnquiries(200000); // Poll every 2 seconds
@@ -88,14 +40,6 @@ export function DeliveryModule() {
 
   // Original UI state - UNCHANGED
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [deliveryNotes, setDeliveryNotes] = useState("");
-  const [customerSignature, setCustomerSignature] = useState<string | null>(
-    null
-  );
-  const [selectedDeliveryMethod, setSelectedDeliveryMethod] =
-    useState<DeliveryMethod>("customer-pickup");
-  const [scheduledDateTime, setScheduledDateTime] = useState("");
 
   // REMOVED: Manual polling with setInterval - replaced by useDeliveryEnquiries hook
   // useEffect(() => {
@@ -162,93 +106,7 @@ export function DeliveryModule() {
     }
   };
 
-  // Original image upload handler with backend API integration
-  const handleImageUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      try {
-        console.log(
-          "📸 DELIVERY UI: Image upload initiated for delivery proof"
-        );
-        const thumbnailData = await imageUploadHelper.handleImageUpload(file);
-        setSelectedImage(thumbnailData);
-        console.log("✅ DELIVERY UI: Image upload successful");
-      } catch (error) {
-        console.error("❌ DELIVERY UI: Failed to process image:", error);
-        alert("Failed to process image. Please try again.");
-      }
-    }
-  };
 
-  // Original signature upload handler with backend API integration
-  const handleSignatureUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      try {
-        console.log("📸 DELIVERY UI: Signature upload initiated");
-        const thumbnailData = await imageUploadHelper.handleImageUpload(file);
-        // setCustomerSignature(thumbnailData);
-        console.log("✅ DELIVERY UI: Signature upload successful");
-      } catch (error) {
-        console.error("❌ DELIVERY UI: Failed to process signature:", error);
-        alert("Failed to process signature. Please try again.");
-      }
-    }
-  };
-
-  // Modified schedule delivery function with backend API integration
-  const scheduleDelivery = async (
-    enquiryId: number,
-    method: DeliveryMethod,
-    scheduledTime: string
-  ) => {
-    try {
-      console.log("🔄 DELIVERY UI: Scheduling delivery via backend API:", {
-        enquiryId,
-        method,
-        scheduledTime,
-      });
-
-      // ADDED: Backend API call - replaces localStorage update
-      await apiScheduleDelivery(enquiryId, method, scheduledTime);
-
-      // Reset form - UNCHANGED
-      setSelectedDeliveryMethod("customer-pickup");
-      setScheduledDateTime("");
-
-      // Original WhatsApp notification - UNCHANGED
-      const enquiry = enquiries.find((e) => e.id === enquiryId);
-      if (enquiry) {
-        console.log(
-          "📱 DELIVERY UI: Showing WhatsApp notification for scheduled delivery"
-        );
-        toast({
-          title: `WhatsApp message sent to ${enquiry.customerName}!`,
-          description: `Your ${enquiry.product} delivery has been scheduled for ${scheduledTime}.`,
-          duration: 3000, // 3 seconds
-
-        });
-
-      }
-
-      console.log(
-        "✅ DELIVERY UI: Delivery scheduled successfully via backend API"
-      );
-    } catch (error) {
-      console.error("❌ DELIVERY UI: Failed to schedule delivery:", error);
-      toast({
-        variant: "destructive",
-        title: "Failed to schedule delivery",
-        description: "Please try again.",
-        duration: 3000, // 3 seconds
-
-      });
-    }
-  };
 
   // Modified mark out for delivery function with backend API integration
   const markOutForDelivery = async (enquiryId: number, assignedTo: string) => {
@@ -293,26 +151,32 @@ export function DeliveryModule() {
     try {
       console.log("🔄 DELIVERY UI: Marking as delivered via backend API:", {
         enquiryId,
-        hasImage: !!selectedImage,
-        hasSignature: !!customerSignature,
-        hasNotes: !!deliveryNotes,
       });
+
+      // Find the enquiry to get the service completion photo
+      const enquiry = enquiries.find((e) => e.id === enquiryId);
+      if (!enquiry) {
+        throw new Error("Enquiry not found");
+      }
+
+      // Use service completion photo as delivery proof photo
+      const deliveryProofPhoto = enquiry.deliveryDetails?.photos?.beforePhoto ||
+        enquiry.serviceDetails?.overallPhotos?.afterPhoto ||
+        "";
+
+      if (!deliveryProofPhoto) {
+        throw new Error("No service completion photo available for delivery proof");
+      }
 
       // ADDED: Backend API call - replaces localStorage update and stage transition
       await apiCompleteDelivery(
         enquiryId,
-        selectedImage || "",
-        customerSignature || "",
-        deliveryNotes
+        deliveryProofPhoto, // Use service completion photo as delivery proof
+        "", // No customer signature required
+        "" // No delivery notes required
       );
 
-      // Reset form - UNCHANGED
-      setSelectedImage(null);
-      setCustomerSignature(null);
-      setDeliveryNotes("");
-
       // Original completion WhatsApp notification - UNCHANGED
-      const enquiry = enquiries.find((e) => e.id === enquiryId);
       if (enquiry) {
         console.log(
           "📱 DELIVERY UI: Showing WhatsApp notification for delivery completion"
@@ -602,11 +466,22 @@ export function DeliveryModule() {
                     <span className="text-sm text-foreground break-words">{enquiry.address}</span>
                   </div>
 
-                  <div className="flex items-center space-x-2">
-                    <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
-                      Quantity: {enquiry.quantity}
+                  <div className="flex flex-col space-y-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {enquiry.products && enquiry.products.length > 0 ? (
+                        enquiry.products.map((product, index) => (
+                          <div key={index} className="flex items-center space-x-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                            <span>{product.product}</span>
+                            <span>({product.quantity})</span>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="flex items-center space-x-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                          <span>{enquiry.product}</span>
+                          <span>({enquiry.quantity})</span>
+                        </div>
+                      )}
                     </div>
-                    <span className="text-gray-500 text-sm">{enquiry.product}</span>
                   </div>
 
                   {enquiry.deliveryDetails?.scheduledTime && (
@@ -722,217 +597,26 @@ export function DeliveryModule() {
                   width: '100%'
                 }}>
                   {enquiry.deliveryDetails?.status === "ready" && (
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button
-                          size="sm"
-                          className="bg-gradient-primary hover:opacity-90 text-xs sm:text-sm"
-                        >
-                          <span className="mr-1"></span>
-                          Schedule Delivery
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="sm:max-w-md">
-                        <DialogHeader>
-                          <DialogTitle>Schedule Delivery</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                          <div className="space-y-2">
-                            <Label>Delivery Method</Label>
-                            <Select
-                              onValueChange={(value) =>
-                                setSelectedDeliveryMethod(value as DeliveryMethod)
-                              }
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select delivery method" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="customer-pickup">
-                                  Customer Pickup
-                                </SelectItem>
-                                <SelectItem value="home-delivery">
-                                  Home Delivery
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Scheduled Time</Label>
-                            <Input
-                              type="datetime-local"
-                              value={scheduledDateTime}
-                              onChange={(e) =>
-                                setScheduledDateTime(e.target.value)
-                              }
-                              min={new Date().toISOString().slice(0, 16)}
-                            />
-                          </div>
-                          <Button
-                            onClick={() => {
-                              if (scheduledDateTime) {
-                                scheduleDelivery(
-                                  enquiry.id,
-                                  selectedDeliveryMethod,
-                                  scheduledDateTime
-                                );
-                              } else {
-                                toast({
-                                  variant: "destructive", // red styling
-                                  title: "Missing Scheduled Time",
-                                  description: "Please select a scheduled time before proceeding.",
-                                  duration: 3000, // 3 seconds
-
-                                });
-                              }
-
-                            }}
-                            className="w-full bg-gradient-primary hover:opacity-90"
-                            disabled={!scheduledDateTime}
-                          >
-                            Schedule Delivery
-                          </Button>
-                          {!scheduledDateTime && (
-                            <p className="text-xs text-muted-foreground text-center">
-                              Please select a scheduled time
-                            </p>
-                          )}
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                  )}
-
-                  {enquiry.deliveryDetails?.status === "scheduled" && (
                     <Button
                       size="sm"
-                      variant="outline"
-                      className="text-xs sm:text-sm"
-                      onClick={() =>
-                        markOutForDelivery(enquiry.id, "Delivery Person")
-                      }
+                      className="bg-gradient-primary hover:opacity-90 text-xs sm:text-sm"
+                      onClick={() => markOutForDelivery(enquiry.id, "Delivery Person")}
                     >
-                      {/* <span className="mr-1">🚚</span> */}
+                      <span className="mr-1">🚚</span>
                       Mark Out for Delivery
                     </Button>
                   )}
 
+
                   {enquiry.deliveryDetails?.status === "out-for-delivery" && (
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button
-                          size="sm"
-                          className="bg-green-600 hover:bg-green-700 text-xs sm:text-sm"
-                        >
-                          {/* <span className="mr-1">✓</span> */}
-                          Mark Delivered
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="sm:max-w-md">
-                        <DialogHeader>
-                          <DialogTitle>Confirm Delivery</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                          <div className="space-y-2">
-                            <Label>Delivery Proof Photo</Label>
-                            <div className="flex flex-col sm:flex-row gap-2">
-                              <Input
-                                type="file"
-                                accept="image/*"
-                                onChange={handleImageUpload}
-                                className="hidden"
-                                id={`delivery-photo-${enquiry.id}`}
-                              />
-                              <Label
-                                htmlFor={`delivery-photo-${enquiry.id}`}
-                                className="cursor-pointer flex items-center justify-center space-x-2 border border-input bg-background px-3 py-2 text-sm ring-offset-background hover:bg-accent hover:text-accent-foreground rounded-md flex-1"
-                              >
-                                <Camera className="h-4 w-4" />
-                                <span>Take Photo</span>
-                              </Label>
-                            </div>
-                            {selectedImage && (
-                              <div className="mt-2">
-                                <img
-                                  src={selectedImage}
-                                  alt="Delivery proof"
-                                  className="w-full max-h-48 object-contain rounded-md border bg-gray-50"
-                                  loading="eager"
-                                  decoding="sync"
-                                  style={{
-                                    imageRendering: 'crisp-edges',
-                                    transform: 'translateZ(0)',
-                                    backfaceVisibility: 'hidden',
-                                    WebkitBackfaceVisibility: 'hidden'
-                                  } as React.CSSProperties}
-                                />
-                              </div>
-                            )}
-                          </div>
-
-                          {/* <div className="space-y-2">
-                          <Label>Customer Signature</Label>
-                          <Input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleSignatureUpload}
-                            className="hidden"
-                            id={`signature-${enquiry.id}`}
-                          />
-                          <Label
-                            htmlFor={`signature-${enquiry.id}`}
-                            className="cursor-pointer flex items-center justify-center space-x-2 border border-input bg-background px-3 py-2 text-sm ring-offset-background hover:bg-accent hover:text-accent-foreground rounded-md"
-                          >
-                            <PenTool className="h-4 w-4" />
-                            <span>Upload Signature</span>
-                          </Label>
-                          {customerSignature && (
-                            <div className="mt-2">
-                              <img
-                                src={customerSignature}
-                                alt="Customer signature"
-                                className="w-full max-h-32 object-contain rounded-md border bg-gray-50"
-                                loading="eager"
-                                decoding="sync"
-                                style={{ 
-                                  imageRendering: 'crisp-edges',
-                                  transform: 'translateZ(0)',
-                                  backfaceVisibility: 'hidden',
-                                  WebkitBackfaceVisibility: 'hidden'
-                                } as React.CSSProperties}
-                              />
-                            </div>
-                          )}
-                        </div> */}
-
-                          <div className="space-y-2">
-                            <Label htmlFor="delivery-notes">
-                              Delivery Notes (Optional)
-                            </Label>
-                            <Textarea
-                              id="delivery-notes"
-                              placeholder="Any notes about the delivery..."
-                              value={deliveryNotes}
-                              onChange={(e) => setDeliveryNotes(e.target.value)}
-                              rows={3}
-                            />
-                          </div>
-
-                          <Button
-                            onClick={() => markDelivered(enquiry.id)}
-                            className="w-full bg-green-600 hover:bg-green-700"
-                            disabled={!selectedImage}
-                          >
-                            <span className="mr-2">✓</span>
-                            Confirm Delivery
-                          </Button>
-                          {!selectedImage && (
-                            <p className="text-xs text-muted-foreground text-center">
-                              Please upload a delivery proof photo to continue
-                            </p>
-                          )}
-                        </div>
-                      </DialogContent>
-                    </Dialog>
+                    <Button
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700 text-xs sm:text-sm"
+                      onClick={() => markDelivered(enquiry.id)}
+                    >
+                      <span className="mr-1">✓</span>
+                      Mark Delivered
+                    </Button>
                   )}
                 </div>
               </Card>

@@ -1,12 +1,12 @@
-import { 
-  Enquiry, 
-  ApiResponse 
+import {
+  Enquiry,
+  ApiResponse
 } from '@/types';
 import { useState, useEffect, useCallback } from 'react';
 
 // API Configuration - SAME AS OTHER SERVICES
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (
-  typeof window !== 'undefined' && window.location.origin !== 'http://localhost:5173' 
+  typeof window !== 'undefined' && window.location.origin !== 'http://localhost:5173'
     ? `${window.location.origin}/api`
     : 'http://localhost:3001/api'
 );
@@ -30,7 +30,7 @@ class ApiClient {
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
-    
+
     const config: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
@@ -42,7 +42,7 @@ class ApiClient {
 
     try {
       const response = await fetch(url, config);
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
@@ -65,6 +65,12 @@ class ApiClient {
 // Create API client instance - SAME AS OTHER SERVICES
 const apiClient = new ApiClient(API_BASE_URL, X_TOKEN);
 
+// Product item interface
+export interface ProductItem {
+  product: string;
+  quantity: number;
+}
+
 // Completed enquiry interface for frontend (matches backend)
 export interface CompletedEnquiry {
   id: number;
@@ -73,8 +79,9 @@ export interface CompletedEnquiry {
   address: string;
   message: string;
   inquiryType: string;
-  product: string;
-  quantity: number;
+  product: string; // Keep for backward compatibility
+  quantity: number; // Keep for backward compatibility
+  products: ProductItem[]; // New field for multiple products
   date: string;
   status: string;
   contacted: boolean;
@@ -86,19 +93,19 @@ export interface CompletedEnquiry {
   finalAmount?: number;
   createdAt: string;
   updatedAt: string;
-  
+
   // Billing details
   billedAmount?: number;
   subtotalAmount?: number;
   gstAmount?: number;
   invoiceNumber?: string;
   invoiceDate?: string;
-  
+
   // Delivery details
   deliveredAt?: string;
   deliveryMethod?: string;
   deliveryNotes?: string;
-  
+
   // Service details
   serviceTypes?: string;
   workNotes?: string;
@@ -118,18 +125,18 @@ export class CompletedApiService {
   static async getCompletedEnquiries(): Promise<CompletedEnquiry[]> {
     try {
       console.log('CompletedApiService.getCompletedEnquiries - Starting API call');
-      
+
       const response = await apiClient.get<ApiResponse<CompletedEnquiry[]>>('/completed/enquiries');
-      
+
       if (!response.success) {
         throw new Error(response.error || 'Failed to fetch completed enquiries');
       }
-      
+
       console.log('CompletedApiService.getCompletedEnquiries - Success', {
         count: response.data?.length || 0,
         timestamp: new Date().toISOString()
       });
-      
+
       return response.data!;
     } catch (error) {
       console.error('CompletedApiService.getCompletedEnquiries - Error:', error);
@@ -141,18 +148,18 @@ export class CompletedApiService {
   static async getCompletedStats(): Promise<CompletedStats> {
     try {
       console.log('CompletedApiService.getCompletedStats - Starting API call');
-      
+
       const response = await apiClient.get<ApiResponse<CompletedStats>>('/completed/stats');
-      
+
       if (!response.success) {
         throw new Error(response.error || 'Failed to fetch completed statistics');
       }
-      
+
       console.log('CompletedApiService.getCompletedStats - Success', {
         stats: response.data,
         timestamp: new Date().toISOString()
       });
-      
+
       return response.data!;
     } catch (error) {
       console.error('CompletedApiService.getCompletedStats - Error:', error);
@@ -164,19 +171,19 @@ export class CompletedApiService {
   static async getCompletedEnquiryById(id: number): Promise<CompletedEnquiry | null> {
     try {
       console.log('CompletedApiService.getCompletedEnquiryById - Starting API call', { id });
-      
+
       const response = await apiClient.get<ApiResponse<CompletedEnquiry>>(`/completed/enquiries/${id}`);
-      
+
       if (!response.success) {
         throw new Error(response.error || 'Failed to fetch completed enquiry');
       }
-      
+
       console.log('CompletedApiService.getCompletedEnquiryById - Success', {
         id,
         found: !!response.data,
         timestamp: new Date().toISOString()
       });
-      
+
       return response.data!;
     } catch (error) {
       console.error('CompletedApiService.getCompletedEnquiryById - Error:', { id, error });
@@ -196,11 +203,11 @@ export function useCompletedEnquiries(pollInterval: number = 200000) {
     try {
       console.log('useCompletedEnquiries.fetchCompletedEnquiries - Starting fetch');
       setError(null);
-      
+
       const result = await CompletedApiService.getCompletedEnquiries();
       setEnquiries(result);
       setLastUpdate(new Date());
-      
+
       console.log('useCompletedEnquiries.fetchCompletedEnquiries - Success', {
         count: result.length,
         timestamp: new Date().toISOString()
@@ -254,10 +261,10 @@ export function useCompletedStats(pollInterval: number = 500000) {
     try {
       console.log('useCompletedStats.fetchStats - Starting fetch');
       setError(null);
-      
+
       const result = await CompletedApiService.getCompletedStats();
       setStats(result);
-      
+
       console.log('useCompletedStats.fetchStats - Success', {
         stats: result,
         timestamp: new Date().toISOString()
@@ -274,7 +281,7 @@ export function useCompletedStats(pollInterval: number = 500000) {
   useEffect(() => {
     console.log('useCompletedStats - Initial fetch starting');
     fetchStats();
-    
+
     // Refresh stats every 5 seconds
     const interval = setInterval(fetchStats, pollInterval);
     return () => {

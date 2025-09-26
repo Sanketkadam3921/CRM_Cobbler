@@ -267,7 +267,7 @@ export const createTables = async (): Promise<void> => {
         INDEX idx_product_item (product, item_index)
       )`,
 
-      // Photos storage - Enhanced with proper constraints and types
+      // Photos storage - Enhanced with proper constraints and types INCLUDING NEW COLUMNS
       `CREATE TABLE IF NOT EXISTS photos (
         id INT PRIMARY KEY AUTO_INCREMENT,
         enquiry_id INT NOT NULL,
@@ -445,7 +445,9 @@ export const createTables = async (): Promise<void> => {
         INDEX idx_date (date),
         INDEX idx_amount (amount),
         INDEX idx_employee_id (employee_id)
-      )` ,
+      )`,
+
+      // Business info table
       `CREATE TABLE IF NOT EXISTS business_info (
         id INT PRIMARY KEY AUTO_INCREMENT,
         business_name VARCHAR(255) NOT NULL,
@@ -519,11 +521,78 @@ export const createTables = async (): Promise<void> => {
 
     logDatabase.success('All database tables created successfully');
 
+    // Run database migrations to ensure schema is up-to-date
+    await runDatabaseMigrations();
+
   } catch (error) {
     logDatabase.error('Failed to create database tables', error);
     throw error;
   }
 };
+
+// Database migration function to add missing columns
+export const runDatabaseMigrations = async (): Promise<void> => {
+  try {
+    logDatabase.connection('Running database migrations...');
+
+    // Check if photos table has the required columns for multi-item photos
+    const [columns] = await executeQuery(`
+      SELECT COLUMN_NAME 
+      FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'photos' AND COLUMN_NAME IN ('product', 'item_index', 'slot_index')
+    `) as any[];
+
+    const hasProductColumn = columns.some((col: any) => col.COLUMN_NAME === 'product');
+    const hasItemIndexColumn = columns.some((col: any) => col.COLUMN_NAME === 'item_index');
+    const hasSlotIndexColumn = columns.some((col: any) => col.COLUMN_NAME === 'slot_index');
+
+    if (!hasProductColumn) {
+      await executeQuery(`
+        ALTER TABLE photos 
+        ADD COLUMN product ENUM('Bag', 'Shoe', 'Wallet', 'Belt', 'All type furniture') NULL
+      `);
+      logDatabase.success('Added product column to photos table');
+    }
+
+    if (!hasItemIndexColumn) {
+      await executeQuery(`
+        ALTER TABLE photos 
+        ADD COLUMN item_index INT NULL
+      `);
+      logDatabase.success('Added item_index column to photos table');
+    }
+
+    if (!hasSlotIndexColumn) {
+      await executeQuery(`
+        ALTER TABLE photos 
+        ADD COLUMN slot_index TINYINT NULL
+      `);
+      logDatabase.success('Added slot_index column to photos table');
+    }
+
+    // Add index if columns were added
+    if (!hasProductColumn || !hasItemIndexColumn) {
+      try {
+        await executeQuery(`
+          ALTER TABLE photos 
+          ADD INDEX idx_product_item (product, item_index)
+        `);
+        logDatabase.success('Added product_item index to photos table');
+      } catch (e: any) {
+        if (!e.message.includes('Duplicate key name')) {
+          logDatabase.error('Failed to add product_item index', e);
+        }
+      }
+    }
+
+    logDatabase.success('Database migrations completed successfully');
+
+  } catch (error) {
+    logDatabase.error('Failed to run database migrations', error);
+    // Don't throw error - migrations are optional and shouldn't break the app
+  }
+};
+
 export const insertSettingsInitialData = async (): Promise<void> => {
   try {
     logDatabase.connection('Inserting initial data for Settings module...');
@@ -594,7 +663,6 @@ export const insertSettingsInitialData = async (): Promise<void> => {
   }
 };
 
-
 export default {
   initializeDatabase,
   getConnection,
@@ -602,5 +670,6 @@ export default {
   executeTransaction,
   closeDatabase,
   createTables,
+  runDatabaseMigrations,
   insertSettingsInitialData
 };

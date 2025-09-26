@@ -281,14 +281,31 @@ export function PendingPickupsView({ onNavigate, onBack }: PendingPickupsViewPro
                                     </span>
                                 </div>
 
-                                {/* Product & Quantity */}
+                                {/* Products & Quantity */}
                                 <div className="flex justify-between text-sm">
-                                    <div>
-                                        <span className="text-muted-foreground">Product:</span> {enquiry.product}
-                                        <div className="text-muted-foreground text-xs">Qty: {enquiry.quantity}</div>
+                                    <div className="flex-1">
+                                        {enquiry.products && enquiry.products.length > 0 ? (
+                                            <div className="space-y-1">
+                                                <span className="text-muted-foreground text-xs">Products:</span>
+                                                <div className="flex flex-wrap gap-1">
+                                                    {enquiry.products.map((product, index) => (
+                                                        <div key={index} className="flex items-center space-x-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                                                            <Package className="h-3 w-3" />
+                                                            <span>{product.product}</span>
+                                                            <span>({product.quantity})</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div>
+                                                <span className="text-muted-foreground">Product:</span> {enquiry.product}
+                                                <div className="text-muted-foreground text-xs">Qty: {enquiry.quantity}</div>
+                                            </div>
+                                        )}
                                     </div>
                                     {enquiry.quotedAmount && (
-                                        <div className="text-sm font-semibold text-green-600">
+                                        <div className="text-sm font-semibold text-green-600 ml-2">
                                             ₹{enquiry.quotedAmount.toLocaleString()}
                                         </div>
                                     )}
@@ -397,12 +414,29 @@ export function PendingPickupsView({ onNavigate, onBack }: PendingPickupsViewPro
                                             </td>
                                             <td className="p-4">
                                                 <div>
-                                                    <div className="font-medium">{enquiry.product}</div>
-                                                    <div className="text-sm text-muted-foreground">
-                                                        Qty: {enquiry.quantity}
-                                                    </div>
+                                                    {enquiry.products && enquiry.products.length > 0 ? (
+                                                        <div className="space-y-2">
+                                                            <div className="text-xs text-muted-foreground">Products:</div>
+                                                            <div className="flex flex-wrap gap-1">
+                                                                {enquiry.products.map((product, index) => (
+                                                                    <div key={index} className="flex items-center space-x-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                                                                        <Package className="h-3 w-3" />
+                                                                        <span>{product.product}</span>
+                                                                        <span>({product.quantity})</span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <div>
+                                                            <div className="font-medium">{enquiry.product}</div>
+                                                            <div className="text-sm text-muted-foreground">
+                                                                Qty: {enquiry.quantity}
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                     {enquiry.quotedAmount && (
-                                                        <div className="text-sm text-muted-foreground">
+                                                        <div className="text-sm text-muted-foreground mt-1">
                                                             ₹{enquiry.quotedAmount.toLocaleString()}
                                                         </div>
                                                     )}
@@ -528,14 +562,30 @@ export function PendingPickupsView({ onNavigate, onBack }: PendingPickupsViewPro
                                 )}
 
                                 {/* Product Details */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="space-y-4">
                                     <div>
-                                        <label className="text-sm font-medium text-muted-foreground">Product</label>
-                                        <div className="text-foreground">{selectedEnquiry.product}</div>
-                                    </div>
-                                    <div>
-                                        <label className="text-sm font-medium text-muted-foreground">Quantity</label>
-                                        <div className="text-foreground">{selectedEnquiry.quantity}</div>
+                                        <label className="text-sm font-medium text-muted-foreground">Products</label>
+                                        {selectedEnquiry.products && selectedEnquiry.products.length > 0 ? (
+                                            <div className="mt-2 space-y-2">
+                                                {selectedEnquiry.products.map((product, index) => (
+                                                    <div key={index} className="flex items-center space-x-2 bg-blue-50 p-3 rounded-lg border">
+                                                        <Package className="h-4 w-4 text-blue-600" />
+                                                        <div className="flex-1">
+                                                            <div className="font-medium text-foreground">{product.product}</div>
+                                                            <div className="text-sm text-muted-foreground">Quantity: {product.quantity}</div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="mt-2 flex items-center space-x-2 bg-blue-50 p-3 rounded-lg border">
+                                                <Package className="h-4 w-4 text-blue-600" />
+                                                <div className="flex-1">
+                                                    <div className="font-medium text-foreground">{selectedEnquiry.product}</div>
+                                                    <div className="text-sm text-muted-foreground">Quantity: {selectedEnquiry.quantity}</div>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 

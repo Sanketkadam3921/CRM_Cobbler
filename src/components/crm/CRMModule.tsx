@@ -38,6 +38,12 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Enquiry, ProductItem, ProductType } from "@/types";
+
+// Local interface for form data that allows string quantities
+interface FormProductItem {
+  product: ProductType;
+  quantity: string | number;
+}
 import { useEnquiriesWithPolling, useCrmStats } from "@/services/enquiryApiService";
 import { Card as Card1, CardContent, Stack, Box, Button as Button1 } from "@mui/material";
 
@@ -119,7 +125,7 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
   const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [editData, setEditData] = useState<Partial<Enquiry>>({});
+  const [editData, setEditData] = useState<Partial<Omit<Enquiry, 'products'> & { products?: FormProductItem[] }>>({});
 
   // Convert dialog state
   const [showConvertDialog, setShowConvertDialog] = useState(false);
@@ -134,7 +140,7 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
     location: "",
     message: "",
     enquiryType: "",
-    products: [] as ProductItem[]
+    products: [] as FormProductItem[]
   });
   const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
   const [editErrors, setEditErrors] = useState<{ [key: string]: string }>({});
@@ -149,7 +155,7 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
     if (!existingProduct) {
       setFormData({
         ...formData,
-        products: [...formData.products, { product: productType, quantity: 1 }]
+        products: [...formData.products, { product: productType, quantity: "" }]
       });
     }
   };
@@ -161,7 +167,7 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
     });
   };
 
-  const updateProductQuantity = (productType: ProductType, quantity: number) => {
+  const updateProductQuantity = (productType: ProductType, quantity: string | number) => {
     setFormData({
       ...formData,
       products: formData.products.map(p =>
@@ -176,7 +182,7 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
 
   const getProductQuantity = (productType: ProductType) => {
     const product = formData.products.find(p => p.product === productType);
-    return product ? product.quantity : 1;
+    return product ? product.quantity : "";
   };
 
   // Use stats from API instead of calculating locally
@@ -199,6 +205,18 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
     }
 
     const date = new Date(isoDateString);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+
+    return `${day}/${month}/${year}`;
+  };
+
+  // Helper function to format dates for toast messages in dd/mm/yyyy format
+  const formatDateForToast = (dateString) => {
+    if (!dateString) return "N/A";
+
+    const date = new Date(dateString);
     const day = date.getDate().toString().padStart(2, '0');
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const year = date.getFullYear();
@@ -287,7 +305,8 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
 
     // Validate individual product quantities
     formData.products.forEach((product, index) => {
-      if (product.quantity < 1) {
+      const quantity = typeof product.quantity === 'string' ? parseInt(product.quantity) : product.quantity;
+      if (!product.quantity || product.quantity === "" || isNaN(quantity) || quantity < 1) {
         errors[`product_${index}_quantity`] = "Quantity must be at least 1";
       }
     });
@@ -321,7 +340,8 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
     // Validate individual product quantities
     const products = editData.products ?? currentEnquiry.products ?? [];
     products.forEach((product, index) => {
-      if (product.quantity < 1) {
+      const quantity = typeof product.quantity === 'string' ? parseInt(product.quantity) : product.quantity;
+      if (!product.quantity || (typeof product.quantity === 'string' && product.quantity === "") || isNaN(quantity) || quantity < 1) {
         errors[`product_${index}_quantity`] = "Quantity must be at least 1";
       }
     });
@@ -373,8 +393,11 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
         inquiryType: formData.enquiryType as "Instagram" | "Facebook" | "WhatsApp",
         // For backward compatibility, use first product or default
         product: formData.products.length > 0 ? formData.products[0].product : "Bag",
-        quantity: formData.products.length > 0 ? formData.products[0].quantity : 1,
-        products: formData.products,
+        quantity: formData.products.length > 0 ? (typeof formData.products[0].quantity === 'string' ? parseInt(formData.products[0].quantity) || 1 : formData.products[0].quantity) : 1,
+        products: formData.products.map(p => ({
+          ...p,
+          quantity: typeof p.quantity === 'string' ? parseInt(p.quantity) || 1 : p.quantity
+        })),
         date: new Date().toISOString().split("T")[0],
         status: "new",
         contacted: false,
@@ -429,7 +452,15 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
     }
 
     try {
-      const updatedEnquiry = await updateEnquiry(id, editData);
+      // Convert string quantities to numbers for submission
+      const processedEditData = {
+        ...editData,
+        products: editData.products?.map(p => ({
+          ...p,
+          quantity: typeof p.quantity === 'string' ? parseInt(p.quantity) || 1 : p.quantity
+        }))
+      };
+      const updatedEnquiry = await updateEnquiry(id, processedEditData);
       if (updatedEnquiry) {
         setEditingId(null);
         setEditData({});
@@ -544,17 +575,6 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
     }
   };
 
-  const getProductIcon = (product: string) => {
-    const iconMap = {
-      "Bag": <Briefcase className="h-4 w-4" />,
-      "Shoe": <Footprints className="h-4 w-4" />,
-      "Wallet": <Wallet className="h-4 w-4" />,
-      "Belt": <AlarmSmoke className="h-4 w-4" />,
-      "All type furniture": <Sofa className="h-4 w-4" />
-    };
-
-    return iconMap[product] || <ShoppingBag className="h-4 w-4" />;
-  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -830,7 +850,6 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                     />
                     <div className="flex-1 flex items-center justify-between">
                       <div className="flex items-center space-x-2">
-                        {getProductIcon(productType)}
                         <Label htmlFor={`product-${productType}`} className="text-sm font-medium text-gray-700 cursor-pointer">
                           {productType}
                         </Label>
@@ -843,10 +862,14 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                             min="1"
                             value={getProductQuantity(productType)}
                             onChange={(e) => {
-                              const quantity = parseInt(e.target.value) || 1;
-                              updateProductQuantity(productType, quantity);
+                              const value = e.target.value;
+                              // Allow empty string or positive numbers only
+                              if (value === "" || /^[1-9]\d*$/.test(value)) {
+                                updateProductQuantity(productType, value);
+                              }
                             }}
-                            className="w-16 h-8 text-sm"
+                            placeholder="Qty"
+                            className="w-16 h-8 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           />
                         </div>
                       )}
@@ -909,7 +932,6 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                     <div className="mt-2 space-y-2">
                       {formData.products.map((product, index) => (
                         <div key={index} className="flex items-center space-x-2 bg-white p-2 rounded border">
-                          {getProductIcon(product.product)}
                           <span className="text-sm text-gray-900">{product.product}</span>
                           <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">
                             Qty: {product.quantity}
@@ -1094,7 +1116,8 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                       <div className="mt-2 space-y-3">
                         {productTypes.map((productType) => {
                           const isSelected = (editData.products ?? enquiry.products ?? []).some(p => p.product === productType);
-                          const currentQuantity = (editData.products ?? enquiry.products ?? []).find(p => p.product === productType)?.quantity ?? 1;
+                          const currentProduct = (editData.products ?? enquiry.products ?? []).find(p => p.product === productType);
+                          const currentQuantity = currentProduct ? (typeof currentProduct.quantity === 'string' ? currentProduct.quantity : currentProduct.quantity.toString()) : "";
 
                           return (
                             <div key={productType} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50">
@@ -1104,7 +1127,7 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                                 onCheckedChange={(checked) => {
                                   const currentProducts = editData.products ?? enquiry.products ?? [];
                                   if (checked) {
-                                    const newProducts = [...currentProducts, { product: productType, quantity: 1 }];
+                                    const newProducts = [...currentProducts, { product: productType, quantity: "" as string | number }];
                                     setEditData({ ...editData, products: newProducts });
                                   } else {
                                     const newProducts = currentProducts.filter(p => p.product !== productType);
@@ -1114,7 +1137,6 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                               />
                               <div className="flex-1 flex items-center justify-between">
                                 <div className="flex items-center space-x-2">
-                                  {getProductIcon(productType)}
                                   <Label htmlFor={`edit-product-${productType}`} className="text-sm font-medium text-gray-700 cursor-pointer">
                                     {productType}
                                   </Label>
@@ -1127,14 +1149,18 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                                       min="1"
                                       value={currentQuantity}
                                       onChange={(e) => {
-                                        const quantity = parseInt(e.target.value) || 1;
-                                        const currentProducts = editData.products ?? enquiry.products ?? [];
-                                        const newProducts = currentProducts.map(p =>
-                                          p.product === productType ? { ...p, quantity } : p
-                                        );
-                                        setEditData({ ...editData, products: newProducts });
+                                        const value = e.target.value;
+                                        // Allow empty string or positive numbers only
+                                        if (value === "" || /^[1-9]\d*$/.test(value)) {
+                                          const currentProducts = editData.products ?? enquiry.products ?? [];
+                                          const newProducts = currentProducts.map(p =>
+                                            p.product === productType ? { ...p, quantity: value as string | number } : p
+                                          );
+                                          setEditData({ ...editData, products: newProducts });
+                                        }
                                       }}
-                                      className="w-16 h-8 text-sm"
+                                      placeholder="Qty"
+                                      className="w-16 h-8 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                     />
                                   </div>
                                 )}
@@ -1266,14 +1292,12 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                             {enquiry.products && enquiry.products.length > 0 ? (
                               enquiry.products.map((product, index) => (
                                 <div key={index} className="flex items-center space-x-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
-                                  {getProductIcon(product.product)}
                                   <span>{product.product}</span>
                                   <span>({product.quantity})</span>
                                 </div>
                               ))
                             ) : (
                               <div className="flex items-center space-x-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
-                                {getProductIcon(enquiry.product)}
                                 <span>{enquiry.product}</span>
                                 <span>({enquiry.quantity})</span>
                               </div>
@@ -1405,7 +1429,6 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                         <span className="text-xs text-gray-500">Products:</span>
                         {convertingEnquiry.products.map((product, index) => (
                           <div key={index} className="flex items-center gap-2 text-xs text-gray-500">
-                            {getProductIcon(product.product)}
                             <span>{product.product} (Qty: {product.quantity})</span>
                           </div>
                         ))}
@@ -1491,7 +1514,7 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                     />
                     <p className="text-xs text-gray-500">
                       {pickupDate
-                        ? `Select delivery date (must be at least 15 days after pickup: ${new Date(new Date(pickupDate).getTime() + 15 * 24 * 60 * 60 * 1000).toLocaleDateString()})`
+                        ? `Select delivery date (must be at least 15 days after pickup: ${formatDateForToast(new Date(new Date(pickupDate).getTime() + 15 * 24 * 60 * 60 * 1000).toISOString())})`
                         : "Please select pickup date first"
                       }
                     </p>
@@ -1576,7 +1599,7 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
                   if (result) {
                     toast({
                       title: "Enquiry Converted!",
-                      description: `${convertingEnquiry.customerName} has been marked as converted with quoted amount ₹${amount}. Pickup: ${new Date(pickupDate).toLocaleDateString()}, Delivery: ${new Date(deliveryDate).toLocaleDateString()}.`,
+                      description: `${convertingEnquiry.customerName} has been marked as converted with quoted amount ₹${amount}. Pickup: ${formatDateForToast(pickupDate)}, Delivery: ${formatDateForToast(deliveryDate)}.`,
                       className: "bg-blue-50 border-blue-200 text-blue-800",
                       duration: 3000,
                     });

@@ -9,10 +9,33 @@ import {
   DatabaseServiceEnquiryJoin,
   DatabaseServiceType,
   DatabasePhoto,
-  ProductType
+  ProductType,
+  ProductItem,
+  DatabaseEnquiryProduct
 } from '../types';
 
 export class ServiceModel {
+
+  // Get products for an enquiry
+  private static async getEnquiryProducts(enquiryId: number): Promise<ProductItem[]> {
+    try {
+      const query = `
+        SELECT product, quantity 
+        FROM enquiry_products 
+        WHERE enquiry_id = ?
+        ORDER BY id
+      `;
+
+      const rows = await executeQuery<DatabaseEnquiryProduct>(query, [enquiryId]);
+      return rows.map(row => ({
+        product: row.product,
+        quantity: row.quantity
+      }));
+    } catch (error) {
+      console.error('Failed to get enquiry products', error);
+      return [];
+    }
+  }
 
   // Get all service stage enquiries with complete details
   static async getServiceEnquiries(): Promise<ServiceDetails[]> {
@@ -54,6 +77,7 @@ export class ServiceModel {
         const serviceTypes = await this.getServiceTypes(enquiry.enquiry_id);
         const overallPhotos = await this.getOverallPhotos(enquiry.enquiry_id);
         const itemPhotos = await this.getItemizedProductItems(enquiry.enquiry_id);
+        const products = await this.getEnquiryProducts(enquiry.enquiry_id);
 
         serviceDetails.push({
           id: enquiry.service_detail_id,
@@ -63,6 +87,7 @@ export class ServiceModel {
           address: enquiry.address,
           product: enquiry.product,
           quantity: enquiry.quantity,
+          products: products, // Add products array
           quotedAmount: enquiry.quoted_amount,
           estimatedCost: enquiry.estimated_cost,
           actualCost: enquiry.actual_cost,
@@ -278,19 +303,39 @@ export class ServiceModel {
   // Assign services to an enquiry
   static async assignServices(enquiryId: number, serviceTypes: ServiceType[], product?: ProductType, itemIndex?: number): Promise<void> {
     try {
+      console.log('🔍 ServiceModel.assignServices called with:', {
+        enquiryId,
+        serviceTypes,
+        product,
+        itemIndex,
+        productType: typeof product,
+        itemIndexType: typeof itemIndex
+      });
+
       // First, ensure service_details record exists
       await this.ensureServiceDetailsExist(enquiryId);
 
       // Insert service types
-      const queries = serviceTypes.map(serviceType => ({
-        query: `
-          INSERT INTO service_types (enquiry_id, service_type, status, product, item_index, created_at, updated_at)
-          VALUES (?, ?, 'pending', ?, ?, NOW(), NOW())
-        `,
-        params: [enquiryId, serviceType, product || null, itemIndex || null]
-      }));
+      const queries = serviceTypes.map(serviceType => {
+        const queryParams = [enquiryId, serviceType, product || null, itemIndex || null];
+        console.log('🔍 Inserting service type with params:', {
+          serviceType,
+          product: product || null,
+          itemIndex: itemIndex || null,
+          params: queryParams
+        });
+
+        return {
+          query: `
+            INSERT INTO service_types (enquiry_id, service_type, status, product, item_index, created_at, updated_at)
+            VALUES (?, ?, 'pending', ?, ?, NOW(), NOW())
+          `,
+          params: queryParams
+        };
+      });
 
       await executeTransaction(queries);
+      console.log('✅ Services assigned successfully to database');
     } catch (error) {
       console.error('Error assigning services:', error);
       throw error;
@@ -489,6 +534,7 @@ export class ServiceModel {
       const serviceTypes = await this.getServiceTypes(enquiryId);
       const overallPhotos = await this.getOverallPhotos(enquiryId);
       const itemPhotos = await this.getItemizedProductItems(enquiryId);
+      const products = await this.getEnquiryProducts(enquiryId);
 
       const query = `
         SELECT 
@@ -532,6 +578,7 @@ export class ServiceModel {
         address: detail.address,
         product: detail.product,
         quantity: detail.quantity,
+        products: products, // Add products array
         quotedAmount: detail.quoted_amount,
         estimatedCost: detail.estimated_cost,
         actualCost: detail.actual_cost,

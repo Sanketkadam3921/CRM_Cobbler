@@ -42,6 +42,8 @@ export function PickupModule() {
   // New UI state for multi-photo capture per product item
   const [multiPhotos, setMultiPhotos] = useState<Record<string, string[]>>({}); // key: `${product}-${index}` -> string[] of photos
   const [selectedProductKey, setSelectedProductKey] = useState<string | null>(null);
+  // Dialog state management - added from teammate's version
+  const [openDialogId, setOpenDialogId] = useState<number | null>(null);
 
   // Use pickup API hooks with 2-second polling
   const {
@@ -96,16 +98,14 @@ export function PickupModule() {
         title: "Pickup Assigned!",
         description: `Pickup has been assigned to ${assignedTo}`,
         className: "bg-green-50 border-green-200 text-green-800",
-        duration: 3000, // 3 seconds
-
+        duration: 3000,
       });
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to assign pickup",
         variant: "destructive",
-        duration: 3000, // 3 seconds
-
+        duration: 3000,
       });
     }
   };
@@ -116,8 +116,7 @@ export function PickupModule() {
         title: "Photo Required",
         description: "Please upload a collection proof photo",
         variant: "destructive",
-        duration: 3000, // 3 seconds
-
+        duration: 3000,
       });
       return;
     }
@@ -132,8 +131,7 @@ export function PickupModule() {
         title: "Pickup Collected!",
         description: "Pickup has been marked as collected successfully",
         className: "bg-green-50 border-green-200 text-green-800",
-        duration: 3000, // 3 seconds
-
+        duration: 3000,
       });
 
       // Send WhatsApp notification (simulated)
@@ -143,8 +141,7 @@ export function PickupModule() {
           title: "WhatsApp Notification",
           description: `WhatsApp message sent to ${enquiry.customerName}: "Your ${enquiry.product} has been successfully collected."`,
           className: "bg-blue-50 border-blue-200 text-blue-800",
-          duration: 3000, // 3 seconds
-
+          duration: 3000,
         });
       }
     } catch (error) {
@@ -152,8 +149,7 @@ export function PickupModule() {
         title: "Error",
         description: "Failed to mark pickup as collected",
         variant: "destructive",
-        duration: 3000, // 3 seconds
-
+        duration: 3000,
       });
     }
   };
@@ -170,8 +166,7 @@ export function PickupModule() {
           title: "Error",
           description: "Failed to process image. Please try again.",
           variant: "destructive",
-          duration: 3000, // 3 seconds
-
+          duration: 3000,
         });
       }
     }
@@ -250,6 +245,8 @@ export function PickupModule() {
       setSelectedImage(null);
       setReceivedNotes("");
       setMultiPhotos({});
+      setSelectedProductKey(null);
+      setOpenDialogId(null); // Close the dialog - added from teammate's version
 
       toast({
         title: "Items Received!",
@@ -285,8 +282,7 @@ export function PickupModule() {
       title: "Invoice Sent!",
       description: `Invoice sent to ${enquiry.customerName}`,
       className: "bg-green-50 border-green-200 text-green-800",
-      duration: 3000, // 3 seconds
-
+      duration: 3000,
     });
   };
 
@@ -330,8 +326,6 @@ export function PickupModule() {
             </div>
           </div>
         </Card>
-
-
       </div>
 
       {/* Search */}
@@ -350,7 +344,8 @@ export function PickupModule() {
       {/* Pickup Items */}
       <div className="space-y-4">
         <h2 className="text-xl sm:text-2xl font-bold text-foreground">
-          Pickup Queue        </h2>
+          Pickup Queue
+        </h2>
 
         {enquiriesLoading ? (
           <div className="flex items-center justify-center py-8">
@@ -376,7 +371,8 @@ export function PickupModule() {
             {filteredEnquiries.map((enquiry) => (
               <Card
                 key={enquiry.id}
-                className="p-4 sm:p-6 bg-gradient-card border-0 shadow-soft hover:shadow-medium transition-all duration-300 relative"              >
+                className="p-4 sm:p-6 bg-gradient-card border-0 shadow-soft hover:shadow-medium transition-all duration-300 relative"
+              >
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-4 gap-3">
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-foreground text-base sm:text-lg">
@@ -459,58 +455,81 @@ export function PickupModule() {
                   )}
 
                   {enquiry.pickupDetails?.status === "assigned" && (
-                    <Dialog>
+                    <Dialog open={openDialogId === enquiry.id} onOpenChange={(open) => {
+                      if (!open) {
+                        setOpenDialogId(null);
+                        // Reset form state when dialog closes - added from teammate's version
+                        setSelectedImage(null);
+                        setReceivedNotes("");
+                        setMultiPhotos({});
+                        setSelectedProductKey(null);
+                      }
+                    }}>
                       <DialogTrigger asChild>
                         <Button
                           size="sm"
                           className="bg-green-600 hover:bg-green-700 text-xs sm:text-sm"
+                          onClick={() => setOpenDialogId(enquiry.id)}
                         >
                           <CheckCircle className="h-3 w-3 mr-1" />
                           Item Received
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="sm:max-w-md">
+                      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
                           <DialogTitle>Item Received - Move to Service</DialogTitle>
                         </DialogHeader>
                         <div className="space-y-4">
-                          <div className="space-y-2">
+                          <div className="space-y-4">
                             <Label>Per-Item Photos (up to 4 per item)</Label>
-                            {/* Item selector */}
-                            <div className="flex items-center gap-2">
-                              <Label className="text-xs">Select Item</Label>
-                              <Select value={selectedProductKey || undefined} onValueChange={(v) => setSelectedProductKey(v)}>
-                                <SelectTrigger className="h-8 w-48">
-                                  <SelectValue placeholder="Choose item" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {(enquiry.products && enquiry.products.length > 0 ? enquiry.products : [{ product: enquiry.product, quantity: enquiry.quantity } as any]).flatMap((p: any) => (
-                                    Array.from({ length: p.quantity || 1 }).map((_, idx) => {
-                                      const key = `${p.product}-${idx + 1}`;
-                                      return (
-                                        <SelectItem key={key} value={key}>{p.product} — #{idx + 1}</SelectItem>
-                                      );
-                                    })
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
+
                             {/* Multiple products support; fallback to single product/quantity */}
                             {(enquiry.products && enquiry.products.length > 0 ? enquiry.products : [{ product: enquiry.product, quantity: enquiry.quantity } as any]).map((p, pIdx) => (
-                              <div key={`product-${pIdx}`} className="space-y-2 border rounded-md p-2">
-                                <div className="text-sm font-medium">{p.product} × {p.quantity || 1}</div>
-                                <div className="space-y-2">
-                                  {Array.from({ length: p.quantity || 1 }).map((_, idx) => {
-                                    const itemIndex = idx + 1;
-                                    const key = `${p.product}-${itemIndex}`;
-                                    const photos = multiPhotos[key] || [];
-                                    const remaining = Math.max(0, 4 - photos.length);
-                                    return (
-                                      <div key={`item-${itemIndex}`} className={`space-y-2 ${selectedProductKey && selectedProductKey !== key ? 'opacity-50' : ''}`}>
-                                        <div className="text-xs text-muted-foreground">Item #{itemIndex}</div>
+                              <div key={`product-${pIdx}`} className="space-y-3 border rounded-md p-3">
+                                <div className="text-sm font-medium text-foreground">{p.product} × {p.quantity || 1}</div>
+
+                                {/* Item selector for this product - improved from teammate's version */}
+                                <div className="flex items-center gap-2">
+                                  <Label className="text-xs text-muted-foreground">Select Item to Upload Photos</Label>
+                                  <Select
+                                    value={selectedProductKey && selectedProductKey.startsWith(p.product) ? selectedProductKey : undefined}
+                                    onValueChange={(v) => setSelectedProductKey(v)}
+                                  >
+                                    <SelectTrigger className="h-8 w-48">
+                                      <SelectValue placeholder="Choose item" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {Array.from({ length: p.quantity || 1 }).map((_, idx) => {
+                                        const key = `${p.product}-${idx + 1}`;
+                                        return (
+                                          <SelectItem key={key} value={key}>{p.product} — #{idx + 1}</SelectItem>
+                                        );
+                                      })}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+
+                                {/* Photo upload section - only show for selected item - improved from teammate's version */}
+                                {selectedProductKey && selectedProductKey.startsWith(p.product) && (
+                                  <div className="space-y-2">
+                                    <div className="text-xs text-muted-foreground">
+                                      Upload photos for {selectedProductKey.split('-')[0]} — #{selectedProductKey.split('-')[1]}
+                                    </div>
+                                    {(() => {
+                                      const itemIndex = parseInt(selectedProductKey.split('-')[1]);
+                                      const key = selectedProductKey;
+                                      const photos = multiPhotos[key] || [];
+                                      const remaining = Math.max(0, 4 - photos.length);
+
+                                      return (
                                         <div className="grid grid-cols-4 gap-2">
                                           {photos.map((ph, i) => (
-                                            <img key={`ph-${i}`} src={ph} alt={`Item ${itemIndex} photo ${i + 1}`} className="h-16 w-full object-cover rounded border bg-gray-50" />
+                                            <img
+                                              key={`ph-${i}`}
+                                              src={ph}
+                                              alt={`Item ${itemIndex} photo ${i + 1}`}
+                                              className="h-16 w-full object-cover rounded border bg-gray-50"
+                                            />
                                           ))}
                                           {Array.from({ length: remaining }).map((__, addIdx) => {
                                             const inputId = `item-photo-${enquiry.id}-${p.product}-${itemIndex}-${addIdx}`;
@@ -534,10 +553,10 @@ export function PickupModule() {
                                             );
                                           })}
                                         </div>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
+                                      );
+                                    })()}
+                                  </div>
+                                )}
                               </div>
                             ))}
                           </div>
@@ -573,7 +592,6 @@ export function PickupModule() {
                 </div>
               </Card>
             ))}
-
           </div>
         )}
       </div>

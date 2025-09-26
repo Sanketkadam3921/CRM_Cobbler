@@ -196,6 +196,74 @@ export function InvoiceDisplay({ enquiry }: InvoiceDisplayProps) {
         </div>
       </div>
 
+      {/* Items Summary */}
+      {(() => {
+        // Group items by product and itemIndex
+        const itemsMap = new Map<string, Array<typeof billingDetails.items[0]>>();
+        billingDetails.items.forEach(item => {
+          const productName = (item as any).productName || 'Unknown Product';
+          const itemIndex = (item as any).itemIndex || 1;
+          const key = `${productName}-${itemIndex}`;
+
+          if (!itemsMap.has(key)) {
+            itemsMap.set(key, []);
+          }
+          itemsMap.get(key)!.push(item);
+        });
+
+        if (itemsMap.size > 1) {
+          return (
+            <div style={{ padding: "20px", borderBottom: "2px solid #e5e7eb" }}>
+              <h3
+                style={{
+                  fontSize: "18px",
+                  fontWeight: "600",
+                  color: "#111827",
+                  margin: "0 0 12px 0",
+                }}
+              >
+                Items Summary:
+              </h3>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px" }}>
+                {Array.from(itemsMap.entries()).map(([key, items]) => {
+                  const [productName, itemIndex] = key.split('-');
+                  return (
+                    <div
+                      key={key}
+                      style={{
+                        padding: "12px",
+                        background: "#f9fafb",
+                        borderRadius: "8px",
+                        border: "1px solid #e5e7eb",
+                      }}
+                    >
+                      <p
+                        style={{
+                          fontWeight: "600",
+                          color: "#111827",
+                          margin: "0 0 8px 0",
+                          fontSize: "14px",
+                        }}
+                      >
+                        {productName} #{itemIndex}
+                      </p>
+                      <div style={{ fontSize: "12px", color: "#6b7280" }}>
+                        {items.map((item, idx) => (
+                          <p key={idx} style={{ margin: "0 0 4px 0" }}>
+                            • {item.serviceType}
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        }
+        return null;
+      })()}
+
       {/* Services Table */}
       {/* 👇 keeping your table code as-is */}
       <div style={{ padding: "20px" }}>
@@ -269,6 +337,18 @@ export function InvoiceDisplay({ enquiry }: InvoiceDisplayProps) {
                       >
                         {item.serviceType}
                       </p>
+                      {(item as any).productName && (item as any).itemIndex && (
+                        <p
+                          style={{
+                            fontSize: "12px",
+                            color: "#2563eb",
+                            margin: "0",
+                            fontWeight: "500",
+                          }}
+                        >
+                          {(item as any).productName} #{(item as any).itemIndex}
+                        </p>
+                      )}
                       {item.description && (
                         <p
                           style={{

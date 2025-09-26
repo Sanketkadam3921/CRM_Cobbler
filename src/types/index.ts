@@ -66,6 +66,7 @@ export interface ServiceDetails {
   address: string;
   product: string;
   quantity: number;
+  products?: ProductItem[]; // Add products array for multiple products
   quotedAmount?: number;
   estimatedCost?: number;
   actualCost?: number;
@@ -178,6 +179,9 @@ export interface BillingItem {
   gstRate: number; // Individual GST rate per service
   gstAmount: number; // Individual GST amount per service
   description?: string;
+  // Product and item context (optional for backward compatibility)
+  productName?: string;
+  itemIndex?: number;
 }
 
 // Service stage details  
@@ -188,8 +192,17 @@ export interface ServiceStage {
     beforeNotes?: string;
     afterNotes?: string;
   };
-  // New: list of per-item before photos (captured at pickup stage)
-  itemPhotos?: Array<{ product: string; itemIndex: number; photos: string[]; notes?: string; finalPhoto?: string }>;
+  // New: list of per-item photos (captured at pickup stage and service stage)
+  itemPhotos?: Array<{
+    product: string;
+    itemIndex: number;
+    photos: {
+      before: string[];
+      after: string[];
+      received: string[];
+      other: string[];
+    };
+  }>;
   serviceTypes: ServiceTypeStatus[];
   estimatedCost?: number;
   actualCost?: number;
@@ -286,16 +299,35 @@ export interface BillingEnquiry {
   customerName: string;
   phone: string;
   address: string;
-  product: string;
-  quantity: number;
+  product: string; // Keep for backward compatibility
+  quantity: number; // Keep for backward compatibility
+  products: ProductItem[]; // New field for multiple products
   currentStage: string;
   serviceDetails?: {
     serviceTypes?: Array<{
       type: string;
       status: string;
       workNotes?: string;
+      product?: string;
+      itemIndex?: number;
     }>;
     estimatedCost?: number;
+    itemPhotos?: Array<{
+      product: string;
+      itemIndex: number;
+      photos: {
+        before: string[];
+        after: string[];
+        received: string[];
+        other: string[];
+      };
+    }>;
+    overallPhotos?: {
+      beforePhoto?: string;
+      afterPhoto?: string;
+      beforeNotes?: string;
+      afterNotes?: string;
+    };
     billingDetails?: BillingDetails;
   };
 }
@@ -552,6 +584,7 @@ export interface DeliveryEnquiry {
   inquiryType: 'Instagram' | 'Facebook' | 'WhatsApp' | 'Phone' | 'Walk-in' | 'Website';
   product: 'Bag' | 'Shoe' | 'Wallet' | 'Belt' | 'All type furniture';
   quantity: number;
+  products?: ProductItem[]; // Add products array for multiple products
   date: string;
   status: 'new' | 'contacted' | 'converted' | 'closed' | 'lost';
   contacted: boolean;

@@ -316,12 +316,26 @@ export function InServiceView({ onNavigate, onBack }: InServiceViewProps) {
                                         </div>
                                     </div>
 
-                                    {/* Product & Cost */}
+                                    {/* Products & Cost */}
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                                         <div>
-                                            <span className="text-muted-foreground">Product:</span>
-                                            <div className="font-medium text-foreground truncate">{service.product}</div>
-                                            <div className="text-muted-foreground">Qty: {service.quantity}</div>
+                                            <span className="text-muted-foreground">Products:</span>
+                                            {service.products && service.products.length > 0 ? (
+                                                <div className="flex flex-wrap gap-1 mt-1">
+                                                    {service.products.map((product, index) => (
+                                                        <div key={index} className="flex items-center space-x-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                                                            <Package className="h-3 w-3" />
+                                                            <span>{product.product}</span>
+                                                            <span>({product.quantity})</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <div>
+                                                    <div className="font-medium text-foreground truncate">{service.product}</div>
+                                                    <div className="text-muted-foreground">Qty: {service.quantity}</div>
+                                                </div>
+                                            )}
                                         </div>
                                         <div>
                                             <span className="text-muted-foreground">Estimated Cost:</span>
@@ -419,8 +433,25 @@ export function InServiceView({ onNavigate, onBack }: InServiceViewProps) {
                                                 </td>
                                                 <td className="p-4">
                                                     <div>
-                                                        <div className="font-medium">{service.product}</div>
-                                                        <div className="text-sm text-muted-foreground">Qty: {service.quantity}</div>
+                                                        {service.products && service.products.length > 0 ? (
+                                                            <div className="space-y-2">
+                                                                <div className="text-xs text-muted-foreground">Products:</div>
+                                                                <div className="flex flex-wrap gap-1">
+                                                                    {service.products.map((product, index) => (
+                                                                        <div key={index} className="flex items-center space-x-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                                                                            <Package className="h-3 w-3" />
+                                                                            <span>{product.product}</span>
+                                                                            <span>({product.quantity})</span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <div>
+                                                                <div className="font-medium">{service.product}</div>
+                                                                <div className="text-sm text-muted-foreground">Qty: {service.quantity}</div>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </td>
                                                 <td className="p-4">
@@ -572,14 +603,30 @@ export function InServiceView({ onNavigate, onBack }: InServiceViewProps) {
                                 </div>
 
                                 {/* Product Details */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="space-y-4">
                                     <div>
-                                        <label className="text-sm font-medium text-muted-foreground">Product</label>
-                                        <div className="text-foreground">{selectedService.product}</div>
-                                    </div>
-                                    <div>
-                                        <label className="text-sm font-medium text-muted-foreground">Quantity</label>
-                                        <div className="text-foreground">{selectedService.quantity}</div>
+                                        <label className="text-sm font-medium text-muted-foreground">Products</label>
+                                        {selectedService.products && selectedService.products.length > 0 ? (
+                                            <div className="mt-2 space-y-2">
+                                                {selectedService.products.map((product, index) => (
+                                                    <div key={index} className="flex items-center space-x-2 bg-blue-50 p-3 rounded-lg border">
+                                                        <Package className="h-4 w-4 text-blue-600" />
+                                                        <div className="flex-1">
+                                                            <div className="font-medium text-foreground">{product.product}</div>
+                                                            <div className="text-sm text-muted-foreground">Quantity: {product.quantity}</div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="mt-2 flex items-center space-x-2 bg-blue-50 p-3 rounded-lg border">
+                                                <Package className="h-4 w-4 text-blue-600" />
+                                                <div className="flex-1">
+                                                    <div className="font-medium text-foreground">{selectedService.product}</div>
+                                                    <div className="text-sm text-muted-foreground">Quantity: {selectedService.quantity}</div>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 

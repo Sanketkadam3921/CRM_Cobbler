@@ -103,6 +103,51 @@ export function InvoiceUI({ billingDetails, onDownload, onSend, onPrint }: Invoi
         </div>
       </div>
 
+      {/* Items Summary */}
+      {(() => {
+        // Group items by product and itemIndex
+        const itemsMap = new Map<string, Array<typeof billingDetails.items[0]>>();
+        billingDetails.items.forEach(item => {
+          const productName = item.productName || 'Unknown Product';
+          const itemIndex = item.itemIndex || 1;
+          const key = `${productName}-${itemIndex}`;
+
+          if (!itemsMap.has(key)) {
+            itemsMap.set(key, []);
+          }
+          itemsMap.get(key)!.push(item);
+        });
+
+        if (itemsMap.size > 1) {
+          return (
+            <div className="p-8 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Items Summary:</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {Array.from(itemsMap.entries()).map(([key, items]) => {
+                  const [productName, itemIndex] = key.split('-');
+                  return (
+                    <div
+                      key={key}
+                      className="p-4 bg-gray-50 rounded-lg border border-gray-200"
+                    >
+                      <p className="font-semibold text-gray-900 mb-2">
+                        {productName} #{itemIndex}
+                      </p>
+                      <div className="text-sm text-gray-600 space-y-1">
+                        {items.map((item, idx) => (
+                          <p key={idx}>• {item.serviceType}</p>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        }
+        return null;
+      })()}
+
       {/* Services Table */}
       <div className="p-8">
         <div className="overflow-x-auto">
@@ -119,6 +164,11 @@ export function InvoiceUI({ billingDetails, onDownload, onSend, onPrint }: Invoi
                   <td className="py-3 px-4">
                     <div>
                       <p className="font-medium text-gray-900">{item.serviceType}</p>
+                      {item.productName && item.itemIndex && (
+                        <p className="text-sm text-blue-600 font-medium">
+                          {item.productName} #{item.itemIndex}
+                        </p>
+                      )}
                       {item.description && (
                         <p className="text-sm text-gray-600">{item.description}</p>
                       )}

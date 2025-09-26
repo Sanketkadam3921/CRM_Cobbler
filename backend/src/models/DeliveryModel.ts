@@ -1,13 +1,34 @@
 import { executeQuery, executeTransaction } from '../config/database';
 import { logDatabase } from '../utils/logger';
-import { DeliveryDetails, DeliveryStats, DeliveryEnquiry } from '../types';
+import { DeliveryDetails, DeliveryStats, DeliveryEnquiry, ProductItem, DatabaseEnquiryProduct } from '../types';
 
 export class DeliveryModel {
+  // Get products for an enquiry
+  private static async getEnquiryProducts(enquiryId: number): Promise<ProductItem[]> {
+    try {
+      const query = `
+        SELECT product, quantity 
+        FROM enquiry_products 
+        WHERE enquiry_id = ?
+        ORDER BY id
+      `;
+
+      const rows = await executeQuery<DatabaseEnquiryProduct>(query, [enquiryId]);
+      return rows.map(row => ({
+        product: row.product,
+        quantity: row.quantity
+      }));
+    } catch (error) {
+      console.error('Failed to get enquiry products', error);
+      return [];
+    }
+  }
+
   // Get delivery statistics for dashboard
   static async getDeliveryStats(): Promise<DeliveryStats> {
     try {
       logDatabase.query('Fetching delivery statistics...');
-      
+
       const query = `
         SELECT 
           COUNT(CASE WHEN dd.status = 'ready' THEN 1 END) as readyForDelivery,
@@ -18,16 +39,16 @@ export class DeliveryModel {
         INNER JOIN enquiries e ON dd.enquiry_id = e.id
         WHERE e.current_stage = 'delivery'
       `;
-      
+
       const [stats] = await executeQuery<any>(query);
-      
+
       const result: DeliveryStats = {
         readyForDelivery: parseInt(stats?.readyForDelivery) || 0,
         scheduledDeliveries: parseInt(stats?.scheduledDeliveries) || 0,
         outForDelivery: parseInt(stats?.outForDelivery) || 0,
         deliveredToday: parseInt(stats?.deliveredToday) || 0
       };
-      
+
       logDatabase.success('Delivery statistics fetched successfully', result);
       return result;
     } catch (error) {
@@ -40,7 +61,7 @@ export class DeliveryModel {
   static async getDeliveryEnquiries(): Promise<DeliveryEnquiry[]> {
     try {
       logDatabase.query('Fetching all delivery stage enquiries...');
-      
+
       const query = `
         SELECT 
           e.*,
@@ -86,55 +107,62 @@ export class DeliveryModel {
           END,
           e.created_at DESC
       `;
-      
+
       const enquiries = await executeQuery<any>(query);
-      
-      const result: DeliveryEnquiry[] = enquiries.map(row => ({
-        id: row.id,
-        customerName: row.customer_name,
-        phone: row.phone,
-        address: row.address,
-        message: row.message,
-        inquiryType: row.inquiry_type,
-        product: row.product,
-        quantity: row.quantity,
-        date: row.date,
-        status: row.status,
-        contacted: row.contacted,
-        contactedAt: row.contacted_at,
-        assignedTo: row.assigned_to,
-        notes: row.notes,
-        currentStage: row.current_stage,
-        quotedAmount: parseFloat(row.quoted_amount) || 0,
-        finalAmount: parseFloat(row.final_amount) || parseFloat(row.actual_cost) || parseFloat(row.quoted_amount) || 0,
-        createdAt: row.created_at,
-        updatedAt: row.updated_at,
-        deliveryDetails: {
-          status: row.delivery_status,
-          deliveryMethod: row.delivery_method,
-          scheduledTime: row.scheduled_time,
-          assignedTo: row.delivery_assigned_to,
-          deliveryAddress: row.delivery_address,
-          customerSignature: row.customer_signature,
-          deliveryNotes: row.delivery_notes,
-          deliveredAt: row.delivered_at,
-          photos: {
-            // Use service after photo as delivery before photo (service completed photo)
-            beforePhoto: row.delivery_before_photo || row.service_after_photo,
-            afterPhoto: row.delivery_after_photo
+
+      const result: DeliveryEnquiry[] = [];
+
+      for (const row of enquiries) {
+        const products = await this.getEnquiryProducts(row.id);
+
+        result.push({
+          id: row.id,
+          customerName: row.customer_name,
+          phone: row.phone,
+          address: row.address,
+          message: row.message,
+          inquiryType: row.inquiry_type,
+          product: row.product,
+          quantity: row.quantity,
+          products: products, // Add products array
+          date: row.date,
+          status: row.status,
+          contacted: row.contacted,
+          contactedAt: row.contacted_at,
+          assignedTo: row.assigned_to,
+          notes: row.notes,
+          currentStage: row.current_stage,
+          quotedAmount: parseFloat(row.quoted_amount) || 0,
+          finalAmount: parseFloat(row.final_amount) || parseFloat(row.actual_cost) || parseFloat(row.quoted_amount) || 0,
+          createdAt: row.created_at,
+          updatedAt: row.updated_at,
+          deliveryDetails: {
+            status: row.delivery_status,
+            deliveryMethod: row.delivery_method,
+            scheduledTime: row.scheduled_time,
+            assignedTo: row.delivery_assigned_to,
+            deliveryAddress: row.delivery_address,
+            customerSignature: row.customer_signature,
+            deliveryNotes: row.delivery_notes,
+            deliveredAt: row.delivered_at,
+            photos: {
+              // Use service after photo as delivery before photo (service completed photo)
+              beforePhoto: row.delivery_before_photo || row.service_after_photo,
+              afterPhoto: row.delivery_after_photo
+            }
+          },
+          serviceDetails: {
+            estimatedCost: parseFloat(row.estimated_cost) || 0,
+            actualCost: parseFloat(row.actual_cost) || 0,
+            workNotes: row.work_notes,
+            completedAt: row.service_completed_at,
+            overallPhotos: {
+              afterPhoto: row.service_after_photo
+            }
           }
-        },
-        serviceDetails: {
-          estimatedCost: parseFloat(row.estimated_cost) || 0,
-          actualCost: parseFloat(row.actual_cost) || 0,
-          workNotes: row.work_notes,
-          completedAt: row.service_completed_at,
-          overallPhotos: {
-            afterPhoto: row.service_after_photo
-          }
-        }
-      }));
-      
+        });
+      }
+
       logDatabase.success('Delivery enquiries fetched successfully', { count: result.length });
       return result;
     } catch (error) {
@@ -147,7 +175,7 @@ export class DeliveryModel {
   static async getDeliveryEnquiry(enquiryId: number): Promise<DeliveryEnquiry | null> {
     try {
       logDatabase.query('Fetching delivery enquiry by ID', { enquiryId });
-      
+
       // Same query as above but with WHERE clause for specific enquiry
       const query = `
         SELECT 
@@ -181,14 +209,16 @@ export class DeliveryModel {
           AND p_delivery_after.photo_type = 'after_photo'
         WHERE e.id = ? AND e.current_stage = 'delivery'
       `;
-      
+
       const [enquiry] = await executeQuery<any>(query, [enquiryId]);
-      
+
       if (!enquiry) {
         logDatabase.query('Delivery enquiry not found', { enquiryId });
         return null;
       }
-      
+
+      const products = await this.getEnquiryProducts(enquiryId);
+
       const result: DeliveryEnquiry = {
         id: enquiry.id,
         customerName: enquiry.customer_name,
@@ -198,6 +228,7 @@ export class DeliveryModel {
         inquiryType: enquiry.inquiry_type,
         product: enquiry.product,
         quantity: enquiry.quantity,
+        products: products, // Add products array
         date: enquiry.date,
         status: enquiry.status,
         contacted: enquiry.contacted,
@@ -233,7 +264,7 @@ export class DeliveryModel {
           }
         }
       };
-      
+
       logDatabase.success('Delivery enquiry fetched successfully', { enquiryId });
       return result;
     } catch (error) {
@@ -244,13 +275,13 @@ export class DeliveryModel {
 
   // Schedule delivery - Update delivery details with schedule info
   static async scheduleDelivery(
-    enquiryId: number, 
-    deliveryMethod: 'customer-pickup' | 'home-delivery', 
+    enquiryId: number,
+    deliveryMethod: 'customer-pickup' | 'home-delivery',
     scheduledTime: string
   ): Promise<void> {
     try {
       logDatabase.query('Scheduling delivery', { enquiryId, deliveryMethod, scheduledTime });
-      
+
       const updateQuery = `
         UPDATE delivery_details 
         SET 
@@ -260,9 +291,9 @@ export class DeliveryModel {
           updated_at = CURRENT_TIMESTAMP
         WHERE enquiry_id = ?
       `;
-      
+
       await executeQuery(updateQuery, [deliveryMethod, scheduledTime, enquiryId]);
-      
+
       logDatabase.success('Delivery scheduled successfully', { enquiryId, deliveryMethod, scheduledTime });
     } catch (error) {
       logDatabase.error('Failed to schedule delivery', { enquiryId, deliveryMethod, scheduledTime, error });
@@ -274,7 +305,7 @@ export class DeliveryModel {
   static async markOutForDelivery(enquiryId: number, assignedTo: string): Promise<void> {
     try {
       logDatabase.query('Marking delivery as out for delivery', { enquiryId, assignedTo });
-      
+
       const updateQuery = `
         UPDATE delivery_details 
         SET 
@@ -283,9 +314,9 @@ export class DeliveryModel {
           updated_at = CURRENT_TIMESTAMP
         WHERE enquiry_id = ?
       `;
-      
+
       await executeQuery(updateQuery, [assignedTo, enquiryId]);
-      
+
       logDatabase.success('Delivery marked as out for delivery', { enquiryId, assignedTo });
     } catch (error) {
       logDatabase.error('Failed to mark delivery as out for delivery', { enquiryId, assignedTo, error });
@@ -302,9 +333,9 @@ export class DeliveryModel {
   ): Promise<void> {
     try {
       logDatabase.query('Completing delivery', { enquiryId, hasProofPhoto: !!deliveryProofPhoto, hasSignature: !!customerSignature });
-      
+
       const currentTime = new Date().toISOString().split('T')[0];
-      
+
       // Use transaction to ensure consistency
       const queries = [
         // Update delivery details
@@ -341,9 +372,9 @@ export class DeliveryModel {
           params: [enquiryId, deliveryProofPhoto]
         }
       ];
-      
+
       await executeTransaction(queries);
-      
+
       logDatabase.success('Delivery completed successfully', { enquiryId });
     } catch (error) {
       logDatabase.error('Failed to complete delivery', { enquiryId, error });
@@ -356,16 +387,16 @@ export class DeliveryModel {
   static async initializeDeliveryDetails(enquiryId: number): Promise<void> {
     try {
       logDatabase.query('Initializing delivery details', { enquiryId });
-      
+
       // Check if delivery details already exist
       const checkQuery = 'SELECT id FROM delivery_details WHERE enquiry_id = ?';
       const existing = await executeQuery(checkQuery, [enquiryId]);
-      
+
       if (existing.length > 0) {
         logDatabase.query('Delivery details already exist, skipping initialization', { enquiryId });
         return;
       }
-      
+
       // Copy service after photo as delivery before photo
       const copyPhotoQuery = `
         INSERT INTO photos (enquiry_id, stage, photo_type, photo_data, notes, created_at)
@@ -382,7 +413,7 @@ export class DeliveryModel {
           AND photo_type = 'overall_after'
         LIMIT 1
       `;
-      
+
       const queries = [
         // Create delivery details record
         {
@@ -403,9 +434,9 @@ export class DeliveryModel {
           params: [enquiryId]
         }
       ];
-      
+
       await executeTransaction(queries);
-      
+
       logDatabase.success('Delivery details initialized successfully', { enquiryId });
     } catch (error) {
       logDatabase.error('Failed to initialize delivery details', { enquiryId, error });

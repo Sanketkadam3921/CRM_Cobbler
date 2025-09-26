@@ -127,6 +127,7 @@ export class PickupModel {
       throw error;
     }
   }
+
   // Get all pickup stage enquiries with optional search
   static async getPickupEnquiries(searchTerm?: string): Promise<Enquiry[]> {
     try {
@@ -487,7 +488,7 @@ export class PickupModel {
     }
   }
 
-  // New: Mark multiple product items as received with multiple photos (up to 4 per item)
+  // New: Mark multiple product items as received with multiple photos (up to 4 per item) - ENHANCED VERSION
   static async markReceivedMulti(
     enquiryId: number,
     items: Array<{ product: string; itemIndex: number; photos: string[]; notes?: string }>,
@@ -515,6 +516,17 @@ export class PickupModel {
         [enquiryId, estimatedCost || enquiry.quotedAmount || 0, notes || '']
       ) as any;
 
+      // Check if photos table has the required columns for multi-item photos - ENHANCED SCHEMA CHECK
+      const [columns] = await connection.execute(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'photos' AND COLUMN_NAME IN ('product', 'item_index', 'slot_index')
+      `) as any[];
+
+      const hasProductColumn = columns.some((col: any) => col.COLUMN_NAME === 'product');
+      const hasItemIndexColumn = columns.some((col: any) => col.COLUMN_NAME === 'item_index');
+      const hasSlotIndexColumn = columns.some((col: any) => col.COLUMN_NAME === 'slot_index');
+
       // Insert photos for each product item
       for (const item of items) {
         const product = item.product as any;
@@ -522,11 +534,21 @@ export class PickupModel {
         const photos = Array.isArray(item.photos) ? item.photos.slice(0, 4) : [];
         let slot = 1;
         for (const photo of photos) {
-          await connection.execute(
-            `INSERT INTO photos (enquiry_id, stage, photo_type, photo_data, notes, product, item_index, slot_index, created_at)
-             VALUES (?, 'pickup', 'before_photo', ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
-            [enquiryId, photo, item.notes || 'Received condition photo', product, idx, slot]
-          );
+          if (hasProductColumn && hasItemIndexColumn && hasSlotIndexColumn) {
+            // Use enhanced schema with product, item_index, slot_index
+            await connection.execute(
+              `INSERT INTO photos (enquiry_id, stage, photo_type, photo_data, notes, product, item_index, slot_index, created_at)
+               VALUES (?, 'pickup', 'before_photo', ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+              [enquiryId, photo, item.notes || 'Received condition photo', product, idx, slot]
+            );
+          } else {
+            // Fallback to basic schema without product/item_index/slot_index
+            await connection.execute(
+              `INSERT INTO photos (enquiry_id, stage, photo_type, photo_data, notes, created_at)
+               VALUES (?, 'pickup', 'before_photo', ?, ?, CURRENT_TIMESTAMP)`,
+              [enquiryId, photo, item.notes || `Received condition photo - ${product} #${idx}`]
+            );
+          }
           slot++;
         }
       }

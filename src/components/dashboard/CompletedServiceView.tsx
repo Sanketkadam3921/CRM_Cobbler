@@ -16,9 +16,10 @@ import {
     DollarSign,
     Calendar,
     FileText,
-    Truck
+    Truck,
+    Archive
 } from "lucide-react";
-import { useCompletedEnquiries, CompletedEnquiry } from "@/services/completedApiService";
+import { useCompletedEnquiries, useCompletedStats, CompletedEnquiry } from "@/services/completedApiService";
 import { FormControl, InputLabel, Select, MenuItem } from "@mui/material"
 interface CompletedServicesViewProps {
     onNavigate: (view: string, action?: string, id?: number) => void;
@@ -68,19 +69,27 @@ export function CompletedServicesView({ onNavigate, onBack }: CompletedServicesV
     const [selectedService, setSelectedService] = useState<CompletedEnquiry | null>(null);
     const [showDetailsModal, setShowDetailsModal] = useState(false);
 
-    // Use the completed enquiries hook
+    // Use the completed enquiries hook with consistent polling interval
     const {
         enquiries,
-        loading,
-        error,
+        loading: enquiriesLoading,
+        error: enquiriesError,
         lastUpdate,
         refetch
-    } = useCompletedEnquiries(30000); // Poll every 30 seconds
+    } = useCompletedEnquiries(200000); // Poll every 2 seconds (consistent with CompletedModule)
 
-    // Apply search and date filters
+    // Use the completed stats hook
+    const {
+        stats,
+        loading: statsLoading,
+        error: statsError
+    } = useCompletedStats(500000); // Poll every 5 seconds (consistent with CompletedModule)
+
+    // Apply search and date filters (updated to match CompletedModule pattern)
     const filteredServices = enquiries.filter(enquiry => {
         const matchesSearch = searchTerm === "" ||
             enquiry.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            enquiry.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
             enquiry.phone.includes(searchTerm) ||
             enquiry.id.toString().includes(searchTerm) ||
             enquiry.product.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -124,10 +133,13 @@ export function CompletedServicesView({ onNavigate, onBack }: CompletedServicesV
         setShowDetailsModal(true);
     };
 
-    // Calculate statistics for display
-    const totalRevenue = filteredServices.reduce((sum, enquiry) =>
-        sum + (enquiry.billedAmount || enquiry.finalAmount || 0), 0
-    );
+    // Use backend API stats instead of client-side calculations (consistent with CompletedModule)
+    const totalCompleted = stats.totalCompleted;
+    const completedThisWeek = stats.completedThisWeek;
+    const totalRevenue = stats.totalRevenue
+        ? Number(stats.totalRevenue).toLocaleString("en-IN")
+        : "0";
+    const avgCompletionTime = stats.avgCompletionTime;
 
     return (
         <div className="space-y-4 sm:space-y-6 animate-fade-in p-2 sm:p-0">
@@ -170,27 +182,58 @@ export function CompletedServicesView({ onNavigate, onBack }: CompletedServicesV
 
             {/* Statistics Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-
-
-
-
+                <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <div className="text-lg sm:text-2xl font-bold text-foreground">
+                                {statsLoading ? '...' : totalCompleted}
+                            </div>
+                            <div className="text-xs sm:text-sm text-muted-foreground">
+                                Total Completed
+                            </div>
+                        </div>
+                        <div className="h-6 w-6 sm:h-8 sm:w-8 text-success flex items-center justify-center">
+                            <CheckCircle className="h-full w-full" />
+                        </div>
+                    </div>
+                </Card>
+                <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <div className="text-lg sm:text-2xl font-bold text-foreground">
+                                {statsLoading ? '...' : completedThisWeek}
+                            </div>
+                            <div className="text-xs sm:text-sm text-muted-foreground">
+                                This Week
+                            </div>
+                        </div>
+                        <div className="h-6 w-6 sm:h-8 sm:w-8 text-blue-500 flex items-center justify-center">
+                            <Calendar className="h-full w-full" />
+                        </div>
+                    </div>
+                </Card>
+                <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <div className="text-lg sm:text-2xl font-bold text-foreground">
+                                ₹{statsLoading ? '...' : totalRevenue}
+                            </div>
+                            <div className="text-xs sm:text-sm text-muted-foreground">
+                                Total Revenue
+                            </div>
+                        </div>
+                        <div className="h-6 w-6 sm:h-8 sm:w-8 text-green-500 flex items-center justify-center">
+                            <DollarSign className="h-full w-full" />
+                        </div>
+                    </div>
+                </Card>
             </div>
 
-            {/* Error State */}
-            {error && (
-                <Card className="p-4 sm:p-6 bg-red-50 border-red-200">
-                    <div className="flex items-center space-x-3">
-                        <AlertTriangle className="h-5 w-5 text-red-500 flex-shrink-0" />
-                        <div className="min-w-0">
-                            <h3 className="text-sm font-medium text-red-800">Failed to load completed services</h3>
-                            <p className="text-sm text-red-600 mt-1 break-words">{error}</p>
-                            <button
-                                onClick={refetch}
-                                className="text-sm text-red-700 underline hover:text-red-800 mt-2"
-                            >
-                                Try again
-                            </button>
-                        </div>
+            {/* Error State - Updated to match CompletedModule pattern */}
+            {(enquiriesError || statsError) && (
+                <Card className="p-4 bg-red-50 border-red-200">
+                    <div className="text-red-800 text-sm">
+                        <strong>Error loading data:</strong> {enquiriesError || statsError}
                     </div>
                 </Card>
             )}
@@ -236,15 +279,17 @@ export function CompletedServicesView({ onNavigate, onBack }: CompletedServicesV
                 </div>
             </Card>
 
-            {/* Loading State */}
-            {loading && enquiries.length === 0 ? (
-                <Card className="p-8 sm:p-12 text-center">
-                    <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-muted-foreground">Loading completed services...</p>
+            {/* Loading State - Updated to match CompletedModule pattern */}
+            {enquiriesLoading && (
+                <Card className="p-8 text-center">
+                    <div className="text-muted-foreground">Loading completed services...</div>
                 </Card>
-            ) : paginatedServices.length === 0 ? (
+            )}
+
+            {/* Services List */}
+            {!enquiriesLoading && paginatedServices.length === 0 ? (
                 <Card className="p-8 sm:p-12 text-center">
-                    <CheckCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <Archive className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-foreground mb-2">No completed services found</h3>
                     <p className="text-muted-foreground mb-6">
                         {searchTerm || dateFilter !== "all"
@@ -252,7 +297,7 @@ export function CompletedServicesView({ onNavigate, onBack }: CompletedServicesV
                             : "No services have been completed yet"}
                     </p>
                 </Card>
-            ) : (
+            ) : !enquiriesLoading && (
                 <>
                     {/* Mobile + Tablet Card View */}
                     <div className="block lg:hidden space-y-3">
@@ -304,8 +349,16 @@ export function CompletedServicesView({ onNavigate, onBack }: CompletedServicesV
                                     <div className="grid grid-cols-2 gap-3 text-xs">
                                         <div>
                                             <span className="text-muted-foreground">Product:</span>
-                                            <div className="font-medium text-foreground">{service.product}</div>
-                                            <div className="text-muted-foreground">Qty: {service.quantity}</div>
+                                            <div className="font-medium text-foreground">
+                                                {service.products && service.products.length > 0
+                                                    ? service.products.map((product, index) => (
+                                                        <div key={index}>
+                                                            {product.product} ({product.quantity})
+                                                        </div>
+                                                    ))
+                                                    : `${service.product} (${service.quantity})`
+                                                }
+                                            </div>
                                         </div>
                                         <div>
                                             <span className="text-muted-foreground">Services:</span>
@@ -339,7 +392,10 @@ export function CompletedServicesView({ onNavigate, onBack }: CompletedServicesV
                                         </div>
                                         <div className="text-right">
                                             <div className="text-lg font-bold text-green-600">
-                                                ₹{(service.billedAmount || service.finalAmount || 0).toLocaleString()}
+                                                ₹{(Number(service.subtotalAmount || 0) + Number(service.gstAmount || 0)).toLocaleString("en-IN", {
+                                                    minimumFractionDigits: 2,
+                                                    maximumFractionDigits: 2,
+                                                })}
                                             </div>
                                         </div>
                                     </div>
@@ -396,10 +452,21 @@ export function CompletedServicesView({ onNavigate, onBack }: CompletedServicesV
                                             </td>
                                             <td className="p-4">
                                                 <div>
-                                                    <div className="font-medium">{service.product}</div>
-                                                    <div className="text-sm text-muted-foreground">
-                                                        Qty: {service.quantity}
+                                                    <div className="font-medium">
+                                                        {service.products && service.products.length > 0
+                                                            ? service.products.map((product, index) => (
+                                                                <div key={index}>
+                                                                    {product.product} ({product.quantity})
+                                                                </div>
+                                                            ))
+                                                            : service.product
+                                                        }
                                                     </div>
+                                                    {!service.products && (
+                                                        <div className="text-sm text-muted-foreground">
+                                                            Qty: {service.quantity}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </td>
                                             <td className="p-4">
@@ -410,7 +477,10 @@ export function CompletedServicesView({ onNavigate, onBack }: CompletedServicesV
                                             <td className="p-4">
                                                 <div className="space-y-1">
                                                     <div className="font-medium text-foreground">
-                                                        ₹{(service.billedAmount || service.finalAmount || 0).toLocaleString()}
+                                                        ₹{(Number(service.subtotalAmount || 0) + Number(service.gstAmount || 0)).toLocaleString("en-IN", {
+                                                            minimumFractionDigits: 2,
+                                                            maximumFractionDigits: 2,
+                                                        })}
                                                     </div>
                                                     {service.gstAmount && (
                                                         <div className="text-xs text-muted-foreground">
@@ -536,11 +606,25 @@ export function CompletedServicesView({ onNavigate, onBack }: CompletedServicesV
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
                                         <label className="text-sm font-medium text-muted-foreground">Product</label>
-                                        <div className="text-foreground">{selectedService.product}</div>
+                                        <div className="text-foreground">
+                                            {selectedService.products && selectedService.products.length > 0
+                                                ? selectedService.products.map((product, index) => (
+                                                    <div key={index}>
+                                                        {product.product} ({product.quantity})
+                                                    </div>
+                                                ))
+                                                : `${selectedService.product} (${selectedService.quantity})`
+                                            }
+                                        </div>
                                     </div>
                                     <div>
-                                        <label className="text-sm font-medium text-muted-foreground">Quantity</label>
-                                        <div className="text-foreground">{selectedService.quantity}</div>
+                                        <label className="text-sm font-medium text-muted-foreground">Total Quantity</label>
+                                        <div className="text-foreground">
+                                            {selectedService.products && selectedService.products.length > 0
+                                                ? selectedService.products.reduce((sum, product) => sum + product.quantity, 0)
+                                                : selectedService.quantity
+                                            }
+                                        </div>
                                     </div>
                                 </div>
 
@@ -557,7 +641,10 @@ export function CompletedServicesView({ onNavigate, onBack }: CompletedServicesV
                                     <div>
                                         <label className="text-sm font-medium text-muted-foreground">Final Amount</label>
                                         <div className="text-foreground font-semibold">
-                                            ₹{(selectedService.billedAmount || selectedService.finalAmount || 0).toLocaleString()}
+                                            ₹{(Number(selectedService.subtotalAmount || 0) + Number(selectedService.gstAmount || 0)).toLocaleString("en-IN", {
+                                                minimumFractionDigits: 2,
+                                                maximumFractionDigits: 2,
+                                            })}
                                         </div>
                                     </div>
                                     {selectedService.gstAmount && (

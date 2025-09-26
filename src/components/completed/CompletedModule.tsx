@@ -263,11 +263,20 @@ export function CompletedModule() {
                   <span className="ml-1">{enquiry.address || "No address provided"}</span>
                 </div>
 
-                <div className="flex items-center space-x-2">
-                  <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
-                    Quantity: {enquiry.quantity}
-                  </div>
-                  <span className="text-gray-500 text-sm">{enquiry.product}</span>
+                <div className="flex flex-wrap items-center gap-2">
+                  {enquiry.products && enquiry.products.length > 0 ? (
+                    enquiry.products.map((product, index) => (
+                      <div key={index} className="flex items-center space-x-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                        <span>{product.product}</span>
+                        <span>({product.quantity})</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex items-center space-x-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                      <span>{enquiry.product}</span>
+                      <span>({enquiry.quantity})</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex items-center space-x-2">

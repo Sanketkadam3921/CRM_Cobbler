@@ -785,6 +785,7 @@ export interface ServiceDetails {
   address: string;
   product: string;
   quantity: number;
+  products?: ProductItem[]; // Products array for multiple products per enquiry
   quotedAmount?: number;
   estimatedCost?: number;
   actualCost?: number;
@@ -1336,6 +1337,7 @@ export interface DeliveryEnquiry {
   inquiryType: 'Instagram' | 'Facebook' | 'WhatsApp' | 'Phone' | 'Walk-in' | 'Website';
   product: 'Bag' | 'Shoe' | 'Wallet' | 'Belt' | 'All type furniture';
   quantity: number;
+  products?: ProductItem[]; // Add products array for multiple products
   date: string;
   status: 'new' | 'contacted' | 'converted' | 'closed' | 'lost';
   contacted: boolean;
