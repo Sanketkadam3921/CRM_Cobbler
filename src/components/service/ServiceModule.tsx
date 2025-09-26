@@ -740,6 +740,7 @@ export function ServiceModule() {
                   </div>
 
                   {/* All Items Summary */}
+                  {/* All Items Summary */}
                   {items.length > 1 && (
                     <div className="space-y-2 mt-4 pt-3 border-t border-muted">
                       <h4 className="text-sm font-medium text-foreground">All Items Summary:</h4>
@@ -750,7 +751,7 @@ export function ServiceModule() {
                           return (
                             <div key={itemKey} className="flex items-center justify-between p-2 bg-muted/30 rounded text-xs">
                               <span className="font-medium">
-                                {item.product} <strong>({item.itemIndex + 1})</strong>
+                                {item.product} - {item.itemIndex}
                               </span>
                               <Badge
                                 className={`text-xs ${itemServices.length > 0
@@ -765,6 +766,8 @@ export function ServiceModule() {
                       </div>
                     </div>
                   )}
+
+
 
 
                   {/* Overall Photos (use selected item) */}
