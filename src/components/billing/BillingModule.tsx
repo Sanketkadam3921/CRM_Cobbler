@@ -1274,7 +1274,7 @@ export function BillingModule() {
                           {/* Original Amount */}
                           {/* Original Amount */}
                           <div>
-                            <Label htmlFor={`originalAmount-${index}`}>Price (₹) *</Label>
+                            <Label htmlFor={`originalAmount-${index}`}>Price (₹)*</Label>
                             <Input
                               id={`originalAmount-${index}`}
                               type="text"

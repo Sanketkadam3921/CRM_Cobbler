@@ -905,22 +905,30 @@ export function ServiceModule() {
                               {/* Item Info */}
                               <div className="bg-blue-50 p-3 rounded border border-blue-200">
                                 <div className="text-sm font-medium text-blue-900 flex items-center gap-2">
-                                  {isAddingMore ? 'Adding services to:' : 'Assigning services to:'} <strong>{product}</strong>
-                                  <span className="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full">
-                                    {itemIndex + 1}
+                                  {isAddingMore ? 'Adding services to:' : 'Assigning services to:'}
+                                  <span className="flex items-center gap-2">
+                                    <span>{product} — {itemIndex}</span>
+                                    {existingServices.length > 0 && (
+                                      <Badge className="ml-2 bg-green-100 text-green-800 text-xs">
+                                        {existingServices.length} service{existingServices.length > 1 ? 's' : ''}
+                                      </Badge>
+                                    )}
                                   </span>
                                 </div>
+
                                 {isAddingMore && (
                                   <div className="text-xs text-blue-700 mt-1">
                                     Current services: {existingServices.join(', ')} ({existingServices.length}/3)
                                   </div>
                                 )}
+
                                 {availableServices.length === 0 && (
                                   <div className="text-xs text-green-700 bg-green-50 border border-green-200 p-2 rounded mt-2">
                                     All services (3/3) have been assigned to this item.
                                   </div>
                                 )}
                               </div>
+
 
                               {availableServices.length > 0 && (
                                 <div className="space-y-2">
