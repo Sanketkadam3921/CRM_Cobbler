@@ -315,10 +315,43 @@ export function usePickupEnquiries(pollInterval: number = 20000) {
 
   const markReceivedOptimistic = useCallback(async (id: number, receivedPhoto: string, notes?: string, estimatedCost?: number) => {
     try {
+      // Remove from pickup enquiries immediately (optimistic update)
       setEnquiries(prev => prev.filter(e => e.id !== id));
+      
+      // Make the API call
       const updatedEnquiry = await PickupApiService.markReceived(id, receivedPhoto, notes, estimatedCost);
+      
+      // Trigger a refresh to ensure data consistency
+      // This will help if the service module is also active
+      setTimeout(() => {
+        fetchPickupEnquiries();
+      }, 1000);
+      
       return updatedEnquiry;
     } catch (error) {
+      // On error, refresh the data to restore the item
+      fetchPickupEnquiries();
+      throw error;
+    }
+  }, [fetchPickupEnquiries]);
+
+  const markReceivedMultiOptimistic = useCallback(async (id: number, items: Array<{ product: string; itemIndex: number; photos: string[]; notes?: string }>, notes?: string, estimatedCost?: number) => {
+    try {
+      // Remove from pickup enquiries immediately (optimistic update)
+      setEnquiries(prev => prev.filter(e => e.id !== id));
+      
+      // Make the API call
+      const updatedEnquiry = await PickupApiService.markReceivedMulti(id, items, notes, estimatedCost);
+      
+      // Trigger a refresh to ensure data consistency
+      // This will help if the service module is also active
+      setTimeout(() => {
+        fetchPickupEnquiries();
+      }, 1000);
+      
+      return updatedEnquiry;
+    } catch (error) {
+      // On error, refresh the data to restore the item
       fetchPickupEnquiries();
       throw error;
     }
@@ -333,6 +366,7 @@ export function usePickupEnquiries(pollInterval: number = 20000) {
     assignPickup: assignPickupOptimistic,
     markCollected: markCollectedOptimistic,
     markReceived: markReceivedOptimistic,
+    markReceivedMulti: markReceivedMultiOptimistic,
   };
 }
 

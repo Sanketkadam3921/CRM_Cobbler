@@ -52,7 +52,8 @@ export function PickupModule() {
     error: enquiriesError,
     assignPickup,
     markCollected,
-    markReceived
+    markReceived,
+    markReceivedMulti
   } = usePickupEnquiries(200000);
 
   const {
@@ -233,9 +234,8 @@ export function PickupModule() {
         return;
       }
 
-      // Always send structured multi-item photos payload
-      // Call underlying API directly to ensure correct payload shape
-      await (await import('@/services/pickupApiService')).PickupApiService.markReceivedMulti(
+      // Use the optimistic update function from the hook
+      await markReceivedMulti(
         enquiryId,
         itemsPayload,
         receivedNotes,
@@ -250,9 +250,9 @@ export function PickupModule() {
 
       toast({
         title: "Items Received!",
-        description: "All items have been received and moved to service",
+        description: "All items have been received and moved to service workflow. Check the Service module to continue.",
         className: "bg-green-50 border-green-200 text-green-800",
-        duration: 3000,
+        duration: 5000,
       });
 
       if (enquiry) {
