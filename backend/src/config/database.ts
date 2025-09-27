@@ -169,7 +169,7 @@ export const createTables = async (): Promise<void> => {
         address TEXT NOT NULL,
         message TEXT NOT NULL,
         inquiry_type ENUM('Instagram', 'Facebook', 'WhatsApp', 'Phone', 'Walk-in', 'Website') NOT NULL,
-        product ENUM('Bag', 'Shoe', 'Wallet', 'Belt', 'All type furniture') NOT NULL,
+        product ENUM('Bag', 'Shoe', 'Wallet', 'Belt', 'All type furniture', 'Jacket', 'Other') NOT NULL,
         quantity INT NOT NULL DEFAULT 1,
         date DATE NOT NULL,
         status ENUM('new', 'contacted', 'converted', 'closed', 'lost') DEFAULT 'new',
@@ -196,7 +196,7 @@ export const createTables = async (): Promise<void> => {
       `CREATE TABLE IF NOT EXISTS enquiry_products (
         id INT PRIMARY KEY AUTO_INCREMENT,
         enquiry_id INT NOT NULL,
-        product ENUM('Bag', 'Shoe', 'Wallet', 'Belt', 'All type furniture') NOT NULL,
+        product ENUM('Bag', 'Shoe', 'Wallet', 'Belt', 'All type furniture', 'Jacket', 'Other') NOT NULL,
         quantity INT NOT NULL DEFAULT 1,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -252,7 +252,7 @@ export const createTables = async (): Promise<void> => {
         enquiry_id INT NOT NULL,
         service_type ENUM('Repairing', 'Cleaning', 'Dyeing') NOT NULL,
         status ENUM('pending', 'in-progress', 'done') DEFAULT 'pending',
-        product ENUM('Bag', 'Shoe', 'Wallet', 'Belt', 'All type furniture') NULL,
+        product ENUM('Bag', 'Shoe', 'Wallet', 'Belt', 'All type furniture', 'Jacket', 'Other') NULL,
         item_index INT NULL,
         department VARCHAR(255) NULL,
         assigned_to VARCHAR(255) NULL,
@@ -277,7 +277,7 @@ export const createTables = async (): Promise<void> => {
         notes TEXT NULL,
         service_type_id INT NULL,
         service_detail_id INT NULL,
-        product ENUM('Bag', 'Shoe', 'Wallet', 'Belt', 'All type furniture') NULL,
+        product ENUM('Bag', 'Shoe', 'Wallet', 'Belt', 'All type furniture', 'Jacket', 'Other') NULL,
         item_index INT NULL,
         slot_index TINYINT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -549,7 +549,7 @@ export const runDatabaseMigrations = async (): Promise<void> => {
     if (!hasProductColumn) {
       await executeQuery(`
         ALTER TABLE photos 
-        ADD COLUMN product ENUM('Bag', 'Shoe', 'Wallet', 'Belt', 'All type furniture') NULL
+        ADD COLUMN product ENUM('Bag', 'Shoe', 'Wallet', 'Belt', 'All type furniture', 'Jacket', 'Other') NULL
       `);
       logDatabase.success('Added product column to photos table');
     }

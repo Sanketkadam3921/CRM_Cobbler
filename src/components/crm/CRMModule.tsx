@@ -147,7 +147,7 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
   const [showSuccess, setShowSuccess] = useState(false);
 
   // Product types list
-  const productTypes: ProductType[] = ["Bag", "Shoe", "Wallet", "Belt", "All type furniture"];
+  const productTypes: ProductType[] = ["Bag", "Shoe", "Wallet", "Belt", "All type furniture", "Jacket", "Other"];
 
   // Helper functions for managing products
   const addProduct = (productType: ProductType) => {
@@ -426,7 +426,13 @@ export function CRMModule({ activeAction }: CRMModuleProps = {}) {
         setShowForm(false);
       }, 100);
     } catch (error) {
-
+      console.error('Error adding enquiry:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add enquiry. Please try again.",
+        variant: "destructive",
+        duration: 3000,
+      });
     }
   };
 

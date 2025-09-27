@@ -496,7 +496,12 @@ export function DeliveryModule() {
 
                   <div className="flex items-center space-x-2">
                     <span className="text-sm font-semibold text-foreground">
-                      Amount: ₹{enquiry.finalAmount || enquiry.quotedAmount || 0}
+                      Amount: ₹
+                      {(Number(enquiry.subtotalAmount || 0) +
+                        Number(enquiry.gstAmount || 0)).toLocaleString("en-IN", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
                     </span>
                   </div>
 

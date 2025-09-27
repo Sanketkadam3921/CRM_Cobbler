@@ -77,6 +77,12 @@ export class DeliveryModel {
           sd.actual_cost,
           sd.work_notes,
           sd.completed_at as service_completed_at,
+          -- Billing details (using total_amount which is subtotal + GST)
+          bd.total_amount as billedAmount,
+          bd.subtotal as subtotalAmount,
+          bd.gst_amount as gstAmount,
+          bd.invoice_number as invoiceNumber,
+          bd.invoice_date as invoiceDate,
           -- Get service completion photo (overall after photo)
           p_service_after.photo_data as service_after_photo,
           -- Get delivery photos
@@ -85,6 +91,7 @@ export class DeliveryModel {
         FROM enquiries e
         INNER JOIN delivery_details dd ON e.id = dd.enquiry_id
         LEFT JOIN service_details sd ON e.id = sd.enquiry_id
+        LEFT JOIN billing_details bd ON e.id = bd.enquiry_id
         -- Get service overall after photo as delivery before photo
         LEFT JOIN photos p_service_after ON e.id = p_service_after.enquiry_id 
           AND p_service_after.stage = 'service' 
@@ -134,6 +141,12 @@ export class DeliveryModel {
           currentStage: row.current_stage,
           quotedAmount: parseFloat(row.quoted_amount) || 0,
           finalAmount: parseFloat(row.final_amount) || parseFloat(row.actual_cost) || parseFloat(row.quoted_amount) || 0,
+          // Add billing amounts
+          subtotalAmount: parseFloat(row.subtotalAmount) || 0,
+          gstAmount: parseFloat(row.gstAmount) || 0,
+          billedAmount: parseFloat(row.billedAmount) || 0,
+          invoiceNumber: row.invoiceNumber,
+          invoiceDate: row.invoiceDate,
           createdAt: row.created_at,
           updatedAt: row.updated_at,
           deliveryDetails: {
@@ -192,12 +205,19 @@ export class DeliveryModel {
           sd.actual_cost,
           sd.work_notes,
           sd.completed_at as service_completed_at,
+          -- Billing details (using total_amount which is subtotal + GST)
+          bd.total_amount as billedAmount,
+          bd.subtotal as subtotalAmount,
+          bd.gst_amount as gstAmount,
+          bd.invoice_number as invoiceNumber,
+          bd.invoice_date as invoiceDate,
           p_service_after.photo_data as service_after_photo,
           p_delivery_before.photo_data as delivery_before_photo,
           p_delivery_after.photo_data as delivery_after_photo
         FROM enquiries e
         INNER JOIN delivery_details dd ON e.id = dd.enquiry_id
         LEFT JOIN service_details sd ON e.id = sd.enquiry_id
+        LEFT JOIN billing_details bd ON e.id = bd.enquiry_id
         LEFT JOIN photos p_service_after ON e.id = p_service_after.enquiry_id 
           AND p_service_after.stage = 'service' 
           AND p_service_after.photo_type = 'overall_after'
@@ -238,6 +258,12 @@ export class DeliveryModel {
         currentStage: enquiry.current_stage,
         quotedAmount: parseFloat(enquiry.quoted_amount) || 0,
         finalAmount: parseFloat(enquiry.final_amount) || parseFloat(enquiry.actual_cost) || parseFloat(enquiry.quoted_amount) || 0,
+        // Add billing amounts
+        subtotalAmount: parseFloat(enquiry.subtotalAmount) || 0,
+        gstAmount: parseFloat(enquiry.gstAmount) || 0,
+        billedAmount: parseFloat(enquiry.billedAmount) || 0,
+        invoiceNumber: enquiry.invoiceNumber,
+        invoiceDate: enquiry.invoiceDate,
         createdAt: enquiry.created_at,
         updatedAt: enquiry.updated_at,
         deliveryDetails: {

@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Search, Filter, Instagram, Facebook, MessageCircle, Briefcase, ShoppingBag } from "lucide-react";
+import { ArrowLeft, Search, Filter, Instagram, Facebook, MessageCircle, Briefcase, ShoppingBag, Shirt, Package } from "lucide-react";
 import { Enquiry } from "@/types";
 import { enquiriesStorage } from "@/utils/localStorage";
 import { Phone, MapPin, Calendar } from "lucide-react";
@@ -39,11 +39,24 @@ export function AllEnquiriesTable({ onBack }: AllEnquiriesTableProps) {
   };
 
   const getProductIcon = (product: string) => {
-    return product.toLowerCase() === "bag" ? (
-      <Briefcase className="h-4 w-4 text-amber-600" />
-    ) : (
-      <ShoppingBag className="h-4 w-4 text-purple-600" />
-    );
+    switch (product.toLowerCase()) {
+      case "bag":
+        return <Briefcase className="h-4 w-4 text-amber-600" />;
+      case "shoe":
+        return <ShoppingBag className="h-4 w-4 text-purple-600" />;
+      case "wallet":
+        return <Briefcase className="h-4 w-4 text-blue-600" />;
+      case "belt":
+        return <Package className="h-4 w-4 text-green-600" />;
+      case "all type furniture":
+        return <Package className="h-4 w-4 text-orange-600" />;
+      case "jacket":
+        return <Shirt className="h-4 w-4 text-red-600" />;
+      case "other":
+        return <Package className="h-4 w-4 text-gray-600" />;
+      default:
+        return <Package className="h-4 w-4 text-gray-600" />;
+    }
   };
 
   const getStatusColor = (status: string) => {

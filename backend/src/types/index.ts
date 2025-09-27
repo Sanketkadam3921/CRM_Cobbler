@@ -268,7 +268,7 @@
 
 // // Enums and union types
 // export type InquiryType = "Instagram" | "Facebook" | "WhatsApp" | "Phone" | "Walk-in" | "Website";
-// export type ProductType = "Bag" | "Shoe" | "Wallet" | "Belt" | "All type furniture";
+// export type ProductType = "Bag" | "Shoe" | "Wallet" | "Belt" | "All type furniture" | "Jacket" | "Other";
 // export type EnquiryStatus = "new" | "contacted" | "converted" | "closed" | "lost";
 
 // // Workflow stages
@@ -970,7 +970,7 @@ export interface StaffMember {
 
 // Enums and union types
 export type InquiryType = "Instagram" | "Facebook" | "WhatsApp" | "Phone" | "Walk-in" | "Website";
-export type ProductType = "Bag" | "Shoe" | "Wallet" | "Belt" | "All type furniture";
+export type ProductType = "Bag" | "Shoe" | "Wallet" | "Belt" | "All type furniture" | "Jacket" | "Other";
 export type EnquiryStatus = "new" | "contacted" | "converted" | "closed" | "lost";
 
 // Workflow stages
@@ -1347,6 +1347,12 @@ export interface DeliveryEnquiry {
   currentStage: 'enquiry' | 'pickup' | 'service' | 'billing' | 'delivery' | 'completed';
   quotedAmount?: number;
   finalAmount?: number;
+  // Billing amounts
+  subtotalAmount?: number;
+  gstAmount?: number;
+  billedAmount?: number;
+  invoiceNumber?: string;
+  invoiceDate?: string;
   createdAt: string;
   updatedAt: string;
 
