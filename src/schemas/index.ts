@@ -22,7 +22,7 @@ export const enquiryFormSchema = z.object({
   address: z.string().min(10, "Address must be at least 10 characters"),
   message: z.string().min(10, "Message must be at least 10 characters"),
   inquiryType: z.enum(["Instagram", "Facebook", "WhatsApp", "Phone", "Walk-in", "Website"]),
-  product: z.enum(["Bag", "Shoe", "Wallet", "Belt", "All type furniture"]),
+  product: z.enum(["Bag", "Shoe", "Wallet", "Belt", "All type furniture", "Jacket", "Other"]),
   quantity: z.number().min(1, "Quantity must be at least 1").max(100, "Quantity cannot exceed 100"),
 });
 
@@ -40,7 +40,7 @@ export const serviceFormSchema = z.object({
   items: z.string().min(2, "Items description must be at least 2 characters"),
   serviceType: z.enum([
     "Sole Replacement",
-    "Zipper Repair", 
+    "Zipper Repair",
     "Cleaning & Polish",
     "Stitching",
     "Leather Treatment",
@@ -55,7 +55,7 @@ export const serviceFormSchema = z.object({
 export const serviceUpdateSchema = serviceFormSchema.partial().extend({
   status: z.enum([
     "in-progress",
-    "photos-taken", 
+    "photos-taken",
     "awaiting-approval",
     "completed",
     "billed",
@@ -108,13 +108,13 @@ export const expenseFormSchema = z.object({
   amount: z.number().min(0.01, "Amount must be greater than 0"),
   category: z.enum([
     "Materials",
-    "Tools", 
+    "Tools",
     "Rent",
     "Utilities",
     "Transportation",
     "Marketing",
     "Staff Salaries",
-    "Office Supplies", 
+    "Office Supplies",
     "Maintenance",
     "Professional Services",
     "Insurance",

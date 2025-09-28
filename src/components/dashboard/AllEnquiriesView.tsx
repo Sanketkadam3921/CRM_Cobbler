@@ -1,0 +1,378 @@
+import { useState, useEffect } from "react";
+import { Card } from "@/components/ui/card";
+import {
+    Search,
+    Eye,
+    Edit,
+    Trash2,
+    Phone,
+    ArrowLeft,
+    ChevronLeft,
+    ChevronRight,
+} from "lucide-react";
+import { useEnquiriesWithPolling } from "@/services/enquiryApiService";
+import { Enquiry } from "@/types";
+import { FormControl, InputLabel, Select, MenuItem } from "@mui/material";
+
+interface AllEnquiriesViewProps {
+    onNavigate: (view: string, action?: string, id?: number) => void;
+    onBack: () => void;
+}
+
+const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+    });
+};
+
+const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+        case "new":
+            return "text-blue-600 bg-blue-50 border-blue-200";
+        case "contacted":
+            return "text-amber-600 bg-amber-50 border-amber-200";
+        case "converted":
+            return "text-green-600 bg-green-50 border-green-200";
+        case "closed":
+            return "text-gray-600 bg-gray-50 border-gray-200";
+        case "lost":
+            return "text-red-600 bg-red-50 border-red-200";
+        default:
+            return "text-gray-600 bg-gray-50 border-gray-200";
+    }
+};
+
+const getStageColor = (stage: string) => {
+    switch (stage.toLowerCase()) {
+        case "enquiry":
+            return "text-blue-600 bg-blue-50 border-blue-200";
+        case "pickup":
+            return "text-amber-600 bg-amber-50 border-amber-200";
+        case "service":
+            return "text-purple-600 bg-purple-50 border-purple-200";
+        case "billing":
+            return "text-orange-600 bg-orange-50 border-orange-200";
+        case "delivery":
+            return "text-green-600 bg-green-50 border-green-200";
+        case "completed":
+            return "text-emerald-600 bg-emerald-50 border-emerald-200";
+        default:
+            return "text-gray-600 bg-gray-50 border-gray-200";
+    }
+};
+
+const capitalize = (text: string) =>
+    text.charAt(0).toUpperCase() + text.slice(1);
+
+export function AllEnquiriesView({ onNavigate, onBack }: AllEnquiriesViewProps) {
+    const [searchTerm, setSearchTerm] = useState("");
+    const [stageFilter, setStageFilter] = useState("all");
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage] = useState(10);
+    const [selectedEnquiry, setSelectedEnquiry] = useState<Enquiry | null>(null);
+    const [showDetailsModal, setShowDetailsModal] = useState(false);
+
+    const { enquiries, deleteEnquiry } = useEnquiriesWithPolling(30000);
+
+    const filteredEnquiries = enquiries.filter((enquiry) => {
+        const matchesSearch =
+            searchTerm === "" ||
+            enquiry.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            enquiry.phone.includes(searchTerm) ||
+            enquiry.id.toString().includes(searchTerm);
+
+        const matchesStage =
+            stageFilter === "all" || enquiry.currentStage === stageFilter;
+
+        return matchesSearch && matchesStage;
+    });
+
+    const totalPages = Math.ceil(filteredEnquiries.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const paginatedEnquiries = filteredEnquiries.slice(
+        startIndex,
+        startIndex + itemsPerPage
+    );
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, stageFilter]);
+
+    const handleDelete = async (id: number) => {
+        if (window.confirm("Are you sure you want to delete this enquiry?")) {
+            try {
+                await deleteEnquiry(id);
+            } catch (error) {
+                console.error("Failed to delete enquiry:", error);
+            }
+        }
+    };
+
+    const handleViewDetails = (enquiry: Enquiry) => {
+        setSelectedEnquiry(enquiry);
+        setShowDetailsModal(true);
+    };
+
+    return (
+        <div className="space-y-6 animate-fade-in p-2 sm:p-0">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+                <div className="flex items-center space-x-4">
+                    <button
+                        onClick={onBack}
+                        className="flex items-center space-x-2 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                        <ArrowLeft className="h-5 w-5" />
+                    </button>
+                    <div className="h-6 w-px bg-border hidden sm:block"></div>
+                    <div>
+                        <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center">
+                            All Enquiries
+                        </h1>
+                        <p className="text-sm sm:text-base text-muted-foreground">
+                            Manage and track all customer enquiries
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Filters */}
+            <Card className="p-4 sm:p-6">
+                <div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:gap-4">
+                    {/* Search */}
+                    <div className="flex-1 relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                        <input
+                            type="text"
+                            placeholder="Search by name, phone, or ID"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-sm"
+                        />
+                    </div>
+
+                    {/* Stage Filter */}
+                    <FormControl size="small" className="sm:w-48 w-full">
+                        <InputLabel id="stage-filter-label">Stage</InputLabel>
+                        <Select
+                            labelId="stage-filter-label"
+                            value={stageFilter}
+                            onChange={(e) => setStageFilter(e.target.value)}
+                            label="Stage"
+                        >
+                            <MenuItem value="all">All Stages</MenuItem>
+                            <MenuItem value="enquiry">Enquiry</MenuItem>
+                            <MenuItem value="pickup">Pickup</MenuItem>
+                            <MenuItem value="service">Service</MenuItem>
+                            <MenuItem value="billing">Billing</MenuItem>
+                            <MenuItem value="delivery">Delivery</MenuItem>
+                            <MenuItem value="completed">Completed</MenuItem>
+                        </Select>
+                    </FormControl>
+                </div>
+            </Card>
+
+            {/* Enquiries Table (Responsive) */}
+            <Card className="overflow-hidden">
+                {/* Table view - tablet & desktop */}
+                <div className="overflow-x-auto hidden lg:block">
+                    <table className="w-full min-w-[900px]">
+                        <thead className="bg-muted/50">
+                            <tr>
+                                <th className="text-left p-3">ID</th>
+                                <th className="text-left p-3">Customer</th>
+                                <th className="text-left p-3">Contact</th>
+                                <th className="text-left p-3">Status</th>
+                                <th className="text-left p-3">Stage</th>
+                                <th className="text-left p-3 hidden md:table-cell">Created</th>
+                                <th className="text-left p-3">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {paginatedEnquiries.map((enquiry) => (
+                                <tr
+                                    key={enquiry.id}
+                                    className="border-b border-border hover:bg-muted/30"
+                                >
+                                    <td className="p-3 font-mono text-sm">{enquiry.id}</td>
+                                    <td className="p-3">{enquiry.customerName}</td>
+                                    <td className="p-3">
+                                        <div className="flex items-center text-sm">
+                                            <Phone className="h-3 w-3 mr-1 text-muted-foreground" />
+                                            {enquiry.phone.startsWith("+91")
+                                                ? enquiry.phone
+                                                : `+91 ${enquiry.phone}`}
+                                        </div>
+                                    </td>
+
+                                    <td className="p-3">
+                                        <span
+                                            className={`inline-flex px-2 py-1 rounded-full text-xs border ${getStatusColor(
+                                                enquiry.status
+                                            )}`}
+                                        >
+                                            {capitalize(enquiry.status)}
+                                        </span>
+                                    </td>
+                                    <td className="p-3">
+                                        <span
+                                            className={`inline-flex px-2 py-1 rounded-full text-xs border ${getStageColor(
+                                                enquiry.currentStage
+                                            )}`}
+                                        >
+                                            {capitalize(enquiry.currentStage)}
+                                        </span>
+                                    </td>
+                                    <td className="p-3 hidden md:table-cell">
+                                        {formatDate(enquiry.date)}
+                                    </td>
+                                    <td className="p-3">
+                                        <div className="flex space-x-2">
+                                            <button
+                                                onClick={() =>
+                                                    onNavigate("crm", "edit-enquiry", enquiry.id)
+                                                }
+                                                className="p-1 hover:text-blue-600"
+                                            >
+                                                <Edit className="h-4 w-4" />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(enquiry.id)}
+                                                className="p-1 hover:text-red-600"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* Card view - mobile */}
+                {/* Card view - mobile + tablet */}
+                <div className="space-y-4 lg:hidden p-4">
+                    {paginatedEnquiries.map((enquiry) => (
+                        <div
+                            key={enquiry.id}
+                            className="border border-border rounded-xl p-4 shadow-sm bg-white flex flex-col space-y-3"
+                        >
+                            {/* Top Row: Customer Name + ID */}
+                            <div className="flex justify-between items-start">
+                                <h3 className="font-bold text-lg">{enquiry.customerName}</h3>
+                                <span className="text-xs font-mono text-muted-foreground">{enquiry.id}</span>
+                            </div>
+
+                            {/* Status Badges */}
+                            <div className="flex flex-wrap gap-2">
+                                <span
+                                    className={`px-2 py-1 rounded-full text-xs border ${getStatusColor(enquiry.status)}`}
+                                >
+                                    {capitalize(enquiry.status)}
+                                </span>
+                                <span
+                                    className={`px-2 py-1 rounded-full text-xs border ${getStageColor(enquiry.currentStage)}`}
+                                >
+                                    {capitalize(enquiry.currentStage)}
+                                </span>
+                            </div>
+
+                            {/* Product & Contact Info */}
+                            <div className="flex flex-col gap-1 text-sm text-muted-foreground">
+                                <p className="flex items-center">
+                                    <Phone className="h-4 w-4 mr-1" /> {enquiry.phone}
+                                </p>
+                                <p>Product: <span className="text-foreground font-medium">{enquiry.product}</span></p>
+                            </div>
+
+                            {/* Created Date */}
+                            <p className="text-xs text-muted-foreground">
+                                Created: {formatDate(enquiry.date)}
+                            </p>
+
+                            {/* Action Buttons */}
+                            <div className="flex justify-end space-x-2 mt-2">
+                                <button
+                                    onClick={() => handleViewDetails(enquiry)}
+                                    className="p-2 text-muted-foreground hover:text-primary transition-colors rounded"
+                                    title="View Details"
+                                >
+                                    <Eye className="h-4 w-4" />
+                                </button>
+                                <button
+                                    onClick={() => onNavigate("crm", "edit-enquiry", enquiry.id)}
+                                    className="p-2 text-muted-foreground hover:text-blue-600 transition-colors rounded"
+                                    title="Edit Enquiry"
+                                >
+                                    <Edit className="h-4 w-4" />
+                                </button>
+                                <button
+                                    onClick={() => handleDelete(enquiry.id)}
+                                    className="p-2 text-muted-foreground hover:text-red-600 transition-colors rounded"
+                                    title="Delete Enquiry"
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                    <Card className="p-4 border-t border-border">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+                            <div className="text-sm text-muted-foreground text-center sm:text-left">
+                                Page {currentPage} of {totalPages}
+                            </div>
+
+                            <div className="flex items-center justify-center space-x-2">
+                                <button
+                                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                                    disabled={currentPage === 1}
+                                    className="flex items-center px-3 py-2 border border-border rounded-lg hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+                                >
+                                    <ChevronLeft className="h-4 w-4 mr-1" />
+                                    Previous
+                                </button>
+
+                                <div className="flex items-center space-x-1">
+                                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                                        (page) => (
+                                            <button
+                                                key={page}
+                                                onClick={() => setCurrentPage(page)}
+                                                className={`px-3 py-1 rounded-md text-sm transition-colors ${page === currentPage
+                                                    ? "bg-primary text-white"
+                                                    : "hover:bg-muted"
+                                                    }`}
+                                            >
+                                                {page}
+                                            </button>
+                                        )
+                                    )}
+                                </div>
+
+                                <button
+                                    onClick={() =>
+                                        setCurrentPage(Math.min(totalPages, currentPage + 1))
+                                    }
+                                    disabled={currentPage === totalPages}
+                                    className="flex items-center px-3 py-2 border border-border rounded-lg hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+                                >
+                                    Next
+                                    <ChevronRight className="h-4 w-4 ml-1" />
+                                </button>
+                            </div>
+                        </div>
+                    </Card>
+                )}
+            </Card>
+        </div>
+    );
+}

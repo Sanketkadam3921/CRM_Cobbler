@@ -1,20 +1,20 @@
 import { Request, Response } from 'express';
 import { ServiceModel } from '../models/ServiceModel';
-import { 
-  ServiceAssignmentRequest, 
-  ServiceStartRequest, 
-  ServiceCompleteRequest, 
-  FinalPhotoRequest, 
-  WorkflowCompleteRequest 
+import {
+  ServiceAssignmentRequest,
+  ServiceStartRequest,
+  ServiceCompleteRequest,
+  FinalPhotoRequest,
+  WorkflowCompleteRequest
 } from '../types';
 
 export class ServiceController {
-  
+
   // Get all service stage enquiries
   static async getServiceEnquiries(req: Request, res: Response): Promise<void> {
     try {
       const serviceEnquiries = await ServiceModel.getServiceEnquiries();
-      
+
       res.status(200).json({
         success: true,
         data: serviceEnquiries,
@@ -29,12 +29,12 @@ export class ServiceController {
       });
     }
   }
-  
+
   // Get service statistics
   static async getServiceStats(req: Request, res: Response): Promise<void> {
     try {
       const stats = await ServiceModel.getServiceStats();
-      
+
       res.status(200).json({
         success: true,
         data: stats,
@@ -49,13 +49,13 @@ export class ServiceController {
       });
     }
   }
-  
+
   // Get specific enquiry service details
   static async getEnquiryServiceDetails(req: Request, res: Response): Promise<void> {
     try {
       const { enquiryId } = req.params;
       const id = parseInt(enquiryId);
-      
+
       if (isNaN(id)) {
         res.status(400).json({
           success: false,
@@ -64,9 +64,9 @@ export class ServiceController {
         });
         return;
       }
-      
+
       const serviceDetails = await ServiceModel.getEnquiryServiceDetails(id);
-      
+
       if (!serviceDetails) {
         res.status(404).json({
           success: false,
@@ -75,7 +75,7 @@ export class ServiceController {
         });
         return;
       }
-      
+
       res.status(200).json({
         success: true,
         data: serviceDetails,
@@ -90,12 +90,21 @@ export class ServiceController {
       });
     }
   }
-  
+
   // Assign services to an enquiry
   static async assignServices(req: Request, res: Response): Promise<void> {
     try {
-      const { enquiryId, serviceTypes }: ServiceAssignmentRequest = req.body;
-      
+      const { enquiryId, serviceTypes, product, itemIndex }: ServiceAssignmentRequest = req.body;
+
+      console.log('🔍 ServiceController.assignServices received:', {
+        enquiryId,
+        serviceTypes,
+        product,
+        itemIndex,
+        productType: typeof product,
+        itemIndexType: typeof itemIndex
+      });
+
       if (!enquiryId || !serviceTypes || !Array.isArray(serviceTypes) || serviceTypes.length === 0) {
         res.status(400).json({
           success: false,
@@ -104,13 +113,13 @@ export class ServiceController {
         });
         return;
       }
-      
-      await ServiceModel.assignServices(enquiryId, serviceTypes);
-      
+
+      await ServiceModel.assignServices(enquiryId, serviceTypes, product as any, itemIndex as any);
+
       res.status(200).json({
         success: true,
         message: 'Services assigned successfully',
-        data: { enquiryId, serviceTypes }
+        data: { enquiryId, serviceTypes, product: product || null, itemIndex: itemIndex || null }
       });
     } catch (error) {
       console.error('Error assigning services:', error);
@@ -121,12 +130,12 @@ export class ServiceController {
       });
     }
   }
-  
+
   // Start a service
   static async startService(req: Request, res: Response): Promise<void> {
     try {
       const { serviceTypeId, beforePhoto, notes }: ServiceStartRequest = req.body;
-      
+
       if (!serviceTypeId || !beforePhoto) {
         res.status(400).json({
           success: false,
@@ -135,9 +144,9 @@ export class ServiceController {
         });
         return;
       }
-      
+
       await ServiceModel.startService(serviceTypeId, beforePhoto, notes);
-      
+
       res.status(200).json({
         success: true,
         message: 'Service started successfully',
@@ -152,12 +161,12 @@ export class ServiceController {
       });
     }
   }
-  
+
   // Complete a service
   static async completeService(req: Request, res: Response): Promise<void> {
     try {
       const { serviceTypeId, afterPhoto, notes }: ServiceCompleteRequest = req.body;
-      
+
       if (!serviceTypeId || !afterPhoto) {
         res.status(400).json({
           success: false,
@@ -166,9 +175,9 @@ export class ServiceController {
         });
         return;
       }
-      
+
       await ServiceModel.completeService(serviceTypeId, afterPhoto, notes);
-      
+
       res.status(200).json({
         success: true,
         message: 'Service completed successfully',
@@ -183,12 +192,12 @@ export class ServiceController {
       });
     }
   }
-  
+
   // Save final overall photo
   static async saveFinalPhoto(req: Request, res: Response): Promise<void> {
     try {
       const { enquiryId, afterPhoto, notes }: FinalPhotoRequest = req.body;
-      
+
       if (!enquiryId || !afterPhoto) {
         res.status(400).json({
           success: false,
@@ -197,9 +206,9 @@ export class ServiceController {
         });
         return;
       }
-      
+
       await ServiceModel.saveFinalPhoto(enquiryId, afterPhoto, notes);
-      
+
       res.status(200).json({
         success: true,
         message: 'Final photo saved successfully',
@@ -214,12 +223,12 @@ export class ServiceController {
       });
     }
   }
-  
+
   // Complete workflow and move to billing
   static async completeWorkflow(req: Request, res: Response): Promise<void> {
     try {
       const { enquiryId, actualCost, workNotes }: WorkflowCompleteRequest = req.body;
-      
+
       if (!enquiryId || actualCost === undefined) {
         res.status(400).json({
           success: false,
@@ -228,9 +237,9 @@ export class ServiceController {
         });
         return;
       }
-      
+
       await ServiceModel.completeWorkflow(enquiryId, actualCost, workNotes);
-      
+
       res.status(200).json({
         success: true,
         message: 'Workflow completed successfully, moved to billing',

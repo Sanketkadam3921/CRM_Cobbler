@@ -361,11 +361,14 @@ const Index = () => {
         <AppSidebar currentView={currentView} onViewChange={handleViewChange} />
         <SidebarInset className="flex-1">
           {/* Mobile header with trigger */}
-          <header className="lg:hidden h-14 flex items-center justify-between px-4 border-b border-border bg-card">
+          <header className="lg:hidden h-14 flex items-center px-4 border-b border-border bg-card relative">
             <SidebarTrigger />
-            <h1 className="font-semibold text-foreground">Cobbler CRM</h1>
-            <div></div>
+            <h1 className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 font-semibold text-2xl text-foreground">
+              Cobbler CRM
+            </h1>
           </header>
+
+
           <main className="flex-1 p-2 sm:p-4 lg:p-6">{renderContent()}</main>
         </SidebarInset>
       </div>

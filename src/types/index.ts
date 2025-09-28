@@ -32,13 +32,16 @@ export interface PickupStage {
 export interface ServiceTypeStatus {
   type: ServiceType;
   status: ServiceStatus;
+  // Optional per-item targeting
+  product?: ProductType;
+  itemIndex?: number;
 
-  // Photos for this specific service
-  photos: {
-    beforePhoto?: string;
-    afterPhoto?: string;
-    beforeNotes?: string;
-    afterNotes?: string;
+  // Photos for this specific service - support multiple images per bucket
+  photos?: {
+    before?: string[];
+    after?: string[];
+    received?: string[];
+    other?: string[];
   };
 
   // Work details
@@ -63,6 +66,7 @@ export interface ServiceDetails {
   address: string;
   product: string;
   quantity: number;
+  products?: ProductItem[]; // Add products array for multiple products
   quotedAmount?: number;
   estimatedCost?: number;
   actualCost?: number;
@@ -81,6 +85,9 @@ export interface ServiceDetails {
     beforeNotes?: string;
     afterNotes?: string;
   };
+  // New: aggregated before-photos captured per product item during pickup
+  // Each entry represents one item instance (e.g., product "Shoe" item #1) with up to 4 photos
+  itemPhotos?: Array<{ product: string; itemIndex: number; photos: string[]; notes?: string; finalPhoto?: string }>;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -125,6 +132,9 @@ export interface WorkflowCompleteRequest {
 
 // Business information types
 export interface BusinessInfo {
+  id?: number;
+
+
   businessName: string;
   ownerName: string;
   phone: string;
@@ -136,6 +146,9 @@ export interface BusinessInfo {
   logo?: string; // Base64 encoded logo
   website?: string;
   tagline?: string;
+
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // Billing and invoice types
@@ -166,6 +179,9 @@ export interface BillingItem {
   gstRate: number; // Individual GST rate per service
   gstAmount: number; // Individual GST amount per service
   description?: string;
+  // Product and item context (optional for backward compatibility)
+  productName?: string;
+  itemIndex?: number;
 }
 
 // Service stage details  
@@ -176,6 +192,17 @@ export interface ServiceStage {
     beforeNotes?: string;
     afterNotes?: string;
   };
+  // New: list of per-item photos (captured at pickup stage and service stage)
+  itemPhotos?: Array<{
+    product: string;
+    itemIndex: number;
+    photos: {
+      before: string[];
+      after: string[];
+      received: string[];
+      other: string[];
+    };
+  }>;
   serviceTypes: ServiceTypeStatus[];
   estimatedCost?: number;
   actualCost?: number;
@@ -198,6 +225,11 @@ export interface DeliveryStage {
   deliveredAt?: string;
 }
 
+export interface ProductItem {
+  product: ProductType;
+  quantity: number;
+}
+
 export interface Enquiry {
   name: string;
   location: string;
@@ -209,8 +241,9 @@ export interface Enquiry {
   address: string;
   message: string;
   inquiryType: InquiryType;
-  product: ProductType;
-  quantity: number;
+  product: ProductType; // Keep for backward compatibility
+  quantity: number; // Keep for backward compatibility
+  products: ProductItem[]; // New field for multiple products
   date: string;
   status: EnquiryStatus;
   contacted: boolean;
@@ -228,7 +261,9 @@ export interface Enquiry {
   quotedAmount?: number;
   finalAmount?: number;
 
-
+  // Date fields for conversion
+  pickupDate?: string;
+  deliveryDate?: string;
 }
 
 export interface ServiceOrder {
@@ -264,16 +299,35 @@ export interface BillingEnquiry {
   customerName: string;
   phone: string;
   address: string;
-  product: string;
-  quantity: number;
+  product: string; // Keep for backward compatibility
+  quantity: number; // Keep for backward compatibility
+  products: ProductItem[]; // New field for multiple products
   currentStage: string;
   serviceDetails?: {
     serviceTypes?: Array<{
       type: string;
       status: string;
       workNotes?: string;
+      product?: string;
+      itemIndex?: number;
     }>;
     estimatedCost?: number;
+    itemPhotos?: Array<{
+      product: string;
+      itemIndex: number;
+      photos: {
+        before: string[];
+        after: string[];
+        received: string[];
+        other: string[];
+      };
+    }>;
+    overallPhotos?: {
+      beforePhoto?: string;
+      afterPhoto?: string;
+      beforeNotes?: string;
+      afterNotes?: string;
+    };
     billingDetails?: BillingDetails;
   };
 }
@@ -324,10 +378,28 @@ export interface InventoryItem {
   quantity: number;
   minStock: number;
   unit: string;
-  cost: number;
+  purchasePrice: number;
+  sellingPrice: number;
   supplier?: string;
   lastUpdated: string;
+  lastUpdatedBy?: string;
   location?: string;
+  history?: UpdateHistory[];
+}
+
+export interface UpdateHistory {
+  date: string;
+  updatedBy: string;
+  action: string;
+  quantityChange: number;
+  newQuantity: number;
+}
+
+export interface InventoryStats {
+  totalItems: number;
+  totalQuantity: number;
+  lowStockItems: number;
+  wellStockedItems: number;
 }
 
 export interface Expense {
@@ -343,19 +415,30 @@ export interface Expense {
 }
 
 export interface StaffMember {
-  id: number;
+  id?: number;
   name: string;
   email: string;
   phone: string;
-  role: StaffRole;
-  department?: string;
+  role: string; // Changed from StaffRole to string to match backend
   status: "active" | "inactive";
-  createdAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
+export interface NotificationSettings {
+  id?: number;
+  userId?: number;
+  emailAlerts: boolean;
+  smsAlerts: boolean;
+  lowStockAlerts: boolean;
+  orderUpdates: boolean;
+  customerApprovals: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
 // Enums and union types
 export type InquiryType = "Instagram" | "Facebook" | "WhatsApp" | "Phone" | "Walk-in" | "Website";
-export type ProductType = "Bag" | "Shoe" | "Wallet" | "Belt" | "All type furniture";
+export type ProductType = "Bag" | "Shoe" | "Wallet" | "Belt" | "All type furniture" | "Jacket" | "Other";
 export type EnquiryStatus = "new" | "contacted" | "converted" | "closed" | "lost";
 
 // Workflow stages
@@ -363,7 +446,7 @@ export type WorkflowStage = "enquiry" | "pickup" | "service" | "billing" | "deli
 
 // Stage-specific statuses
 export type PickupStatus = "scheduled" | "assigned" | "collected" | "received";
-export type ServiceType = "Sole Replacement" | "Zipper Repair" | "Cleaning & Polish" | "Stitching" | "Leather Treatment" | "Hardware Repair";
+export type ServiceType = "Repairing" | "Cleaning" | "Dyeing";
 export type ServiceStatus = "pending" | "in-progress" | "done";
 export type DeliveryStatus = "ready" | "scheduled" | "out-for-delivery" | "delivered";
 export type DeliveryMethod = "customer-pickup" | "home-delivery";
@@ -501,6 +584,7 @@ export interface DeliveryEnquiry {
   inquiryType: 'Instagram' | 'Facebook' | 'WhatsApp' | 'Phone' | 'Walk-in' | 'Website';
   product: 'Bag' | 'Shoe' | 'Wallet' | 'Belt' | 'All type furniture';
   quantity: number;
+  products?: ProductItem[]; // Add products array for multiple products
   date: string;
   status: 'new' | 'contacted' | 'converted' | 'closed' | 'lost';
   contacted: boolean;
@@ -510,6 +594,12 @@ export interface DeliveryEnquiry {
   currentStage: 'enquiry' | 'pickup' | 'service' | 'billing' | 'delivery' | 'completed';
   quotedAmount?: number;
   finalAmount?: number;
+  // Billing amounts
+  subtotalAmount?: number;
+  gstAmount?: number;
+  billedAmount?: number;
+  invoiceNumber?: string;
+  invoiceDate?: string;
   createdAt: string;
   updatedAt: string;
 

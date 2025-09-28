@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Camera, ArrowLeft, CheckCircle, Clock } from "lucide-react";
+import { Camera, ArrowLeft, CheckCircle } from "lucide-react";
 import { ServiceDetails, ServiceType } from "@/types";
 import { imageUploadHelper } from "@/utils/localStorage";
 import { serviceApiService } from "@/services/serviceApiService";
@@ -13,20 +13,26 @@ import { serviceApiService } from "@/services/serviceApiService";
 interface ServiceTypeDetailProps {
   enquiryId: number;
   serviceType: ServiceType;
+  // Target specific product item (optional)
+  productItemKey?: string; // format: `${product}-${itemIndex}`
   onBack: () => void;
   onServiceUpdated?: () => void;
 }
 
-export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpdated }: ServiceTypeDetailProps) {
+export function ServiceTypeDetail({ enquiryId, serviceType, productItemKey, onBack, onServiceUpdated }: ServiceTypeDetailProps) {
   const [serviceDetails, setServiceDetails] = useState<ServiceDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // State for the photo preview (high-quality URL) and the original file
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-
+  // Separate states for preview and modal
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [modalImage, setModalImage] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
+
+  // Helper function to capitalize first letter
+  const capitalizeFirst = (str: string) => {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  };
 
   useEffect(() => {
     const loadServiceDetails = async () => {
@@ -45,47 +51,56 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
     loadServiceDetails();
   }, [enquiryId]);
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // Create a temporary URL for the high-quality preview
-      const previewUrl = URL.createObjectURL(file);
-      setSelectedImage(previewUrl);
-
-      // Store the original file object for API upload later
-      setSelectedFile(file);
+      try {
+        const thumbnailData = await imageUploadHelper.handleImageUpload(file);
+        setPreviewImage(thumbnailData);
+      } catch (error) {
+        console.error('Failed to process image:', error);
+        alert('Failed to process image. Please try again.');
+      }
     }
   };
 
   const startService = async () => {
-    if (!serviceDetails || !selectedFile) {
-      alert("Please select a photo to start the service.");
-      return;
-    }
+    if (!serviceDetails || !previewImage) return;
 
     try {
-      const serviceTypeData = serviceDetails.serviceTypes?.find(s => s.type === serviceType);
+      // Find the service type ID
+      // If productItemKey provided, match service by product/itemIndex
+      const serviceTypeData = serviceDetails.serviceTypes?.find(s => {
+        if (s.type !== serviceType) return false;
+        if (!productItemKey) return true;
+        const [p, idxStr] = productItemKey.split('-');
+        const idx = parseInt(idxStr, 10);
+        return (s as any).product === p && (s as any).itemIndex === idx;
+      });
       if (!serviceTypeData?.id) {
         alert('Service type not found');
         return;
       }
 
-      const compressedImageData = await imageUploadHelper.handleImageUpload(selectedFile);
-      await serviceApiService.startService(enquiryId, serviceTypeData.id, compressedImageData, notes);
-
+      // Call API to start service
+      await serviceApiService.startService(enquiryId, serviceTypeData.id, previewImage, notes);
       console.log('✅ Service started successfully');
 
-      // Clear the form but preserve the submitted image for display
-      if (selectedImage) {
-        URL.revokeObjectURL(selectedImage);
-      }
-      setSelectedImage(null);
-      setSelectedFile(null);
+      // Reset form - clear both preview and notes
+      setPreviewImage(null);
       setNotes("");
 
+      // Reset file input
+      const fileInput = document.getElementById('before-photo') as HTMLInputElement;
+      if (fileInput) {
+        fileInput.value = '';
+      }
+
+      // Refresh data to show updated status
       const updatedDetails = await serviceApiService.getEnquiryServiceDetails(enquiryId);
       setServiceDetails(updatedDetails);
 
+      // Notify parent component to refresh the main service list
       if (onServiceUpdated) {
         onServiceUpdated();
       }
@@ -96,34 +111,41 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
   };
 
   const completeService = async () => {
-    if (!serviceDetails || !selectedFile) {
-      alert("Please select a photo to complete the service.");
-      return;
-    }
+    if (!serviceDetails || !previewImage) return;
 
     try {
-      const serviceTypeData = serviceDetails.serviceTypes?.find(s => s.type === serviceType);
+      // Find the service type ID
+      const serviceTypeData = serviceDetails.serviceTypes?.find(s => {
+        if (s.type !== serviceType) return false;
+        if (!productItemKey) return true;
+        const [p, idxStr] = productItemKey.split('-');
+        const idx = parseInt(idxStr, 10);
+        return (s as any).product === p && (s as any).itemIndex === idx;
+      });
       if (!serviceTypeData?.id) {
         alert('Service type not found');
         return;
       }
 
-      const compressedImageData = await imageUploadHelper.handleImageUpload(selectedFile);
-      await serviceApiService.completeService(enquiryId, serviceTypeData.id, compressedImageData, notes);
-
+      // Call API to complete service
+      await serviceApiService.completeService(enquiryId, serviceTypeData.id, previewImage, notes);
       console.log('✅ Service completed successfully');
 
-      // Clear the form but preserve the submitted image for display
-      if (selectedImage) {
-        URL.revokeObjectURL(selectedImage);
-      }
-      setSelectedImage(null);
-      setSelectedFile(null);
+      // Reset form - clear both preview and notes
+      setPreviewImage(null);
       setNotes("");
 
+      // Reset file input
+      const fileInput = document.getElementById('after-photo') as HTMLInputElement;
+      if (fileInput) {
+        fileInput.value = '';
+      }
+
+      // Refresh data to show updated status
       const updatedDetails = await serviceApiService.getEnquiryServiceDetails(enquiryId);
       setServiceDetails(updatedDetails);
 
+      // Notify parent component to refresh the main service list
       if (onServiceUpdated) {
         onServiceUpdated();
       }
@@ -132,15 +154,6 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
       alert('Failed to complete service. Please try again.');
     }
   };
-
-  // Cleanup function to revoke object URLs when component unmounts
-  useEffect(() => {
-    return () => {
-      if (selectedImage) {
-        URL.revokeObjectURL(selectedImage);
-      }
-    };
-  }, [selectedImage]);
 
   if (loading) {
     return (
@@ -181,18 +194,26 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
     );
   }
 
-  const serviceTypeData = serviceDetails.serviceTypes?.find(s => s.type === serviceType);
+  // Find the specific service type (match product/item if provided)
+  const serviceTypeData = serviceDetails.serviceTypes?.find(s => {
+    if (s.type !== serviceType) return false;
+    if (!productItemKey) return true;
+    const [p, idxStr] = productItemKey.split('-');
+    const idx = parseInt(idxStr, 10);
+    return (s as any).product === p && (s as any).itemIndex === idx;
+  });
 
   return (
     <div className="space-y-4 animate-fade-in p-2 sm:p-0">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <Button variant="outline" size="sm" onClick={onBack}>
+      {/* Header - Mobile Optimized */}
+      <div className="relative flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-center justify-between">
+        <div className="flex flex-col space-y-2 sm:space-y-0 sm:flex-row sm:items-center sm:space-x-4">
+          <Button variant="outline" size="sm" onClick={onBack} className="w-fit">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
           <div>
-            <h1 className="text-xl font-bold text-foreground">
+            <h1 className="text-lg sm:text-xl font-bold text-foreground">
               {serviceType}
             </h1>
             <p className="text-sm text-muted-foreground">
@@ -200,20 +221,28 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
             </p>
           </div>
         </div>
+
+        {/* Top-right badge */}
         {serviceTypeData && (
-          <Badge className={`${getStatusColor(serviceTypeData.status)} text-sm px-3 py-1`}>
-            {serviceTypeData.status}
+          <Badge
+            className={`${getStatusColor(
+              serviceTypeData.status
+            )} text-sm px-3 py-1 w-fit absolute top-0 right-0 sm:static`}
+          >
+            {capitalizeFirst(serviceTypeData.status)}
           </Badge>
         )}
       </div>
 
+
+      {/* Compact Info - Mobile Optimized */}
       <Card className="p-4 bg-gradient-card border-0 shadow-soft">
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <p><span className="font-medium">Status:</span> {serviceTypeData?.status || 'pending'}</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-sm">
+          <div className="space-y-1">
+            <p><span className="font-medium">Status:</span> {capitalizeFirst(serviceTypeData?.status || 'pending')}</p>
             <p><span className="font-medium">Amount:</span> ₹{serviceDetails.quotedAmount || 0}</p>
           </div>
-          <div>
+          <div className="space-y-1">
             {serviceTypeData?.startedAt && (
               <p><span className="font-medium">Started:</span> {new Date(serviceTypeData.startedAt).toLocaleDateString()}</p>
             )}
@@ -224,125 +253,64 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
         </div>
       </Card>
 
-      <div className="grid grid-cols-2 gap-4">
+      {/* Photos Section - Mobile Optimized */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Before Photos (thumbnails) */}
         <Card className="p-4 bg-gradient-card border-0 shadow-soft">
-          <h3 className="text-sm font-semibold text-foreground mb-2">Before Photo</h3>
-          {serviceTypeData?.photos?.beforePhoto ? (
-            <div className="space-y-2">
-              <div className="relative overflow-hidden rounded-md border" style={{ paddingTop: '75%' }}>
-                <img
-                  src={serviceTypeData.photos.beforePhoto}
-                  alt="Before service"
-                  className="absolute inset-0 h-full w-full object-contain"
-                  loading="lazy"
-                  onError={(e) => {
-                    console.error('Failed to load before photo:', e);
-                    e.currentTarget.style.display = 'none';
-                  }}
-                />
+          <h3 className="text-sm font-semibold text-foreground mb-2">Before Photos</h3>
+          {(() => {
+            const items = (serviceDetails as any).itemPhotos as Array<any> | undefined;
+            let beforeList: string[] = [];
+            if (items && items.length > 0) {
+              const sel = productItemKey
+                ? items.find(it => `${it.product}-${it.itemIndex}` === productItemKey)
+                : items[0];
+              if (sel) {
+                const legacy = Array.isArray((sel as any).photos) ? (sel as any).photos as string[] : undefined;
+                const grouped = !legacy ? ((sel as any).photos || {}) as { before?: string[] } : undefined;
+                beforeList = legacy || grouped?.before || [];
+              }
+            }
+            return beforeList.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {beforeList.map((src, idx) => (
+                  <img
+                    key={`bf-${idx}`}
+                    src={src}
+                    alt={`Before ${idx + 1}`}
+                    className="w-full h-32 object-cover rounded-md border bg-black cursor-pointer"
+                    loading="lazy"
+                    onClick={() => setModalImage(src)}
+                  />
+                ))}
               </div>
-              {serviceTypeData.photos.beforeNotes && (
-                <p className="text-xs text-muted-foreground">{serviceTypeData.photos.beforeNotes}</p>
-              )}
-            </div>
-          ) : (
-            <div className="text-center py-6 text-muted-foreground">
-              <Camera className="h-8 w-8 mx-auto mb-1 opacity-50" />
-              <p className="text-xs">No before photo</p>
-            </div>
-          )}
+            ) : (
+              <div className="text-xs text-muted-foreground">No before photos</div>
+            );
+          })()}
         </Card>
 
+        {/* After Photo (upload and preview) */}
         <Card className="p-4 bg-gradient-card border-0 shadow-soft">
           <h3 className="text-sm font-semibold text-foreground mb-2">After Photo</h3>
-          {serviceTypeData?.photos?.afterPhoto ? (
+          {(serviceTypeData as any)?.photos?.after?.[0] ? (
             <div className="space-y-2">
-              <div className="relative overflow-hidden rounded-md border" style={{ paddingTop: '75%' }}>
-                <img
-                  src={serviceTypeData.photos.afterPhoto}
-                  alt="After service"
-                  className="absolute inset-0 h-full w-full object-contain"
-                  loading="lazy"
-                  onError={(e) => {
-                    console.error('Failed to load after photo:', e);
-                    e.currentTarget.style.display = 'none';
-                  }}
-                />
-              </div>
-              {serviceTypeData.photos.afterNotes && (
-                <p className="text-xs text-muted-foreground">{serviceTypeData.photos.afterNotes}</p>
-              )}
-            </div>
-          ) : (
-            <div className="text-center py-6 text-muted-foreground">
-              <Camera className="h-8 w-8 mx-auto mb-1 opacity-50" />
-              <p className="text-xs">No after photo</p>
-            </div>
-          )}
-        </Card>
-      </div>
-
-      <Card className="p-4 bg-gradient-card border-0 shadow-soft">
-        <h3 className="text-sm font-semibold text-foreground mb-3">Actions</h3>
-
-        {serviceTypeData?.status === "pending" && (
-          <div className="space-y-3">
-            <div className="space-y-2">
-              <Label className="text-xs">Take Before Photo</Label>
-              <div className="flex gap-2">
-                <Input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                  id="before-photo"
-                />
-                <Label
-                  htmlFor="before-photo"
-                  className="cursor-pointer flex items-center justify-center space-x-2 border border-input bg-background px-3 py-2 text-xs ring-offset-background hover:bg-accent hover:text-accent-foreground rounded-md flex-1"
-                >
-                  <Camera className="h-3 w-3" />
-                  <span>Take Photo</span>
-                </Label>
-              </div>
-              {selectedImage && (
-                <div className="mt-2">
-                  <img
-                    src={selectedImage}
-                    alt="Before photo preview"
-                    className="w-full h-24 object-contain rounded-md border"
-                  />
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-1">
-              <Label className="text-xs">Notes (Optional)</Label>
-              <Textarea
-                placeholder="Add notes..."
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows={2}
-                className="text-xs"
+              <img
+                src={(serviceTypeData as any).photos.after[0]}
+                alt="After service"
+                className="w-full h-48 sm:h-64 object-contain rounded-md border bg-black cursor-pointer"
+                loading="lazy"
+                onClick={() => setModalImage((serviceTypeData as any).photos.after[0])}
               />
             </div>
-
-            <Button
-              onClick={startService}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-sm"
-              disabled={!selectedFile}
-            >
-              <Clock className="h-3 w-3 mr-1" />
-              Start Service
-            </Button>
-          </div>
-        )}
-
-        {serviceTypeData?.status === "in-progress" && (
-          <div className="space-y-3">
-            <div className="space-y-2">
-              <Label className="text-xs">Take After Photo</Label>
-              <div className="flex gap-2">
+          ) : (
+            <>
+              <label
+                htmlFor="after-photo"
+                className="flex flex-col items-center justify-center text-center py-8 sm:py-6 text-muted-foreground border-2 border-dashed rounded-md cursor-pointer hover:bg-accent/30 transition"
+              >
+                <Camera className="h-8 w-8 mb-2 opacity-50" />
+                <p className="text-xs">Click to upload after photo</p>
                 <Input
                   type="file"
                   accept="image/*"
@@ -350,40 +318,57 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
                   className="hidden"
                   id="after-photo"
                 />
-                <Label
-                  htmlFor="after-photo"
-                  className="cursor-pointer flex items-center justify-center space-x-2 border border-input bg-background px-3 py-2 text-xs ring-offset-background hover:bg-accent hover:text-accent-foreground rounded-md flex-1"
-                >
-                  <Camera className="h-3 w-3" />
-                  <span>Take Photo</span>
-                </Label>
-              </div>
-              {selectedImage && (
-                <div className="mt-2">
+              </label>
+              {previewImage && (
+                <div className="mt-2 flex items-center justify-center bg-gray-100 border rounded-md overflow-hidden">
                   <img
-                    src={selectedImage}
+                    src={previewImage}
                     alt="After photo preview"
-                    className="w-full h-24 object-contain rounded-md border"
+                    className="max-h-48 sm:max-h-64 w-auto object-contain rounded-md"
+                  />
+                </div>
+              )}
+            </>
+          )}
+        </Card>
+      </div>
+
+      {/* Action Section - Mobile Optimized */}
+      <Card className="p-4 bg-gradient-card border-0 shadow-soft">
+        <h3 className="text-sm font-semibold text-foreground mb-3">Actions</h3>
+
+        {(serviceTypeData?.status === "pending" || serviceTypeData?.status === "in-progress") && (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              {previewImage && (
+                <div className="mt-2 flex items-center justify-center bg-gray-100 border rounded-md overflow-hidden">
+                  <img
+                    src={previewImage}
+                    alt="After photo preview"
+                    className="max-h-48 sm:max-h-64 w-auto object-contain rounded-md"
                   />
                 </div>
               )}
             </div>
 
-            <div className="space-y-1">
+            <div className="space-y-2">
               <Label className="text-xs">Work Notes (Optional)</Label>
               <Textarea
                 placeholder="Add work notes..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                rows={2}
-                className="text-xs"
+                rows={3}
+                className="text-xs resize-none"
               />
             </div>
 
             <Button
-              onClick={completeService}
+              onClick={async () => {
+                await completeService(); // your existing API call
+                if (onBack) onBack();    // ✅ navigate back after completion
+              }}
               className="w-full bg-green-600 hover:bg-green-700 text-sm"
-              disabled={!selectedFile}
+              disabled={!previewImage}
             >
               <CheckCircle className="h-3 w-3 mr-1" />
               Complete Service
@@ -392,15 +377,39 @@ export function ServiceTypeDetail({ enquiryId, serviceType, onBack, onServiceUpd
         )}
 
         {serviceTypeData?.status === "done" && (
-          <div className="text-center py-4">
-            <CheckCircle className="h-8 w-8 mx-auto mb-1 text-green-500" />
-            <p className="text-sm font-semibold text-foreground">Service Completed!</p>
+          <div className="text-center py-6">
+            <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-500" />
+            <p className="text-sm font-semibold text-foreground mb-1">Service Completed!</p>
             <p className="text-xs text-muted-foreground">
               This service has been completed successfully.
             </p>
           </div>
         )}
       </Card>
+
+
+      {/* Photo Viewer Modal - Mobile Optimized */}
+      {modalImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+          onClick={() => setModalImage(null)}
+        >
+          <div className="relative max-w-4xl w-full max-h-[90vh]">
+            <img
+              src={modalImage}
+              alt="Full view"
+              className="w-full max-h-[90vh] object-contain rounded-lg shadow-lg cursor-zoom-in"
+              onClick={(e) => e.stopPropagation()}
+            />
+            <button
+              onClick={() => setModalImage(null)}
+              className="absolute top-2 right-2 bg-black/70 text-white px-3 py-1 rounded-md hover:bg-black text-sm"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

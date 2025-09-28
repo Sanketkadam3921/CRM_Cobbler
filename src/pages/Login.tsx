@@ -4,7 +4,6 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { Eye, EyeOff, Mail, Lock, Wrench } from "lucide-react";
 import { toast } from "sonner";
 
@@ -15,9 +14,12 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Static credentials for demo
-  const DEMO_EMAIL = "admin@cobbler.com";
-  const DEMO_PASSWORD = "password123";
+  // --- CHANGE: Replaced single demo user with a list of users ---
+  // In a real application, this user data would come from a secure backend API.
+  const users = [
+    { email: "admin@cobbler.com", password: "password123", name: "Admin User" },
+    { email: "staff@cobbler.com", password: "password456", name: "Staff User" }
+  ];
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,12 +28,18 @@ const Login = () => {
     // Simulate API call delay
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    if (email === DEMO_EMAIL && password === DEMO_PASSWORD) {
-      // Store auth state in localStorage
-      localStorage.setItem("isAuthenticated", "true");
-      localStorage.setItem("userEmail", email);
+    // --- CHANGE: Find the user in the array instead of a direct comparison ---
+    const foundUser = users.find(
+      (user) => user.email === email && user.password === password
+    );
 
-      toast.success("Login successful! Welcome back.");
+    if (foundUser) {
+      // Store auth state and user info in localStorage
+      localStorage.setItem("isAuthenticated", "true");
+      localStorage.setItem("userEmail", foundUser.email);
+      localStorage.setItem("userName", foundUser.name); // Store the user's name
+
+      toast.success(`Login successful! Welcome back, ${foundUser.name}.`);
       navigate("/dashboard");
     } else {
       toast.error("Invalid credentials. Please try again.");
@@ -59,14 +67,10 @@ const Login = () => {
         {/* Login Form */}
         <Card className="p-8 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
           {/* Demo Credentials Notice */}
-          {/* <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <h3 className="text-sm font-medium text-blue-800 mb-2">Demo Credentials</h3>
-            <p className="text-sm text-blue-700">
-              <strong>Email:</strong> admin@cobbler.com<br/>
-              <strong>Password:</strong> password123
-            </p>
-          </div> */}
 
+          </div>
           <form onSubmit={handleLogin} className="space-y-6">
             {/* Email Field */}
             <div className="space-y-2">

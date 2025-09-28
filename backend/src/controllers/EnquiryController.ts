@@ -4,22 +4,22 @@ import { logApi } from '../utils/logger';
 import { Enquiry, ApiResponse, PaginatedResponse, WorkflowStage } from '../types';
 
 export class EnquiryController {
-  
+
   // GET /api/enquiries - Get all enquiries with pagination and filtering
   static async getAll(req: Request, res: Response): Promise<void> {
     const startTime = Date.now();
-    
+
     try {
       logApi.request(req.method, req.url, req.ip || 'unknown', req.get('User-Agent') || 'unknown');
-      
-      const { 
-        page = 1, 
-        limit = 50, 
-        status, 
-        currentStage, 
-        search 
+
+      const {
+        page = 1,
+        limit = 50,
+        status,
+        currentStage,
+        search
       } = req.query;
-      
+
       const filters = {
         page: Number(page),
         limit: Number(limit),
@@ -27,9 +27,9 @@ export class EnquiryController {
         currentStage: currentStage as string,
         search: search as string
       };
-      
+
       const result = await EnquiryModel.getAll(filters);
-      
+
       const response: PaginatedResponse<Enquiry> = {
         data: result.data,
         total: result.total,
@@ -37,19 +37,19 @@ export class EnquiryController {
         limit: result.limit,
         totalPages: result.totalPages
       };
-      
+
       const duration = Date.now() - startTime;
       logApi.response(req.method, req.url, 200, duration);
-      
+
       res.json({
         success: true,
         data: response
       });
-      
+
     } catch (error) {
       const duration = Date.now() - startTime;
       logApi.error(req.method, req.url, error);
-      
+
       res.status(500).json({
         success: false,
         error: 'Failed to retrieve enquiries',
@@ -61,13 +61,13 @@ export class EnquiryController {
   // GET /api/enquiries/:id - Get enquiry by ID
   static async getById(req: Request, res: Response): Promise<void> {
     const startTime = Date.now();
-    
+
     try {
       logApi.request(req.method, req.url, req.ip || 'unknown', req.get('User-Agent') || 'unknown');
-      
+
       const { id } = req.params;
       const enquiryId = Number(id);
-      
+
       if (isNaN(enquiryId)) {
         res.status(400).json({
           success: false,
@@ -76,9 +76,9 @@ export class EnquiryController {
         });
         return;
       }
-      
+
       const enquiry = await EnquiryModel.getById(enquiryId);
-      
+
       if (!enquiry) {
         res.status(404).json({
           success: false,
@@ -87,19 +87,19 @@ export class EnquiryController {
         });
         return;
       }
-      
+
       const duration = Date.now() - startTime;
       logApi.response(req.method, req.url, 200, duration);
-      
+
       res.json({
         success: true,
         data: enquiry
       });
-      
+
     } catch (error) {
       const duration = Date.now() - startTime;
       logApi.error(req.method, req.url, error);
-      
+
       res.status(500).json({
         success: false,
         error: 'Failed to retrieve enquiry',
@@ -111,16 +111,21 @@ export class EnquiryController {
   // POST /api/enquiries - Create new enquiry
   static async create(req: Request, res: Response): Promise<void> {
     const startTime = Date.now();
-    
+
     try {
       logApi.request(req.method, req.url, req.ip || 'unknown', req.get('User-Agent') || 'unknown');
-      
+
       const enquiryData = req.body;
-      
+
       // Validate required fields
-      const requiredFields = ['customerName', 'phone', 'address', 'message', 'inquiryType', 'product', 'quantity'];
+      const requiredFields = ['customerName', 'phone', 'address', 'message', 'inquiryType'];
       const missingFields = requiredFields.filter(field => !enquiryData[field]);
-      
+
+      // Validate products array
+      if (!enquiryData.products || !Array.isArray(enquiryData.products) || enquiryData.products.length === 0) {
+        missingFields.push('products');
+      }
+
       if (missingFields.length > 0) {
         res.status(400).json({
           success: false,
@@ -129,31 +134,34 @@ export class EnquiryController {
         });
         return;
       }
-      
+
       // Set default values
       const newEnquiry = {
         ...enquiryData,
+        // For backward compatibility, set product and quantity from first product if not provided
+        product: enquiryData.product || (enquiryData.products && enquiryData.products.length > 0 ? enquiryData.products[0].product : 'Bag'),
+        quantity: enquiryData.quantity || (enquiryData.products && enquiryData.products.length > 0 ? enquiryData.products[0].quantity : 1),
         date: enquiryData.date || new Date().toISOString().split('T')[0],
         status: enquiryData.status || 'new',
         contacted: enquiryData.contacted || false,
         currentStage: enquiryData.currentStage || 'enquiry'
       };
-      
+
       const createdEnquiry = await EnquiryModel.create(newEnquiry);
-      
+
       const duration = Date.now() - startTime;
       logApi.response(req.method, req.url, 201, duration);
-      
+
       res.status(201).json({
         success: true,
         data: createdEnquiry,
         message: 'Enquiry created successfully'
       });
-      
+
     } catch (error) {
       const duration = Date.now() - startTime;
       logApi.error(req.method, req.url, error);
-      
+
       res.status(500).json({
         success: false,
         error: 'Failed to create enquiry',
@@ -165,13 +173,13 @@ export class EnquiryController {
   // PUT /api/enquiries/:id - Update enquiry
   static async update(req: Request, res: Response): Promise<void> {
     const startTime = Date.now();
-    
+
     try {
       logApi.request(req.method, req.url, req.ip || 'unknown', req.get('User-Agent') || 'unknown');
-      
+
       const { id } = req.params;
       const enquiryId = Number(id);
-      
+
       if (isNaN(enquiryId)) {
         res.status(400).json({
           success: false,
@@ -180,10 +188,10 @@ export class EnquiryController {
         });
         return;
       }
-      
+
       const updates = req.body;
       const updatedEnquiry = await EnquiryModel.update(enquiryId, updates);
-      
+
       if (!updatedEnquiry) {
         res.status(404).json({
           success: false,
@@ -192,20 +200,20 @@ export class EnquiryController {
         });
         return;
       }
-      
+
       const duration = Date.now() - startTime;
       logApi.response(req.method, req.url, 200, duration);
-      
+
       res.json({
         success: true,
         data: updatedEnquiry,
         message: 'Enquiry updated successfully'
       });
-      
+
     } catch (error) {
       const duration = Date.now() - startTime;
       logApi.error(req.method, req.url, error);
-      
+
       res.status(500).json({
         success: false,
         error: 'Failed to update enquiry',
@@ -217,13 +225,13 @@ export class EnquiryController {
   // DELETE /api/enquiries/:id - Delete enquiry
   static async delete(req: Request, res: Response): Promise<void> {
     const startTime = Date.now();
-    
+
     try {
       logApi.request(req.method, req.url, req.ip || 'unknown', req.get('User-Agent') || 'unknown');
-      
+
       const { id } = req.params;
       const enquiryId = Number(id);
-      
+
       if (isNaN(enquiryId)) {
         res.status(400).json({
           success: false,
@@ -232,9 +240,9 @@ export class EnquiryController {
         });
         return;
       }
-      
+
       const deleted = await EnquiryModel.delete(enquiryId);
-      
+
       if (!deleted) {
         res.status(404).json({
           success: false,
@@ -243,19 +251,19 @@ export class EnquiryController {
         });
         return;
       }
-      
+
       const duration = Date.now() - startTime;
       logApi.response(req.method, req.url, 200, duration);
-      
+
       res.json({
         success: true,
         message: 'Enquiry deleted successfully'
       });
-      
+
     } catch (error) {
       const duration = Date.now() - startTime;
       logApi.error(req.method, req.url, error);
-      
+
       res.status(500).json({
         success: false,
         error: 'Failed to delete enquiry',
@@ -267,24 +275,24 @@ export class EnquiryController {
   // GET /api/enquiries/stats - Get CRM statistics
   static async getStats(req: Request, res: Response): Promise<void> {
     const startTime = Date.now();
-    
+
     try {
       logApi.request(req.method, req.url, req.ip || 'unknown', req.get('User-Agent') || 'unknown');
-      
+
       const stats = await EnquiryModel.getStats();
-      
+
       const duration = Date.now() - startTime;
       logApi.response(req.method, req.url, 200, duration);
-      
+
       res.json({
         success: true,
         data: stats
       });
-      
+
     } catch (error) {
       const duration = Date.now() - startTime;
       logApi.error(req.method, req.url, error);
-      
+
       res.status(500).json({
         success: false,
         error: 'Failed to retrieve statistics',
@@ -296,13 +304,13 @@ export class EnquiryController {
   // PATCH /api/enquiries/:id/contact - Mark enquiry as contacted
   static async markContacted(req: Request, res: Response): Promise<void> {
     const startTime = Date.now();
-    
+
     try {
       logApi.request(req.method, req.url, req.ip || 'unknown', req.get('User-Agent') || 'unknown');
-      
+
       const { id } = req.params;
       const enquiryId = Number(id);
-      
+
       if (isNaN(enquiryId)) {
         res.status(400).json({
           success: false,
@@ -311,9 +319,9 @@ export class EnquiryController {
         });
         return;
       }
-      
+
       const updatedEnquiry = await EnquiryModel.markContacted(enquiryId);
-      
+
       if (!updatedEnquiry) {
         res.status(404).json({
           success: false,
@@ -322,20 +330,20 @@ export class EnquiryController {
         });
         return;
       }
-      
+
       const duration = Date.now() - startTime;
       logApi.response(req.method, req.url, 200, duration);
-      
+
       res.json({
         success: true,
         data: updatedEnquiry,
         message: 'Enquiry marked as contacted successfully'
       });
-      
+
     } catch (error) {
       const duration = Date.now() - startTime;
       logApi.error(req.method, req.url, error);
-      
+
       res.status(500).json({
         success: false,
         error: 'Failed to mark enquiry as contacted',
@@ -347,15 +355,15 @@ export class EnquiryController {
   // PATCH /api/enquiries/:id/convert - Convert enquiry
   static async convert(req: Request, res: Response): Promise<void> {
     const startTime = Date.now();
-    
+
     try {
       logApi.request(req.method, req.url, req.ip || 'unknown', req.get('User-Agent') || 'unknown');
-      
+
       const { id } = req.params;
       const { quotedAmount } = req.body;
-      
+
       const enquiryId = Number(id);
-      
+
       if (isNaN(enquiryId)) {
         res.status(400).json({
           success: false,
@@ -364,7 +372,7 @@ export class EnquiryController {
         });
         return;
       }
-      
+
       if (!quotedAmount || isNaN(Number(quotedAmount)) || Number(quotedAmount) < 0) {
         res.status(400).json({
           success: false,
@@ -373,9 +381,9 @@ export class EnquiryController {
         });
         return;
       }
-      
+
       const updatedEnquiry = await EnquiryModel.convert(enquiryId, Number(quotedAmount));
-      
+
       if (!updatedEnquiry) {
         res.status(404).json({
           success: false,
@@ -384,20 +392,20 @@ export class EnquiryController {
         });
         return;
       }
-      
+
       const duration = Date.now() - startTime;
       logApi.response(req.method, req.url, 200, duration);
-      
+
       res.json({
         success: true,
         data: updatedEnquiry,
         message: 'Enquiry converted successfully'
       });
-      
+
     } catch (error) {
       const duration = Date.now() - startTime;
       logApi.error(req.method, req.url, error);
-      
+
       res.status(500).json({
         success: false,
         error: 'Failed to convert enquiry',
@@ -409,15 +417,15 @@ export class EnquiryController {
   // PATCH /api/enquiries/:id/stage - Transition enquiry to next stage
   static async transitionStage(req: Request, res: Response): Promise<void> {
     const startTime = Date.now();
-    
+
     try {
       logApi.request(req.method, req.url, req.ip || 'unknown', req.get('User-Agent') || 'unknown');
-      
+
       const { id } = req.params;
       const { stage } = req.body;
-      
+
       const enquiryId = Number(id);
-      
+
       if (isNaN(enquiryId)) {
         res.status(400).json({
           success: false,
@@ -426,7 +434,7 @@ export class EnquiryController {
         });
         return;
       }
-      
+
       if (!stage) {
         res.status(400).json({
           success: false,
@@ -435,7 +443,7 @@ export class EnquiryController {
         });
         return;
       }
-      
+
       const validStages = ['enquiry', 'pickup', 'service', 'billing', 'delivery', 'completed'];
       if (!validStages.includes(stage)) {
         res.status(400).json({
@@ -445,9 +453,9 @@ export class EnquiryController {
         });
         return;
       }
-      
+
       const updatedEnquiry = await EnquiryModel.transitionStage(enquiryId, stage as WorkflowStage);
-      
+
       if (!updatedEnquiry) {
         res.status(404).json({
           success: false,
@@ -456,20 +464,20 @@ export class EnquiryController {
         });
         return;
       }
-      
+
       const duration = Date.now() - startTime;
       logApi.response(req.method, req.url, 200, duration);
-      
+
       res.json({
         success: true,
         data: updatedEnquiry,
         message: 'Enquiry stage transitioned successfully'
       });
-      
+
     } catch (error) {
       const duration = Date.now() - startTime;
       logApi.error(req.method, req.url, error);
-      
+
       res.status(500).json({
         success: false,
         error: 'Failed to transition enquiry stage',
@@ -481,12 +489,12 @@ export class EnquiryController {
   // GET /api/enquiries/stage/:stage - Get enquiries by stage
   static async getByStage(req: Request, res: Response): Promise<void> {
     const startTime = Date.now();
-    
+
     try {
       logApi.request(req.method, req.url, req.ip || 'unknown', req.get('User-Agent') || 'unknown');
-      
+
       const { stage } = req.params;
-      
+
       const validStages = ['enquiry', 'pickup', 'service', 'billing', 'delivery', 'completed'];
       if (!validStages.includes(stage)) {
         res.status(400).json({
@@ -496,21 +504,21 @@ export class EnquiryController {
         });
         return;
       }
-      
+
       const enquiries = await EnquiryModel.getByStage(stage as WorkflowStage);
-      
+
       const duration = Date.now() - startTime;
       logApi.response(req.method, req.url, 200, duration);
-      
+
       res.json({
         success: true,
         data: enquiries
       });
-      
+
     } catch (error) {
       const duration = Date.now() - startTime;
       logApi.error(req.method, req.url, error);
-      
+
       res.status(500).json({
         success: false,
         error: 'Failed to retrieve enquiries by stage',

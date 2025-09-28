@@ -1,18 +1,42 @@
 import { executeQuery, executeTransaction } from '../config/database';
-import { 
-  ServiceDetails, 
-  ServiceTypeStatus, 
-  ServiceStats, 
+import {
+  ServiceDetails,
+  ServiceTypeStatus,
+  ServiceStats,
   ServiceType,
   ServiceStatus,
   DatabaseServiceDetails,
   DatabaseServiceEnquiryJoin,
   DatabaseServiceType,
-  DatabasePhoto
+  DatabasePhoto,
+  ProductType,
+  ProductItem,
+  DatabaseEnquiryProduct
 } from '../types';
 
 export class ServiceModel {
-  
+
+  // Get products for an enquiry
+  private static async getEnquiryProducts(enquiryId: number): Promise<ProductItem[]> {
+    try {
+      const query = `
+        SELECT product, quantity 
+        FROM enquiry_products 
+        WHERE enquiry_id = ?
+        ORDER BY id
+      `;
+
+      const rows = await executeQuery<DatabaseEnquiryProduct>(query, [enquiryId]);
+      return rows.map(row => ({
+        product: row.product,
+        quantity: row.quantity
+      }));
+    } catch (error) {
+      console.error('Failed to get enquiry products', error);
+      return [];
+    }
+  }
+
   // Get all service stage enquiries with complete details
   static async getServiceEnquiries(): Promise<ServiceDetails[]> {
     try {
@@ -44,24 +68,17 @@ export class ServiceModel {
         WHERE e.current_stage = 'service'
         ORDER BY e.created_at DESC
       `;
-      
+
       const enquiries = await executeQuery<DatabaseServiceEnquiryJoin>(query);
-      
-      console.log('🔍 ServiceModel.getServiceEnquiries - Raw query result:', enquiries);
-      console.log('🔍 Found enquiries in service stage:', enquiries.length);
-      
-      // Get service types for each enquiry
+
       const serviceDetails: ServiceDetails[] = [];
-      
+
       for (const enquiry of enquiries) {
-        console.log('🔍 Processing enquiry:', enquiry.enquiry_id, enquiry.customer_name);
-        
         const serviceTypes = await this.getServiceTypes(enquiry.enquiry_id);
         const overallPhotos = await this.getOverallPhotos(enquiry.enquiry_id);
-        
-        console.log('🔍 Service types for enquiry', enquiry.enquiry_id, ':', serviceTypes.length);
-        console.log('🔍 Overall photos for enquiry', enquiry.enquiry_id, ':', overallPhotos);
-        
+        const itemPhotos = await this.getItemizedProductItems(enquiry.enquiry_id);
+        const products = await this.getEnquiryProducts(enquiry.enquiry_id);
+
         serviceDetails.push({
           id: enquiry.service_detail_id,
           enquiryId: enquiry.enquiry_id,
@@ -70,6 +87,7 @@ export class ServiceModel {
           address: enquiry.address,
           product: enquiry.product,
           quantity: enquiry.quantity,
+          products: products, // Add products array
           quotedAmount: enquiry.quoted_amount,
           estimatedCost: enquiry.estimated_cost,
           actualCost: enquiry.actual_cost,
@@ -82,20 +100,20 @@ export class ServiceModel {
           overallBeforeNotes: enquiry.overall_before_notes,
           overallAfterNotes: enquiry.overall_after_notes,
           serviceTypes,
-          overallPhotos: overallPhotos, // Add the actual photo data
+          overallPhotos,
+          itemPhotos,       // standard key for FE
           createdAt: enquiry.created_at,
           updatedAt: enquiry.updated_at
         });
       }
-      
-      console.log('🔍 Final service details to return:', serviceDetails.length);
+
       return serviceDetails;
     } catch (error) {
       console.error('Error getting service enquiries:', error);
       throw error;
     }
   }
-  
+
   // Get service types for a specific enquiry
   static async getServiceTypes(enquiryId: number): Promise<ServiceTypeStatus[]> {
     try {
@@ -109,21 +127,22 @@ export class ServiceModel {
           st.started_at,
           st.completed_at,
           st.work_notes,
+          st.product,
+          st.item_index,
           st.created_at,
           st.updated_at
         FROM service_types st
         WHERE st.enquiry_id = ?
         ORDER BY st.created_at ASC
       `;
-      
+
       const serviceTypes = await executeQuery<DatabaseServiceType>(query, [enquiryId]);
-      
-      // Get photos for each service type
+
       const serviceTypeStatuses: ServiceTypeStatus[] = [];
-      
+
       for (const serviceType of serviceTypes) {
         const photos = await this.getServicePhotos(serviceType.id);
-        
+
         serviceTypeStatuses.push({
           id: serviceType.id,
           type: serviceType.service_type as ServiceType,
@@ -133,63 +152,70 @@ export class ServiceModel {
           startedAt: serviceType.started_at,
           completedAt: serviceType.completed_at,
           workNotes: serviceType.work_notes,
+          product: (serviceType as any).product,
+          itemIndex: (serviceType as any).item_index,
           photos,
           createdAt: serviceType.created_at,
           updatedAt: serviceType.updated_at
         });
       }
-      
+
       return serviceTypeStatuses;
     } catch (error) {
       console.error('Error getting service types:', error);
       throw error;
     }
   }
-  
+
   // Get photos for a specific service type
   static async getServicePhotos(serviceTypeId: number): Promise<{
-    beforePhoto?: string;
-    afterPhoto?: string;
-    beforeNotes?: string;
-    afterNotes?: string;
+    before?: string[];
+    after?: string[];
+    received?: string[];
+    other?: string[];
   }> {
     try {
       const query = `
         SELECT 
           photo_type,
-          photo_data,
-          notes
+          photo_data
         FROM photos
         WHERE service_type_id = ?
         ORDER BY created_at ASC
       `;
-      
+
       const photos = await executeQuery<DatabasePhoto>(query, [serviceTypeId]);
-      
+
       const result: {
-        beforePhoto?: string;
-        afterPhoto?: string;
-        beforeNotes?: string;
-        afterNotes?: string;
-      } = {};
-      
+        before: string[];
+        after: string[];
+        received: string[];
+        other: string[];
+      } = { before: [], after: [], received: [], other: [] };
+
       photos.forEach(photo => {
-        if (photo.photo_type === 'before_photo') {
-          result.beforePhoto = photo.photo_data;
-          result.beforeNotes = photo.notes;
-        } else if (photo.photo_type === 'after_photo') {
-          result.afterPhoto = photo.photo_data;
-          result.afterNotes = photo.notes;
+        switch (photo.photo_type) {
+          case 'before_photo':
+            result.before.push(photo.photo_data);
+            break;
+          case 'after_photo':
+            result.after.push(photo.photo_data);
+            break;
+          case 'received_photo':
+            result.received.push(photo.photo_data);
+            break;
+          default:
+            result.other.push(photo.photo_data);
         }
       });
-      
+
       return result;
     } catch (error) {
       console.error('Error getting service photos:', error);
       throw error;
     }
   }
-  
+
   // Get overall photos for an enquiry
   static async getOverallPhotos(enquiryId: number): Promise<{
     beforePhoto?: string;
@@ -198,41 +224,22 @@ export class ServiceModel {
     afterNotes?: string;
   }> {
     try {
-      // First, try to get overall photos (service stage photos)
-      const overallQuery = `
-        SELECT 
-          photo_type,
-          photo_data,
-          notes
+      const query = `
+        SELECT photo_type, photo_data, notes
         FROM photos
-        WHERE enquiry_id = ? AND (photo_type = 'overall_before' OR photo_type = 'overall_after')
+        WHERE enquiry_id = ? AND photo_type IN ('overall_before', 'overall_after')
         ORDER BY created_at ASC
       `;
-      
-      const overallPhotos = await executeQuery<DatabasePhoto>(overallQuery, [enquiryId]);
-      
-      // Also get pickup photos (before_photo and after_photo) as they serve as the initial "before" photos
-      const pickupQuery = `
-        SELECT 
-          photo_type,
-          photo_data,
-          notes
-        FROM photos
-        WHERE enquiry_id = ? AND (photo_type = 'before_photo' OR photo_type = 'after_photo')
-        ORDER BY created_at ASC
-      `;
-      
-      const pickupPhotos = await executeQuery<DatabasePhoto>(pickupQuery, [enquiryId]);
-      
+      const photos = await executeQuery<DatabasePhoto>(query, [enquiryId]);
+
       const result: {
         beforePhoto?: string;
         afterPhoto?: string;
         beforeNotes?: string;
         afterNotes?: string;
       } = {};
-      
-      // Process overall photos first (service stage)
-      overallPhotos.forEach(photo => {
+
+      photos.forEach(photo => {
         if (photo.photo_type === 'overall_before') {
           result.beforePhoto = photo.photo_data;
           result.beforeNotes = photo.notes;
@@ -241,64 +248,106 @@ export class ServiceModel {
           result.afterNotes = photo.notes;
         }
       });
-      
-      // If no overall before photo exists, use pickup before_photo as the initial before photo
-      if (!result.beforePhoto) {
-        const pickupBeforePhoto = pickupPhotos.find(photo => photo.photo_type === 'before_photo');
-        if (pickupBeforePhoto) {
-          result.beforePhoto = pickupBeforePhoto.photo_data;
-          result.beforeNotes = pickupBeforePhoto.notes || 'Photo from pickup stage';
-        }
-      }
-      
-      // If no overall before photo exists, use pickup after_photo as the initial before photo
-      // (the photo collected at pickup becomes the "before" photo for service)
-      if (!result.beforePhoto) {
-        const pickupAfterPhoto = pickupPhotos.find(photo => photo.photo_type === 'after_photo');
-        if (pickupAfterPhoto) {
-          result.beforePhoto = pickupAfterPhoto.photo_data;
-          result.beforeNotes = pickupAfterPhoto.notes || 'Photo from pickup stage';
-        }
-      }
-      
-      // afterPhoto should remain empty until service is completed
-      // (we don't use pickup after_photo for this)
-      
+
       return result;
     } catch (error) {
       console.error('Error getting overall photos:', error);
       throw error;
     }
   }
-  
-  // Assign services to an enquiry
-  static async assignServices(enquiryId: number, serviceTypes: ServiceType[]): Promise<void> {
+
+  // Get per-item photos grouped into categories for each product item
+  static async getItemizedProductItems(enquiryId: number): Promise<Array<{ product: ProductType; itemIndex: number; photos: { before: string[]; after: string[]; received: string[]; other: string[] } }>> {
     try {
+      const query = `
+        SELECT product, item_index, stage, photo_type, photo_data
+        FROM photos
+        WHERE enquiry_id = ? AND product IS NOT NULL AND item_index IS NOT NULL
+        ORDER BY item_index ASC, created_at ASC
+      `;
+
+      const rows = await executeQuery<DatabasePhoto>(query, [enquiryId]);
+
+      const map = new Map<string, { product: ProductType; itemIndex: number; photos: { before: string[]; after: string[]; received: string[]; other: string[] } }>();
+
+      rows.forEach(row => {
+        const product = row.product as ProductType;
+        const itemIndex = row.item_index as number;
+        if (!product || itemIndex === undefined) return;
+
+        const key = `${product}-${itemIndex}`;
+        if (!map.has(key)) {
+          map.set(key, { product, itemIndex, photos: { before: [], after: [], received: [], other: [] } });
+        }
+
+        const entry = map.get(key)!;
+
+        const bucket: keyof typeof entry.photos = (() => {
+          if (row.stage === 'pickup' && row.photo_type === 'before_photo') return 'before';
+          if (row.stage === 'pickup' && row.photo_type === 'after_photo') return 'received';
+          if (row.stage === 'service' && row.photo_type === 'before_photo') return 'before';
+          if (row.stage === 'service' && row.photo_type === 'after_photo') return 'after';
+          return 'other';
+        })();
+
+        entry.photos[bucket].push(row.photo_data);
+      });
+
+      return Array.from(map.values());
+    } catch (error) {
+      console.error('Error getting itemized product item photos:', error);
+      return [];
+    }
+  }
+
+  // Assign services to an enquiry
+  static async assignServices(enquiryId: number, serviceTypes: ServiceType[], product?: ProductType, itemIndex?: number): Promise<void> {
+    try {
+      console.log('🔍 ServiceModel.assignServices called with:', {
+        enquiryId,
+        serviceTypes,
+        product,
+        itemIndex,
+        productType: typeof product,
+        itemIndexType: typeof itemIndex
+      });
+
       // First, ensure service_details record exists
       await this.ensureServiceDetailsExist(enquiryId);
-      
+
       // Insert service types
-      const queries = serviceTypes.map(serviceType => ({
-        query: `
-          INSERT INTO service_types (enquiry_id, service_type, status, created_at, updated_at)
-          VALUES (?, ?, 'pending', NOW(), NOW())
-        `,
-        params: [enquiryId, serviceType]
-      }));
-      
+      const queries = serviceTypes.map(serviceType => {
+        const queryParams = [enquiryId, serviceType, product || null, itemIndex || null];
+        console.log('🔍 Inserting service type with params:', {
+          serviceType,
+          product: product || null,
+          itemIndex: itemIndex || null,
+          params: queryParams
+        });
+
+        return {
+          query: `
+            INSERT INTO service_types (enquiry_id, service_type, status, product, item_index, created_at, updated_at)
+            VALUES (?, ?, 'pending', ?, ?, NOW(), NOW())
+          `,
+          params: queryParams
+        };
+      });
+
       await executeTransaction(queries);
+      console.log('✅ Services assigned successfully to database');
     } catch (error) {
       console.error('Error assigning services:', error);
       throw error;
     }
   }
-  
+
   // Ensure service_details record exists
   static async ensureServiceDetailsExist(enquiryId: number): Promise<void> {
     try {
       const checkQuery = 'SELECT id FROM service_details WHERE enquiry_id = ?';
       const existing = await executeQuery(checkQuery, [enquiryId]);
-      
+
       if (existing.length === 0) {
         const insertQuery = `
           INSERT INTO service_details (enquiry_id, created_at, updated_at)
@@ -311,7 +360,7 @@ export class ServiceModel {
       throw error;
     }
   }
-  
+
   // Start a service
   static async startService(serviceTypeId: number, beforePhoto: string, notes?: string): Promise<void> {
     try {
@@ -340,14 +389,14 @@ export class ServiceModel {
           params: [serviceTypeId, beforePhoto, notes || null, serviceTypeId]
         }
       ];
-      
+
       await executeTransaction(queries);
     } catch (error) {
       console.error('Error starting service:', error);
       throw error;
     }
   }
-  
+
   // Complete a service
   static async completeService(serviceTypeId: number, afterPhoto: string, notes?: string): Promise<void> {
     try {
@@ -376,14 +425,14 @@ export class ServiceModel {
           params: [serviceTypeId, afterPhoto, notes || null, serviceTypeId]
         }
       ];
-      
+
       await executeTransaction(queries);
     } catch (error) {
       console.error('Error completing service:', error);
       throw error;
     }
   }
-  
+
   // Save final overall photo
   static async saveFinalPhoto(enquiryId: number, afterPhoto: string, notes?: string): Promise<void> {
     try {
@@ -404,14 +453,14 @@ export class ServiceModel {
           params: [enquiryId]
         }
       ];
-      
+
       await executeTransaction(queries);
     } catch (error) {
       console.error('Error saving final photo:', error);
       throw error;
     }
   }
-  
+
   // Complete workflow and move to billing
   static async completeWorkflow(enquiryId: number, actualCost: number, workNotes?: string): Promise<void> {
     try {
@@ -433,14 +482,14 @@ export class ServiceModel {
           params: [actualCost, workNotes || null, enquiryId]
         }
       ];
-      
+
       await executeTransaction(queries);
     } catch (error) {
       console.error('Error completing workflow:', error);
       throw error;
     }
   }
-  
+
   // Get service statistics
   static async getServiceStats(): Promise<ServiceStats> {
     try {
@@ -454,18 +503,18 @@ export class ServiceModel {
         INNER JOIN enquiries e ON st.enquiry_id = e.id
         WHERE e.current_stage = 'service'
       `;
-      
+
       const result = await executeQuery<{
         pending_count: number;
         in_progress_count: number;
         done_count: number;
         total_count: number;
       }>(query);
-      
+
       if (result.length === 0) {
         return { pendingCount: 0, inProgressCount: 0, doneCount: 0, totalServices: 0 };
       }
-      
+
       const stats = result[0];
       return {
         pendingCount: stats.pending_count,
@@ -478,13 +527,15 @@ export class ServiceModel {
       throw error;
     }
   }
-  
+
   // Get specific enquiry service details
   static async getEnquiryServiceDetails(enquiryId: number): Promise<ServiceDetails | null> {
     try {
       const serviceTypes = await this.getServiceTypes(enquiryId);
       const overallPhotos = await this.getOverallPhotos(enquiryId);
-      
+      const itemPhotos = await this.getItemizedProductItems(enquiryId);
+      const products = await this.getEnquiryProducts(enquiryId);
+
       const query = `
         SELECT 
           e.customer_name,
@@ -510,15 +561,15 @@ export class ServiceModel {
         LEFT JOIN service_details sd ON e.id = sd.enquiry_id
         WHERE e.id = ?
       `;
-      
+
       const result = await executeQuery<DatabaseServiceEnquiryJoin>(query, [enquiryId]);
-      
+
       if (result.length === 0) {
         return null;
       }
-      
+
       const detail = result[0];
-      
+
       return {
         id: detail.service_detail_id,
         enquiryId,
@@ -527,6 +578,7 @@ export class ServiceModel {
         address: detail.address,
         product: detail.product,
         quantity: detail.quantity,
+        products: products, // Add products array
         quotedAmount: detail.quoted_amount,
         estimatedCost: detail.estimated_cost,
         actualCost: detail.actual_cost,
@@ -540,6 +592,7 @@ export class ServiceModel {
         overallAfterNotes: detail.overall_after_notes,
         serviceTypes,
         overallPhotos,
+        itemPhotos,
         createdAt: detail.created_at,
         updatedAt: detail.updated_at
       };

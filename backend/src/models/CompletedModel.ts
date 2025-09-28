@@ -1,6 +1,12 @@
 import { executeQuery } from '../config/database';
 import { logDatabase } from '../utils/logger';
 
+// Product item interface
+export interface ProductItem {
+  product: string;
+  quantity: number;
+}
+
 // Completed enquiry interface for backend
 export interface CompletedEnquiry {
   id: number;
@@ -9,8 +15,9 @@ export interface CompletedEnquiry {
   address: string;
   message: string;
   inquiryType: string;
-  product: string;
-  quantity: number;
+  product: string; // Keep for backward compatibility
+  quantity: number; // Keep for backward compatibility
+  products: ProductItem[]; // New field for multiple products
   date: string;
   status: string;
   contacted: boolean;
@@ -22,17 +29,19 @@ export interface CompletedEnquiry {
   finalAmount?: number;
   createdAt: string;
   updatedAt: string;
-  
+
   // Billing details
   billedAmount?: number;
+  subtotalAmount?: number;
+  gstAmount?: number;
   invoiceNumber?: string;
   invoiceDate?: string;
-  
+
   // Delivery details
   deliveredAt?: string;
   deliveryMethod?: string;
   deliveryNotes?: string;
-  
+
   // Service details
   serviceTypes?: string;
   workNotes?: string;
@@ -51,7 +60,7 @@ export class CompletedModel {
   static async getCompletedEnquiries(): Promise<CompletedEnquiry[]> {
     try {
       logDatabase.query('Fetching completed enquiries with billing and delivery details');
-      
+
       const query = `
         SELECT 
           e.id,
@@ -99,14 +108,37 @@ export class CompletedModel {
         GROUP BY e.id
         ORDER BY dd.delivered_at DESC, e.updated_at DESC
       `;
-      
-      const results = await executeQuery<CompletedEnquiry>(query);
-      
-      logDatabase.success('Successfully fetched completed enquiries', { 
-        count: results.length 
+
+      const results = await executeQuery<any>(query);
+
+      // Fetch products for each enquiry
+      const enquiriesWithProducts: CompletedEnquiry[] = [];
+
+      for (const enquiry of results) {
+        // Get products for this enquiry
+        const productsQuery = `
+          SELECT product, quantity 
+          FROM enquiry_products 
+          WHERE enquiry_id = ?
+          ORDER BY id
+        `;
+
+        const products = await executeQuery<ProductItem>(productsQuery, [enquiry.id]);
+
+        // Add products array to enquiry
+        const enquiryWithProducts: CompletedEnquiry = {
+          ...enquiry,
+          products: products.length > 0 ? products : [{ product: enquiry.product, quantity: enquiry.quantity }]
+        };
+
+        enquiriesWithProducts.push(enquiryWithProducts);
+      }
+
+      logDatabase.success('Successfully fetched completed enquiries with products', {
+        count: enquiriesWithProducts.length
       });
-      
-      return results;
+
+      return enquiriesWithProducts;
     } catch (error) {
       logDatabase.error('Failed to fetch completed enquiries', error);
       throw error;
@@ -117,14 +149,14 @@ export class CompletedModel {
   static async getCompletedStats(): Promise<CompletedStats> {
     try {
       logDatabase.query('Calculating completed enquiries statistics');
-      
+
       // Total completed count
       const totalQuery = `
         SELECT COUNT(*) as totalCompleted
         FROM enquiries e
         WHERE e.current_stage = 'completed'
       `;
-      
+
       // Completed this week
       const weekQuery = `
         SELECT COUNT(*) as completedThisWeek
@@ -133,7 +165,7 @@ export class CompletedModel {
         WHERE e.current_stage = 'completed'
         AND dd.delivered_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
       `;
-      
+
       // Total revenue from billing (using total_amount which is subtotal + GST)
       const revenueQuery = `
         SELECT COALESCE(SUM(bd.total_amount), 0) as totalRevenue
@@ -141,7 +173,7 @@ export class CompletedModel {
         LEFT JOIN billing_details bd ON e.id = bd.enquiry_id
         WHERE e.current_stage = 'completed'
       `;
-      
+
       // Average completion time
       const avgTimeQuery = `
         SELECT 
@@ -151,21 +183,21 @@ export class CompletedModel {
         WHERE e.current_stage = 'completed'
         AND dd.delivered_at IS NOT NULL
       `;
-      
+
       const [totalResult] = await executeQuery<{ totalCompleted: number }>(totalQuery);
       const [weekResult] = await executeQuery<{ completedThisWeek: number }>(weekQuery);
       const [revenueResult] = await executeQuery<{ totalRevenue: number }>(revenueQuery);
       const [avgTimeResult] = await executeQuery<{ avgCompletionTime: number }>(avgTimeQuery);
-      
+
       const stats: CompletedStats = {
         totalCompleted: totalResult?.totalCompleted || 0,
         completedThisWeek: weekResult?.completedThisWeek || 0,
         totalRevenue: revenueResult?.totalRevenue || 0,
         avgCompletionTime: Math.round(avgTimeResult?.avgCompletionTime || 0)
       };
-      
+
       logDatabase.success('Successfully calculated completed statistics', stats);
-      
+
       return stats;
     } catch (error) {
       logDatabase.error('Failed to calculate completed statistics', error);
@@ -177,7 +209,7 @@ export class CompletedModel {
   static async getCompletedEnquiryById(id: number): Promise<CompletedEnquiry | null> {
     try {
       logDatabase.query('Fetching completed enquiry by ID', { id });
-      
+
       const query = `
         SELECT 
           e.id,
@@ -224,20 +256,39 @@ export class CompletedModel {
         WHERE e.id = ? AND e.current_stage = 'completed'
         GROUP BY e.id
       `;
-      
-      const results = await executeQuery<CompletedEnquiry>(query, [id]);
-      
+
+      const results = await executeQuery<any>(query, [id]);
+
       if (results.length === 0) {
         logDatabase.query('No completed enquiry found with ID', { id });
         return null;
       }
-      
-      logDatabase.success('Successfully fetched completed enquiry by ID', { 
-        id, 
-        found: true 
+
+      const enquiry = results[0];
+
+      // Get products for this enquiry
+      const productsQuery = `
+        SELECT product, quantity 
+        FROM enquiry_products 
+        WHERE enquiry_id = ?
+        ORDER BY id
+      `;
+
+      const products = await executeQuery<ProductItem>(productsQuery, [id]);
+
+      // Add products array to enquiry
+      const enquiryWithProducts: CompletedEnquiry = {
+        ...enquiry,
+        products: products.length > 0 ? products : [{ product: enquiry.product, quantity: enquiry.quantity }]
+      };
+
+      logDatabase.success('Successfully fetched completed enquiry by ID with products', {
+        id,
+        found: true,
+        productsCount: enquiryWithProducts.products.length
       });
-      
-      return results[0];
+
+      return enquiryWithProducts;
     } catch (error) {
       logDatabase.error('Failed to fetch completed enquiry by ID', { id, error });
       throw error;

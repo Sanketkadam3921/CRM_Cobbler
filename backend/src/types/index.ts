@@ -32,7 +32,7 @@
 // export interface ServiceTypeStatus {
 //   type: ServiceType;
 //   status: ServiceStatus;
-  
+
 //   // Photos for this specific service
 //   photos: {
 //     beforePhoto?: string;
@@ -40,14 +40,14 @@
 //     beforeNotes?: string;
 //     afterNotes?: string;
 //   };
-  
+
 //   // Work details
 //   department?: string;
 //   assignedTo?: string;
 //   startedAt?: string;
 //   completedAt?: string;
 //   workNotes?: string;
-  
+
 //   // Backend-ready fields
 //   id?: number; // For backend reference
 //   createdAt?: string;
@@ -176,17 +176,17 @@
 //   contactedAt?: string;
 //   assignedTo?: string;
 //   notes?: string;
-  
+
 //   // Workflow stages
 //   currentStage: WorkflowStage;
 //   pickupDetails?: PickupStage;
 //   serviceDetails?: ServiceStage;
 //   deliveryDetails?: DeliveryStage;
-  
+
 //   // Pricing
 //   quotedAmount?: number;
 //   finalAmount?: number;
-  
+
 
 // }
 
@@ -268,7 +268,7 @@
 
 // // Enums and union types
 // export type InquiryType = "Instagram" | "Facebook" | "WhatsApp" | "Phone" | "Walk-in" | "Website";
-// export type ProductType = "Bag" | "Shoe" | "Wallet" | "Belt" | "All type furniture";
+// export type ProductType = "Bag" | "Shoe" | "Wallet" | "Belt" | "All type furniture" | "Jacket" | "Other";
 // export type EnquiryStatus = "new" | "contacted" | "converted" | "closed" | "lost";
 
 // // Workflow stages
@@ -621,10 +621,10 @@
 //   finalAmount?: number;
 //   createdAt: string;
 //   updatedAt: string;
-  
+
 //   // Delivery-specific data
 //   deliveryDetails?: DeliveryDetails;
-  
+
 //   // Service details (for showing service completed photo)
 //   serviceDetails?: {
 //     estimatedCost?: number;
@@ -689,22 +689,25 @@ export interface PickupStage {
 export interface ServiceTypeStatus {
   type: ServiceType;
   status: ServiceStatus;
-  
-  // Photos for this specific service
+  // Optional item targeting
+  product?: ProductType;
+  itemIndex?: number;
+
+  // Photos for this specific service - support multiple images per bucket
   photos: {
-    beforePhoto?: string;
-    afterPhoto?: string;
-    beforeNotes?: string;
-    afterNotes?: string;
+    before?: string[];
+    after?: string[];
+    received?: string[];
+    other?: string[];
   };
-  
+
   // Work details
   department?: string;
   assignedTo?: string;
   startedAt?: string;
   completedAt?: string;
   workNotes?: string;
-  
+
   // Backend-ready fields
   id?: number; // For backend reference
   createdAt?: string;
@@ -782,6 +785,7 @@ export interface ServiceDetails {
   address: string;
   product: string;
   quantity: number;
+  products?: ProductItem[]; // Products array for multiple products per enquiry
   quotedAmount?: number;
   estimatedCost?: number;
   actualCost?: number;
@@ -800,6 +804,28 @@ export interface ServiceDetails {
     beforeNotes?: string;
     afterNotes?: string;
   };
+  // New structured product items with grouped photo categories
+  productItems?: Array<{
+    product: ProductType;
+    itemIndex: number;
+    photos: {
+      before?: string[];
+      after?: string[];
+      received?: string[];
+      other?: string[];
+    };
+  }>;
+  // Backward-compatibility mirror for frontend until fully migrated
+  itemPhotos?: Array<{
+    product: ProductType;
+    itemIndex: number;
+    photos: {
+      before?: string[];
+      after?: string[];
+      received?: string[];
+      other?: string[];
+    };
+  }>;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -817,6 +843,19 @@ export interface DeliveryStage {
   deliveredAt?: string;
 }
 
+export interface ProductItem {
+  product: ProductType;
+  quantity: number;
+}
+
+export interface ProductItemInstance {
+  product: ProductType;
+  itemIndex: number;
+  beforePhotos?: string[];
+  afterPhoto?: string;
+  notes?: string;
+}
+
 export interface Enquiry {
   id: number;
   customerId?: number;
@@ -825,24 +864,29 @@ export interface Enquiry {
   address: string;
   message: string;
   inquiryType: InquiryType;
-  product: ProductType;
-  quantity: number;
+  product: ProductType; // Keep for backward compatibility
+  quantity: number; // Keep for backward compatibility
+  products: ProductItem[]; // New field for multiple products
   date: string;
   status: EnquiryStatus;
   contacted: boolean;
   contactedAt?: string;
   assignedTo?: string;
   notes?: string;
-  
+
   // Workflow stages
   currentStage: WorkflowStage;
   pickupDetails?: PickupStage;
   serviceDetails?: ServiceStage;
   deliveryDetails?: DeliveryStage;
-  
+
   // Pricing
   quotedAmount?: number;
   finalAmount?: number;
+
+  // Date fields for conversion
+  pickupDate?: string;
+  deliveryDate?: string;
 }
 
 export interface ServiceOrder {
@@ -926,7 +970,7 @@ export interface StaffMember {
 
 // Enums and union types
 export type InquiryType = "Instagram" | "Facebook" | "WhatsApp" | "Phone" | "Walk-in" | "Website";
-export type ProductType = "Bag" | "Shoe" | "Wallet" | "Belt" | "All type furniture";
+export type ProductType = "Bag" | "Shoe" | "Wallet" | "Belt" | "All type furniture" | "Jacket" | "Other";
 export type EnquiryStatus = "new" | "contacted" | "converted" | "closed" | "lost";
 
 // Workflow stages
@@ -934,13 +978,7 @@ export type WorkflowStage = "enquiry" | "pickup" | "service" | "billing" | "deli
 
 // Stage-specific statuses
 export type PickupStatus = "scheduled" | "assigned" | "collected" | "received";
-export type ServiceType = 
-  | 'Sole Replacement' 
-  | 'Zipper Repair' 
-  | 'Cleaning & Polish' 
-  | 'Stitching' 
-  | 'Leather Treatment' 
-  | 'Hardware Repair';
+export type ServiceType = 'Repairing' | 'Cleaning' | 'Dyeing';
 
 export type ServiceStatus = 'pending' | 'in-progress' | 'done';
 
@@ -954,6 +992,9 @@ export interface ServiceStats {
 export interface ServiceAssignmentRequest {
   enquiryId: number;
   serviceTypes: ServiceType[];
+  // Optional: assign services to a specific product item
+  product?: ProductType;
+  itemIndex?: number;
 }
 
 export interface ServiceStartRequest {
@@ -972,6 +1013,20 @@ export interface FinalPhotoRequest {
   enquiryId: number;
   afterPhoto: string;
   notes?: string;
+}
+
+// Pickup: Multi-product, per-item receive photos payload
+export interface ReceiveProductItemPhotos {
+  product: ProductType;
+  itemIndex: number; // 1..quantity
+  photos: string[]; // up to 4 photos per item
+  notes?: string;
+}
+
+export interface ReceivePhotosRequest {
+  items: ReceiveProductItemPhotos[];
+  estimatedCost?: number;
+  notes?: string; // global notes
 }
 
 export interface WorkflowCompleteRequest {
@@ -1101,6 +1156,17 @@ export interface DatabaseEnquiry {
   current_stage: WorkflowStage;
   quoted_amount?: number;
   final_amount?: number;
+  pickup_date?: string;
+  delivery_date?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DatabaseEnquiryProduct {
+  id: number;
+  enquiry_id: number;
+  product: ProductType;
+  quantity: number;
   created_at: string;
   updated_at: string;
 }
@@ -1173,6 +1239,9 @@ export interface DatabaseServiceType {
   started_at?: string;
   completed_at?: string;
   work_notes?: string;
+  // optional per-item targeting
+  product?: ProductType;
+  item_index?: number;
   created_at: string;
   updated_at: string;
 }
@@ -1184,6 +1253,10 @@ export interface DatabasePhoto {
   photo_type: string;
   photo_data: string;
   notes?: string;
+  // Optional itemization metadata for pickup per-item photos
+  product?: ProductType;
+  item_index?: number;
+  slot_index?: number;
   created_at: string;
 }
 
@@ -1264,6 +1337,7 @@ export interface DeliveryEnquiry {
   inquiryType: 'Instagram' | 'Facebook' | 'WhatsApp' | 'Phone' | 'Walk-in' | 'Website';
   product: 'Bag' | 'Shoe' | 'Wallet' | 'Belt' | 'All type furniture';
   quantity: number;
+  products?: ProductItem[]; // Add products array for multiple products
   date: string;
   status: 'new' | 'contacted' | 'converted' | 'closed' | 'lost';
   contacted: boolean;
@@ -1273,12 +1347,18 @@ export interface DeliveryEnquiry {
   currentStage: 'enquiry' | 'pickup' | 'service' | 'billing' | 'delivery' | 'completed';
   quotedAmount?: number;
   finalAmount?: number;
+  // Billing amounts
+  subtotalAmount?: number;
+  gstAmount?: number;
+  billedAmount?: number;
+  invoiceNumber?: string;
+  invoiceDate?: string;
   createdAt: string;
   updatedAt: string;
-  
+
   // Delivery-specific data
   deliveryDetails?: DeliveryDetails;
-  
+
   // Service details (for showing service completed photo)
   serviceDetails?: {
     estimatedCost?: number;
@@ -1356,3 +1436,62 @@ export interface ExpenseFilters {
   page?: number;
   limit?: number;
 }
+
+// Report-specific interfaces for backend/frontend communication
+export interface ReportMetrics {
+  totalRevenue: number;
+  totalOrders: number;
+  activeCustomers: number;
+  totalExpenditure: number;
+  netProfit: number;
+}
+
+export interface MonthlyRevenueData {
+  month: string;
+  revenue: number;
+  orders: number;
+}
+
+export interface ServiceDistributionData {
+  name: string;
+  value: number; // percentage
+  color: string;
+}
+
+export interface TopCustomerData {
+  name: string;
+  orders: number;
+  revenue: number;
+}
+
+export interface ProfitLossData {
+  date: string;
+  revenue: number;
+  expense: number;
+}
+
+export interface ReportFilters {
+  startDate: string;
+  endDate: string;
+  period: 'week' | 'month' | 'quarter' | 'year';
+}
+
+export interface ReportData {
+  metrics: ReportMetrics;
+  revenueChartData: MonthlyRevenueData[];
+  serviceDistribution: ServiceDistributionData[];
+  topCustomers: TopCustomerData[];
+  profitLossData: ProfitLossData[];
+}
+
+export interface ReportExportData extends ReportData {
+  expenseBreakdown: any[];
+  period: string;
+  dateRange: {
+    startDate: string;
+    endDate: string;
+  };
+  generatedAt: string;
+}
+
+export type ReportPeriod = 'week' | 'month' | 'quarter' | 'year';

@@ -43,6 +43,8 @@ export const PRODUCT_TYPE_OPTIONS = [
   { value: "Wallet", label: "Wallet", icon: "credit-card" },
   { value: "Belt", label: "Belt", icon: "circle" },
   { value: "All type furniture", label: "All type furniture", icon: "package" },
+  { value: "Jacket", label: "Jacket", icon: "shirt" },
+  { value: "Other", label: "Other", icon: "package" },
 ] as const;
 
 export const SERVICE_TYPE_OPTIONS = [

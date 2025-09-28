@@ -1,5 +1,6 @@
 import { executeQuery, executeTransaction } from '../config/database';
 import { logDatabase } from '../utils/logger';
+import { ProductType } from '../types';
 
 export interface BillingStats {
   pendingBilling: number;
@@ -13,16 +14,29 @@ export interface BillingEnquiry {
   customerName: string;
   phone: string;
   address: string;
-  product: string;
-  quantity: number;
+  product: string; // Keep for backward compatibility
+  quantity: number; // Keep for backward compatibility
+  products: Array<{ product: string; quantity: number }>; // New field for multiple products
   currentStage: string;
   serviceDetails?: {
     serviceTypes?: Array<{
       type: string;
       status: string;
       workNotes?: string;
+      product?: string;
+      itemIndex?: number;
     }>;
     estimatedCost?: number;
+    itemPhotos?: Array<{
+      product: string;
+      itemIndex: number;
+      photos: {
+        before: string[];
+        after: string[];
+        received: string[];
+        other: string[];
+      };
+    }>;
     billingDetails?: BillingDetails;
   };
 }
@@ -61,11 +75,32 @@ export interface BillingItem {
 }
 
 export class BillingModel {
+  // Get products for an enquiry
+  private static async getEnquiryProducts(enquiryId: number): Promise<Array<{ product: string; quantity: number }>> {
+    try {
+      const query = `
+        SELECT product, quantity 
+        FROM enquiry_products 
+        WHERE enquiry_id = ?
+        ORDER BY id
+      `;
+
+      const rows = await executeQuery<any>(query, [enquiryId]);
+      return rows.map(row => ({
+        product: row.product,
+        quantity: row.quantity
+      }));
+    } catch (error) {
+      logDatabase.error('Failed to get enquiry products', error);
+      return [];
+    }
+  }
+
   // Get billing statistics
   static async getBillingStats(): Promise<BillingStats> {
     try {
       logDatabase.query('Getting billing statistics');
-      
+
       // Get pending billing count (enquiries in billing stage without billing details)
       const [pendingResult] = await executeQuery<{ count: number }>(`
         SELECT COUNT(*) as count 
@@ -73,34 +108,34 @@ export class BillingModel {
         LEFT JOIN billing_details bd ON e.id = bd.enquiry_id 
         WHERE e.current_stage = 'billing' AND bd.id IS NULL
       `);
-      
+
       // Get invoices generated count
       const [invoicesResult] = await executeQuery<{ count: number }>(`
         SELECT COUNT(*) as count 
         FROM billing_details 
         WHERE invoice_number IS NOT NULL
       `);
-      
+
       // Get total billed amount
       const [totalResult] = await executeQuery<{ total: number }>(`
         SELECT COALESCE(SUM(total_amount), 0) as total 
         FROM billing_details
       `);
-      
+
       // Get invoices sent count (assuming all generated invoices are sent for now)
       const [sentResult] = await executeQuery<{ count: number }>(`
         SELECT COUNT(*) as count 
         FROM billing_details 
         WHERE invoice_number IS NOT NULL
       `);
-      
+
       const stats: BillingStats = {
         pendingBilling: Number(pendingResult.count) || 0,
         invoicesGenerated: Number(invoicesResult.count) || 0,
         totalBilled: Number(totalResult.total) || 0,
         invoicesSent: Number(sentResult.count) || 0
       };
-      
+
       logDatabase.success('Billing statistics retrieved', { stats });
       return stats;
     } catch (error) {
@@ -113,7 +148,7 @@ export class BillingModel {
   static async getBillingEnquiries(): Promise<BillingEnquiry[]> {
     try {
       logDatabase.query('Getting billing stage enquiries');
-      
+
       const enquiries = await executeQuery<any>(`
         SELECT 
           e.id,
@@ -138,20 +173,30 @@ export class BillingModel {
         WHERE e.current_stage = 'billing'
         ORDER BY e.created_at DESC
       `);
-      
-      // Get service types for each enquiry
+
+      // Get service types, itemPhotos, and products for each enquiry
       const enquiriesWithServices = await Promise.all(
         enquiries.map(async (enquiry) => {
           const serviceTypes = await executeQuery<any>(`
             SELECT 
               st.service_type as type,
               st.status,
-              st.work_notes as workNotes
+              st.work_notes as workNotes,
+              st.product,
+              st.item_index as itemIndex
             FROM service_types st
             WHERE st.enquiry_id = ?
             ORDER BY st.created_at
           `, [enquiry.id]);
-          
+
+          console.log('🔍 Service types for enquiry', enquiry.id, ':', serviceTypes);
+
+          // Get itemPhotos (same as ServiceModel)
+          const itemPhotos = await this.getItemizedProductItems(enquiry.id);
+
+          // Get products data
+          const products = await this.getEnquiryProducts(enquiry.id);
+
           // Get billing items if billing exists
           let billingDetails = null;
           if (enquiry.billingId) {
@@ -169,7 +214,7 @@ export class BillingModel {
               WHERE bi.billing_id = ?
               ORDER BY bi.id
             `, [enquiry.billingId]);
-            
+
             billingDetails = {
               enquiryId: enquiry.id,
               finalAmount: enquiry.finalAmount,
@@ -194,7 +239,7 @@ export class BillingModel {
               items: billingItems
             };
           }
-          
+
           return {
             id: enquiry.id,
             customerName: enquiry.customerName,
@@ -202,20 +247,24 @@ export class BillingModel {
             address: enquiry.address,
             product: enquiry.product,
             quantity: enquiry.quantity,
+            products: products, // Add products data
             currentStage: enquiry.currentStage,
             serviceDetails: {
               serviceTypes: serviceTypes.map(st => ({
                 type: st.type,
                 status: st.status,
-                workNotes: st.workNotes
+                workNotes: st.workNotes,
+                product: st.product,
+                itemIndex: st.itemIndex
               })),
               estimatedCost: enquiry.estimatedCost,
+              itemPhotos: itemPhotos, // Add itemPhotos like ServiceModel
               billingDetails: billingDetails || undefined
             }
           };
         })
       );
-      
+
       logDatabase.success('Billing enquiries retrieved', { count: enquiriesWithServices.length });
       return enquiriesWithServices;
     } catch (error) {
@@ -228,7 +277,7 @@ export class BillingModel {
   static async getBillingEnquiry(enquiryId: number): Promise<BillingEnquiry | null> {
     try {
       logDatabase.query('Getting specific billing enquiry', { enquiryId });
-      
+
       const [enquiry] = await executeQuery<any>(`
         SELECT 
           e.id,
@@ -252,23 +301,31 @@ export class BillingModel {
         LEFT JOIN billing_details bd ON e.id = bd.enquiry_id
         WHERE e.id = ? AND e.current_stage = 'billing'
       `, [enquiryId]);
-      
+
       if (!enquiry) {
         logDatabase.error('Billing enquiry not found', { enquiryId });
         return null;
       }
-      
+
       // Get service types
       const serviceTypes = await executeQuery<any>(`
         SELECT 
           st.service_type as type,
           st.status,
-          st.work_notes as workNotes
+          st.work_notes as workNotes,
+          st.product,
+          st.item_index as itemIndex
         FROM service_types st
         WHERE st.enquiry_id = ?
         ORDER BY st.created_at
       `, [enquiryId]);
-      
+
+      // Get itemPhotos (same as ServiceModel)
+      const itemPhotos = await this.getItemizedProductItems(enquiryId);
+
+      // Get products data
+      const products = await this.getEnquiryProducts(enquiryId);
+
       // Get billing items if billing exists
       let billingDetails = null;
       if (enquiry.billingId) {
@@ -286,7 +343,7 @@ export class BillingModel {
           WHERE bi.billing_id = ?
           ORDER BY bi.id
         `, [enquiry.billingId]);
-        
+
         billingDetails = {
           enquiryId: enquiry.id,
           finalAmount: enquiry.finalAmount,
@@ -311,7 +368,7 @@ export class BillingModel {
           items: billingItems
         };
       }
-      
+
       const result: BillingEnquiry = {
         id: enquiry.id,
         customerName: enquiry.customerName,
@@ -319,18 +376,22 @@ export class BillingModel {
         address: enquiry.address,
         product: enquiry.product,
         quantity: enquiry.quantity,
+        products: products, // Add products data
         currentStage: enquiry.currentStage,
         serviceDetails: {
           serviceTypes: serviceTypes.map(st => ({
             type: st.type,
             status: st.status,
-            workNotes: st.workNotes
+            workNotes: st.workNotes,
+            product: st.product,
+            itemIndex: st.itemIndex
           })),
           estimatedCost: enquiry.estimatedCost,
+          itemPhotos: itemPhotos, // Add itemPhotos like ServiceModel
           billingDetails: billingDetails || undefined
         }
       };
-      
+
       logDatabase.success('Billing enquiry retrieved', { enquiryId });
       return result;
     } catch (error) {
@@ -343,11 +404,11 @@ export class BillingModel {
   static async createBilling(enquiryId: number, billingData: any): Promise<BillingDetails> {
     try {
       logDatabase.query('Creating billing details', { enquiryId, billingData });
-      
+
       // Generate invoice number
       const invoiceNumber = BillingModel.generateInvoiceNumber();
       const invoiceDate = new Date().toISOString().split('T')[0];
-      
+
       // Start transaction
       const results = await executeTransaction([
         // Insert billing details
@@ -377,9 +438,9 @@ export class BillingModel {
           ]
         }
       ]);
-      
+
       const billingId = results[0].insertId;
-      
+
       // Insert billing items
       if (billingData.items && billingData.items.length > 0) {
         const itemQueries = billingData.items.map((item: BillingItem) => ({
@@ -401,19 +462,19 @@ export class BillingModel {
             item.description || ''
           ]
         }));
-        
+
         await executeTransaction(itemQueries);
       }
-      
+
       // Get the created billing details
       const [billingDetails] = await executeQuery<any>(`
         SELECT * FROM billing_details WHERE id = ?
       `, [billingId]);
-      
+
       const billingItems = await executeQuery<any>(`
         SELECT * FROM billing_items WHERE billing_id = ? ORDER BY id
       `, [billingId]);
-      
+
       const result: BillingDetails = {
         id: billingDetails.id,
         enquiryId: billingDetails.enquiry_id,
@@ -451,7 +512,7 @@ export class BillingModel {
           description: item.description
         }))
       };
-      
+
       logDatabase.success('Billing details created', { enquiryId, billingId, invoiceNumber });
       return result;
     } catch (error) {
@@ -464,7 +525,7 @@ export class BillingModel {
   static async getInvoiceData(enquiryId: number): Promise<any> {
     try {
       logDatabase.query('Getting invoice data', { enquiryId });
-      
+
       const [enquiry] = await executeQuery<any>(`
         SELECT 
           e.id,
@@ -478,16 +539,16 @@ export class BillingModel {
         JOIN billing_details bd ON e.id = bd.enquiry_id
         WHERE e.id = ?
       `, [enquiryId]);
-      
+
       if (!enquiry) {
         logDatabase.error('Invoice data not found', { enquiryId });
         return null;
       }
-      
+
       const billingItems = await executeQuery<any>(`
         SELECT * FROM billing_items WHERE billing_id = ? ORDER BY id
       `, [enquiry.billingId]);
-      
+
       const result = {
         id: enquiry.id,
         customerName: enquiry.customerName,
@@ -535,7 +596,7 @@ export class BillingModel {
           }
         }
       };
-      
+
       logDatabase.success('Invoice data retrieved', { enquiryId });
       return result;
     } catch (error) {
@@ -548,31 +609,75 @@ export class BillingModel {
   static async moveToDelivery(enquiryId: number): Promise<any> {
     try {
       logDatabase.query('Moving enquiry to delivery stage', { enquiryId });
-      
+
       // Update enquiry stage to delivery
       await executeQuery(`
         UPDATE enquiries 
         SET current_stage = 'delivery', updated_at = CURRENT_TIMESTAMP 
         WHERE id = ?
       `, [enquiryId]);
-      
+
       // Create delivery details
       await executeQuery(`
         INSERT INTO delivery_details (
           enquiry_id, status, delivery_method, created_at, updated_at
         ) VALUES (?, 'ready', 'customer-pickup', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       `, [enquiryId]);
-      
+
       // Get updated enquiry
       const [enquiry] = await executeQuery<any>(`
         SELECT * FROM enquiries WHERE id = ?
       `, [enquiryId]);
-      
+
       logDatabase.success('Enquiry moved to delivery stage', { enquiryId });
       return enquiry;
     } catch (error) {
       logDatabase.error('Failed to move enquiry to delivery stage', error);
       throw error;
+    }
+  }
+
+  // Get per-item photos grouped into categories for each product item (copied from ServiceModel)
+  static async getItemizedProductItems(enquiryId: number): Promise<Array<{ product: ProductType; itemIndex: number; photos: { before: string[]; after: string[]; received: string[]; other: string[] } }>> {
+    try {
+      const query = `
+        SELECT product, item_index, stage, photo_type, photo_data
+        FROM photos
+        WHERE enquiry_id = ? AND product IS NOT NULL AND item_index IS NOT NULL
+        ORDER BY item_index ASC, created_at ASC
+      `;
+
+      const rows = await executeQuery<any>(query, [enquiryId]);
+
+      const map = new Map<string, { product: ProductType; itemIndex: number; photos: { before: string[]; after: string[]; received: string[]; other: string[] } }>();
+
+      rows.forEach(row => {
+        const product = row.product as ProductType;
+        const itemIndex = row.item_index as number;
+        if (!product || itemIndex === undefined) return;
+
+        const key = `${product}-${itemIndex}`;
+        if (!map.has(key)) {
+          map.set(key, { product, itemIndex, photos: { before: [], after: [], received: [], other: [] } });
+        }
+
+        const entry = map.get(key)!;
+
+        const bucket: keyof typeof entry.photos = (() => {
+          if (row.stage === 'pickup' && row.photo_type === 'before_photo') return 'before';
+          if (row.stage === 'pickup' && row.photo_type === 'after_photo') return 'received';
+          if (row.stage === 'service' && row.photo_type === 'before_photo') return 'before';
+          if (row.stage === 'service' && row.photo_type === 'after_photo') return 'after';
+          return 'other';
+        })();
+
+        entry.photos[bucket].push(row.photo_data);
+      });
+
+      return Array.from(map.values());
+    } catch (error) {
+      console.error('Error getting itemized product item photos:', error);
+      return [];
     }
   }
 

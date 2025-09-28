@@ -5,13 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
   Search,
-  CheckCircle,
-  Calendar,
-  Package,
-  User,
-  MapPin,
   Archive,
-  Eye,
+  MapPin,
+  Package,
+  Calendar,
+  DollarSign,
+  User,
+  Phone,
 } from "lucide-react";
 // REASON: Replaced localStorage imports with backend API service
 // import { Enquiry } from "@/types";
@@ -25,17 +25,17 @@ export function CompletedModule() {
 
   // REASON: Replaced localStorage data fetching with backend API hooks
   // Load completed enquiries from backend API with polling
-  const { 
-    enquiries, 
-    loading: enquiriesLoading, 
-    error: enquiriesError, 
-    lastUpdate 
+  const {
+    enquiries,
+    loading: enquiriesLoading,
+    error: enquiriesError,
+    lastUpdate
   } = useCompletedEnquiries(200000); // Poll every 2 seconds
 
-  const { 
-    stats, 
-    loading: statsLoading, 
-    error: statsError 
+  const {
+    stats,
+    loading: statsLoading,
+    error: statsError
   } = useCompletedStats(500000); // Poll every 5 seconds
 
   // REASON: Removed localStorage useEffect - now handled by API hooks
@@ -72,7 +72,11 @@ export function CompletedModule() {
   // Use backend API stats instead of client-side calculations
   const totalCompleted = stats.totalCompleted;
   const completedThisWeek = stats.completedThisWeek;
-  const totalRevenue = stats.totalRevenue;
+  const totalRevenue = stats.totalRevenue
+    ? Number(stats.totalRevenue).toLocaleString("en-IN")
+    : "0";
+
+
   const avgCompletionTime = stats.avgCompletionTime;
 
   // REASON: Updated filter to use backend API data structure
@@ -84,20 +88,18 @@ export function CompletedModule() {
   );
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-IN', {
-      day: 'numeric',
-      month: 'short',
+    return new Date(dateString).toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
       year: 'numeric'
     });
   };
 
   const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleString('en-IN', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return new Date(dateString).toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
     });
   };
 
@@ -116,7 +118,7 @@ export function CompletedModule() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
           <div className="flex items-center justify-between">
             <div>
@@ -128,7 +130,8 @@ export function CompletedModule() {
                 Total Completed
               </div>
             </div>
-            <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-success" />
+            <div className="h-6 w-6 sm:h-8 sm:w-8 text-success flex items-center justify-center">
+            </div>
           </div>
         </Card>
         <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
@@ -141,35 +144,24 @@ export function CompletedModule() {
                 This Week
               </div>
             </div>
-            <Calendar className="h-6 w-6 sm:h-8 sm:w-8 text-blue-500" />
+            <div className="h-6 w-6 sm:h-8 sm:w-8 text-blue-500 flex items-center justify-center">
+            </div>
           </div>
         </Card>
         <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-lg sm:text-2xl font-bold text-foreground">
-                {statsLoading ? '...' : `₹${totalRevenue.toLocaleString()}`}
+                {statsLoading ? '...' : totalRevenue}
               </div>
               <div className="text-xs sm:text-sm text-muted-foreground">
                 Total Revenue
               </div>
             </div>
-            <span className="h-6 w-6 sm:h-8 sm:w-8 text-green-500 text-2xl font-bold flex items-center justify-center">₹</span>
           </div>
         </Card>
-        <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-lg sm:text-2xl font-bold text-foreground">
-                {statsLoading ? '...' : avgCompletionTime}
-              </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">
-                Avg Days
-              </div>
-            </div>
-            <Package className="h-6 w-6 sm:h-8 sm:w-8 text-purple-500" />
-          </div>
-        </Card>
+
+
       </div>
 
       {/* REASON: Added error handling for API failures */}
@@ -186,92 +178,129 @@ export function CompletedModule() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
-            placeholder="Search completed orders by customer, address, product..."
+            placeholder="Search completed orders"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
+            style={{
+              '--placeholder-animation': 'scroll-left 15s linear infinite',
+            } as React.CSSProperties}
           />
         </div>
       </Card>
+
+      <style>{`
+        @keyframes scroll-left {
+          0% {
+            transform: translateX(100%);
+          }
+          100% {
+            transform: translateX(-100%);
+          }
+        }
+        
+        @media (max-width: 640px) {
+          input::placeholder {
+            animation: var(--placeholder-animation);
+            white-space: nowrap;
+            overflow: hidden;
+            display: inline-block;
+            width: 200%;
+          }
+        }
+        
+        @media (min-width: 641px) {
+          input::placeholder {
+            animation: none;
+          }
+        }
+      `}</style>
 
       {/* Completed Items */}
       <div className="space-y-4">
         <h2 className="text-xl sm:text-2xl font-bold text-foreground">
           Completed Orders
         </h2>
-        
+
         {/* REASON: Added loading state for enquiries */}
         {enquiriesLoading && (
           <Card className="p-8 text-center">
             <div className="text-muted-foreground">Loading completed orders...</div>
           </Card>
         )}
-        
+
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
           {!enquiriesLoading && filteredEnquiries.map((enquiry) => (
             <Card
               key={enquiry.id}
-              className="p-4 sm:p-6 bg-gradient-card border-0 shadow-soft hover:shadow-medium transition-all duration-300"
+              className="relative p-4 sm:p-6 bg-gradient-card border-0 shadow-soft hover:shadow-medium transition-all duration-300"
             >
               <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-4 gap-3">
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-foreground text-base sm:text-lg">
                     {enquiry.customerName}
                   </h3>
-                  <p className="text-sm text-muted-foreground">
-                    {enquiry.phone}
-                  </p>
+                  <div className="flex items-center space-x-1 text-gray-600">
+                    <Phone className="h-4 w-4 shrink-0" />
+                    <span className="text-sm whitespace-nowrap">
+                      {enquiry.phone.startsWith("+91")
+                        ? enquiry.phone
+                        : `+91 ${enquiry.phone}`}
+                    </span>
+                  </div>
                 </div>
-                <Badge className="bg-green-100 text-green-800 border-green-200 text-xs px-2 py-1 rounded-full font-medium">
+
+                {/* ✅ Badge at top-right on mobile, inline on larger screens */}
+                <Badge className="w-fit inline-block bg-green-100 text-green-800 border-green-200 text-xs px-2 py-1 sm:px-3 sm:py-1.5 rounded-full font-medium absolute top-2 right-2 sm:static">
                   Completed
                 </Badge>
               </div>
 
+              {/* rest of your content remains unchanged */}
               <div className="space-y-3">
-                <div className="flex items-start space-x-2">
+                <div className="flex items-center">
                   <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                  <span className="text-sm text-foreground break-words">
-                    {enquiry.address}
-                  </span>
+                  <span className="ml-1">{enquiry.address || "No address provided"}</span>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  {enquiry.products && enquiry.products.length > 0 ? (
+                    enquiry.products.map((product, index) => (
+                      <div key={index} className="flex items-center space-x-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                        <span>{product.product}</span>
+                        <span>({product.quantity})</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex items-center space-x-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                      <span>{enquiry.product}</span>
+                      <span>({enquiry.quantity})</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex items-center space-x-2">
-                  <Package className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                  <span className="text-sm text-foreground">
-                    {enquiry.product} ({enquiry.quantity} items)
-                  </span>
-                </div>
-
-                {/* REASON: Updated to use backend API data structure for service types */}
-                {enquiry.serviceTypes && (
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm text-foreground">
-                      {/* <strong>Service:</strong> {enquiry.serviceTypes} */}
-                    </span>
-                  </div>
-                )}
-
-                {/* REASON: Show final amount (subtotal + GST) with INR symbol */}
-                <div className="flex items-center space-x-2">
-                  <span className="h-4 w-4 text-muted-foreground flex-shrink-0 text-sm font-bold">₹</span>
                   <span className="text-sm font-semibold text-foreground">
-                    Final Amount: ₹{(Number(enquiry.subtotalAmount || 0) + Number(enquiry.gstAmount || 0)).toFixed(2)}
+                    Final Amount: ₹
+                    {(Number(enquiry.subtotalAmount || 0) +
+                      Number(enquiry.gstAmount || 0)).toLocaleString("en-IN", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
                   </span>
                 </div>
 
                 <div className="flex items-center space-x-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                   <span className="text-sm text-foreground">
-                    <strong>Ordered:</strong> {formatDate(enquiry.date)}
+                    <span className="font-bold">Ordered:</span> {formatDate(enquiry.date)}
                   </span>
                 </div>
 
-                {/* REASON: Updated to use backend API data structure for delivery details */}
                 {enquiry.deliveredAt && (
                   <div className="flex items-center space-x-2">
-                    <CheckCircle className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                     <span className="text-sm text-foreground">
-                      <strong>Delivered:</strong> {formatDateTime(enquiry.deliveredAt)}
+                      <span className="font-bold">Delivered:</span>{" "}
+                      {formatDateTime(enquiry.deliveredAt)}
                     </span>
                   </div>
                 )}
@@ -279,31 +308,25 @@ export function CompletedModule() {
                 {enquiry.deliveryMethod && (
                   <div className="flex items-center space-x-2">
                     <span className="text-sm text-foreground">
-                      <strong>Delivery:</strong> {enquiry.deliveryMethod === 'customer-pickup' ? 'Customer Pickup' : 'Home Delivery'}
+                      <span className="font-bold">Delivery:</span>{" "}
+                      {enquiry.deliveryMethod === "customer-pickup"
+                        ? "Customer Pickup"
+                        : "Home Delivery"}
                     </span>
                   </div>
                 )}
 
                 {enquiry.deliveryNotes && (
-                  <div className="bg-muted/50 p-2 rounded">
-                    <span className="text-sm text-foreground">
-                      <strong>Notes:</strong> {enquiry.deliveryNotes}
-                    </span>
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium text-foreground">Notes:</h4>
+                    <div className="bg-muted/50 p-2 rounded">
+                      <p className="text-sm text-foreground">{enquiry.deliveryNotes}</p>
+                    </div>
                   </div>
                 )}
               </div>
-
-              {/* <div className="flex justify-end mt-4">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="text-xs sm:text-sm"
-                >
-                  <Eye className="h-3 w-3 mr-1" />
-                  View Details
-                </Button>
-              </div> */}
             </Card>
+
           ))}
         </div>
 

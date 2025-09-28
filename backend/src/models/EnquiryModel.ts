@@ -3,6 +3,7 @@ import { logDatabase } from '../utils/logger';
 import {
   Enquiry,
   DatabaseEnquiry,
+  DatabaseEnquiryProduct,
   DatabasePickupDetails,
   DatabaseServiceDetails,
   DatabaseServiceType,
@@ -13,13 +14,55 @@ import {
   InquiryType,
   ProductType,
   EnquiryStatus,
-  WorkflowStage
+  WorkflowStage,
+  ProductItem
 } from '../types';
 
 export class EnquiryModel {
 
+  // Get products for an enquiry
+  private static async getEnquiryProducts(enquiryId: number): Promise<ProductItem[]> {
+    try {
+      const query = `
+        SELECT product, quantity 
+        FROM enquiry_products 
+        WHERE enquiry_id = ?
+        ORDER BY id
+      `;
+
+      const rows = await executeQuery<DatabaseEnquiryProduct>(query, [enquiryId]);
+      return rows.map(row => ({
+        product: row.product,
+        quantity: row.quantity
+      }));
+    } catch (error) {
+      logDatabase.error('Failed to get enquiry products', error);
+      return [];
+    }
+  }
+
+  // Save products for an enquiry
+  private static async saveEnquiryProducts(enquiryId: number, products: ProductItem[]): Promise<void> {
+    try {
+      if (products.length === 0) return;
+
+      // Delete existing products
+      await executeQuery('DELETE FROM enquiry_products WHERE enquiry_id = ?', [enquiryId]);
+
+      // Insert new products
+      const values = products.map(() => '(?, ?, ?)').join(', ');
+      const params = products.flatMap(p => [enquiryId, p.product, p.quantity]);
+
+      const query = `INSERT INTO enquiry_products (enquiry_id, product, quantity) VALUES ${values}`;
+      await executeQuery(query, params);
+    } catch (error) {
+      logDatabase.error('Failed to save enquiry products', error);
+      throw error;
+    }
+  }
+
   // Convert database row to Enquiry object
-  private static mapDatabaseToEnquiry(dbEnquiry: DatabaseEnquiry): Enquiry {
+  private static mapDatabaseToEnquiry(dbEnquiry: DatabaseEnquiry, products: ProductItem[] = []): Enquiry {
     return {
       id: dbEnquiry.id,
       customerName: dbEnquiry.customer_name,
@@ -29,6 +72,7 @@ export class EnquiryModel {
       inquiryType: dbEnquiry.inquiry_type,
       product: dbEnquiry.product,
       quantity: dbEnquiry.quantity,
+      products: products,
       date: dbEnquiry.date,
       status: dbEnquiry.status,
       contacted: dbEnquiry.contacted,
@@ -38,7 +82,8 @@ export class EnquiryModel {
       currentStage: dbEnquiry.current_stage,
       quotedAmount: dbEnquiry.quoted_amount,
       finalAmount: dbEnquiry.final_amount,
-
+      pickupDate: dbEnquiry.pickup_date,
+      deliveryDate: dbEnquiry.delivery_date,
     };
   }
 
@@ -84,7 +129,9 @@ export class EnquiryModel {
       notes: enquiry.notes,
       current_stage: enquiry.currentStage,
       quoted_amount: enquiry.quotedAmount,
-      final_amount: enquiry.finalAmount
+      final_amount: enquiry.finalAmount,
+      pickup_date: formatDateForDB(enquiry.pickupDate),
+      delivery_date: formatDateForDB(enquiry.deliveryDate)
     };
   }
 
@@ -140,8 +187,13 @@ export class EnquiryModel {
       const dataParams = [...params];
       const dbEnquiries = await executeQuery<DatabaseEnquiry>(dataQuery, dataParams);
 
-      // Convert to Enquiry objects
-      const enquiries = dbEnquiries.map(this.mapDatabaseToEnquiry);
+      // Convert to Enquiry objects with products
+      const enquiries = await Promise.all(
+        dbEnquiries.map(async (dbEnquiry) => {
+          const products = await this.getEnquiryProducts(dbEnquiry.id);
+          return this.mapDatabaseToEnquiry(dbEnquiry, products);
+        })
+      );
 
       const totalPages = Math.ceil(total / limit);
 
@@ -180,7 +232,8 @@ export class EnquiryModel {
         return null;
       }
 
-      const enquiry = this.mapDatabaseToEnquiry(dbEnquiries[0]);
+      const products = await this.getEnquiryProducts(id);
+      const enquiry = this.mapDatabaseToEnquiry(dbEnquiries[0], products);
 
       logDatabase.success('Retrieved enquiry successfully', { id });
 
@@ -203,8 +256,8 @@ export class EnquiryModel {
         INSERT INTO enquiries (
           customer_name, phone, address, message, inquiry_type, product, 
           quantity, date, status, contacted, contacted_at, assigned_to, 
-          notes, current_stage, quoted_amount, final_amount
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          notes, current_stage, quoted_amount, final_amount, pickup_date, delivery_date
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
       const params = [
@@ -223,7 +276,9 @@ export class EnquiryModel {
         dbData.notes ?? null,
         dbData.current_stage || 'enquiry',
         dbData.quoted_amount ?? null,
-        dbData.final_amount ?? null
+        dbData.final_amount ?? null,
+        dbData.pickup_date ?? null,
+        dbData.delivery_date ?? null
       ];
 
       // For INSERT operations, we need to get the insertId
@@ -238,6 +293,11 @@ export class EnquiryModel {
         }
       } finally {
         connection.release();
+      }
+
+      // Save products if provided
+      if (enquiryData.products && enquiryData.products.length > 0) {
+        await this.saveEnquiryProducts(newId, enquiryData.products);
       }
 
       // Get the created enquiry
@@ -297,6 +357,11 @@ export class EnquiryModel {
       params.push(id);
 
       await executeQuery(query, params);
+
+      // Update products if provided
+      if (updates.products !== undefined) {
+        await this.saveEnquiryProducts(id, updates.products);
+      }
 
       // Get updated enquiry
       const updatedEnquiry = await this.getById(id);
@@ -470,7 +535,12 @@ export class EnquiryModel {
       const query = 'SELECT * FROM enquiries WHERE current_stage = ? ORDER BY created_at DESC, id DESC';
       const dbEnquiries = await executeQuery<DatabaseEnquiry>(query, [stage]);
 
-      const enquiries = dbEnquiries.map(this.mapDatabaseToEnquiry);
+      const enquiries = await Promise.all(
+        dbEnquiries.map(async (dbEnquiry) => {
+          const products = await this.getEnquiryProducts(dbEnquiry.id);
+          return this.mapDatabaseToEnquiry(dbEnquiry, products);
+        })
+      );
 
       logDatabase.success('Retrieved enquiries by stage successfully', {
         stage,

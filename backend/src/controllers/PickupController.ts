@@ -4,28 +4,28 @@ import { logApi } from '../utils/logger';
 import { PickupStatus, WorkflowStage } from '../types';
 
 export class PickupController {
-  
+
   // GET /api/pickup/stats - Get pickup statistics
   static async getStats(req: Request, res: Response): Promise<void> {
     const startTime = Date.now();
-    
+
     try {
       logApi.request(req.method, req.url, req.ip || 'unknown', req.get('User-Agent') || 'unknown');
-      
+
       const stats = await PickupModel.getStats();
-      
+
       const duration = Date.now() - startTime;
       logApi.response(req.method, req.url, 200, duration);
-      
+
       res.json({
         success: true,
         data: stats
       });
-      
+
     } catch (error) {
       const duration = Date.now() - startTime;
       logApi.error(req.method, req.url, error);
-      
+
       res.status(500).json({
         success: false,
         error: 'Failed to retrieve pickup statistics',
@@ -37,27 +37,27 @@ export class PickupController {
   // GET /api/pickup/enquiries - Get all pickup stage enquiries
   static async getPickupEnquiries(req: Request, res: Response): Promise<void> {
     const startTime = Date.now();
-    
+
     try {
       logApi.request(req.method, req.url, req.ip || 'unknown', req.get('User-Agent') || 'unknown');
-      
+
       const { search } = req.query;
       const searchTerm = search as string;
-      
+
       const enquiries = await PickupModel.getPickupEnquiries(searchTerm);
-      
+
       const duration = Date.now() - startTime;
       logApi.response(req.method, req.url, 200, duration);
-      
+
       res.json({
         success: true,
         data: enquiries
       });
-      
+
     } catch (error) {
       const duration = Date.now() - startTime;
       logApi.error(req.method, req.url, error);
-      
+
       res.status(500).json({
         success: false,
         error: 'Failed to retrieve pickup enquiries',
@@ -69,13 +69,13 @@ export class PickupController {
   // GET /api/pickup/enquiries/:id - Get pickup enquiry by ID
   static async getPickupEnquiry(req: Request, res: Response): Promise<void> {
     const startTime = Date.now();
-    
+
     try {
       logApi.request(req.method, req.url, req.ip || 'unknown', req.get('User-Agent') || 'unknown');
-      
+
       const { id } = req.params;
       const enquiryId = Number(id);
-      
+
       if (isNaN(enquiryId)) {
         res.status(400).json({
           success: false,
@@ -84,9 +84,9 @@ export class PickupController {
         });
         return;
       }
-      
+
       const enquiry = await PickupModel.getPickupEnquiry(enquiryId);
-      
+
       if (!enquiry) {
         res.status(404).json({
           success: false,
@@ -95,19 +95,19 @@ export class PickupController {
         });
         return;
       }
-      
+
       const duration = Date.now() - startTime;
       logApi.response(req.method, req.url, 200, duration);
-      
+
       res.json({
         success: true,
         data: enquiry
       });
-      
+
     } catch (error) {
       const duration = Date.now() - startTime;
       logApi.error(req.method, req.url, error);
-      
+
       res.status(500).json({
         success: false,
         error: 'Failed to retrieve pickup enquiry',
@@ -119,15 +119,15 @@ export class PickupController {
   // PATCH /api/pickup/enquiries/:id/assign - Assign pickup to staff member
   static async assignPickup(req: Request, res: Response): Promise<void> {
     const startTime = Date.now();
-    
+
     try {
       logApi.request(req.method, req.url, req.ip || 'unknown', req.get('User-Agent') || 'unknown');
-      
+
       const { id } = req.params;
       const { assignedTo } = req.body;
-      
+
       const enquiryId = Number(id);
-      
+
       if (isNaN(enquiryId)) {
         res.status(400).json({
           success: false,
@@ -136,7 +136,7 @@ export class PickupController {
         });
         return;
       }
-      
+
       if (!assignedTo) {
         res.status(400).json({
           success: false,
@@ -145,9 +145,9 @@ export class PickupController {
         });
         return;
       }
-      
+
       const updatedEnquiry = await PickupModel.assignPickup(enquiryId, assignedTo);
-      
+
       if (!updatedEnquiry) {
         res.status(404).json({
           success: false,
@@ -156,20 +156,20 @@ export class PickupController {
         });
         return;
       }
-      
+
       const duration = Date.now() - startTime;
       logApi.response(req.method, req.url, 200, duration);
-      
+
       res.json({
         success: true,
         data: updatedEnquiry,
         message: 'Pickup assigned successfully'
       });
-      
+
     } catch (error) {
       const duration = Date.now() - startTime;
       logApi.error(req.method, req.url, error);
-      
+
       res.status(500).json({
         success: false,
         error: 'Failed to assign pickup',
@@ -181,15 +181,15 @@ export class PickupController {
   // PATCH /api/pickup/enquiries/:id/collect - Mark pickup as collected
   static async markCollected(req: Request, res: Response): Promise<void> {
     const startTime = Date.now();
-    
+
     try {
       logApi.request(req.method, req.url, req.ip || 'unknown', req.get('User-Agent') || 'unknown');
-      
+
       const { id } = req.params;
       const { collectionPhoto, notes } = req.body;
-      
+
       const enquiryId = Number(id);
-      
+
       if (isNaN(enquiryId)) {
         res.status(400).json({
           success: false,
@@ -198,7 +198,7 @@ export class PickupController {
         });
         return;
       }
-      
+
       if (!collectionPhoto) {
         res.status(400).json({
           success: false,
@@ -207,9 +207,9 @@ export class PickupController {
         });
         return;
       }
-      
+
       const updatedEnquiry = await PickupModel.markCollected(enquiryId, collectionPhoto, notes);
-      
+
       if (!updatedEnquiry) {
         res.status(404).json({
           success: false,
@@ -218,20 +218,20 @@ export class PickupController {
         });
         return;
       }
-      
+
       const duration = Date.now() - startTime;
       logApi.response(req.method, req.url, 200, duration);
-      
+
       res.json({
         success: true,
         data: updatedEnquiry,
         message: 'Pickup marked as collected successfully'
       });
-      
+
     } catch (error) {
       const duration = Date.now() - startTime;
       logApi.error(req.method, req.url, error);
-      
+
       res.status(500).json({
         success: false,
         error: 'Failed to mark pickup as collected',
@@ -240,18 +240,18 @@ export class PickupController {
     }
   }
 
-  // PATCH /api/pickup/enquiries/:id/receive - Mark item as received and move to service
+  // PATCH /api/pickup/enquiries/:id/receive - Mark items as received with multi-photos and move to service
   static async markReceived(req: Request, res: Response): Promise<void> {
     const startTime = Date.now();
-    
+
     try {
       logApi.request(req.method, req.url, req.ip || 'unknown', req.get('User-Agent') || 'unknown');
-      
+
       const { id } = req.params;
-      const { receivedPhoto, notes, estimatedCost } = req.body;
-      
+      const { receivedPhoto, notes, estimatedCost, items } = req.body;
+
       const enquiryId = Number(id);
-      
+
       if (isNaN(enquiryId)) {
         res.status(400).json({
           success: false,
@@ -260,18 +260,42 @@ export class PickupController {
         });
         return;
       }
-      
-      if (!receivedPhoto) {
-        res.status(400).json({
-          success: false,
-          error: 'Missing received photo',
-          message: 'Received condition photo is required'
+
+      // New payload: items[] per product-item with up to 4 photos
+      if (Array.isArray(items) && items.length > 0) {
+        const updatedEnquiry = await PickupModel.markReceivedMulti(enquiryId, items, notes, estimatedCost);
+        if (!updatedEnquiry) {
+          res.status(404).json({
+            success: false,
+            error: 'Enquiry not found',
+            message: `Enquiry with ID ${enquiryId} not found`
+          });
+          return;
+        }
+
+        const duration = Date.now() - startTime;
+        logApi.response(req.method, req.url, 200, duration);
+
+        res.json({
+          success: true,
+          data: updatedEnquiry,
+          message: 'Items received and moved to service successfully'
         });
         return;
       }
-      
+
+      // Backward compatibility: single receivedPhoto
+      if (!receivedPhoto) {
+        res.status(400).json({
+          success: false,
+          error: 'Missing received photo(s)',
+          message: 'Provide items[] with photos or a receivedPhoto'
+        });
+        return;
+      }
+
       const updatedEnquiry = await PickupModel.markReceived(enquiryId, receivedPhoto, notes, estimatedCost);
-      
+
       if (!updatedEnquiry) {
         res.status(404).json({
           success: false,
@@ -280,20 +304,20 @@ export class PickupController {
         });
         return;
       }
-      
+
       const duration = Date.now() - startTime;
       logApi.response(req.method, req.url, 200, duration);
-      
+
       res.json({
         success: true,
         data: updatedEnquiry,
         message: 'Item received and moved to service successfully'
       });
-      
+
     } catch (error) {
       const duration = Date.now() - startTime;
       logApi.error(req.method, req.url, error);
-      
+
       res.status(500).json({
         success: false,
         error: 'Failed to mark item as received',
@@ -305,15 +329,15 @@ export class PickupController {
   // PATCH /api/pickup/enquiries/:id/status - Update pickup status
   static async updateStatus(req: Request, res: Response): Promise<void> {
     const startTime = Date.now();
-    
+
     try {
       logApi.request(req.method, req.url, req.ip || 'unknown', req.get('User-Agent') || 'unknown');
-      
+
       const { id } = req.params;
       const { status, additionalData } = req.body;
-      
+
       const enquiryId = Number(id);
-      
+
       if (isNaN(enquiryId)) {
         res.status(400).json({
           success: false,
@@ -322,7 +346,7 @@ export class PickupController {
         });
         return;
       }
-      
+
       if (!status) {
         res.status(400).json({
           success: false,
@@ -331,7 +355,7 @@ export class PickupController {
         });
         return;
       }
-      
+
       const validStatuses = ['scheduled', 'assigned', 'collected', 'received'];
       if (!validStatuses.includes(status)) {
         res.status(400).json({
@@ -341,9 +365,9 @@ export class PickupController {
         });
         return;
       }
-      
+
       const updatedEnquiry = await PickupModel.updateStatus(enquiryId, status as PickupStatus, additionalData);
-      
+
       if (!updatedEnquiry) {
         res.status(404).json({
           success: false,
@@ -352,20 +376,20 @@ export class PickupController {
         });
         return;
       }
-      
+
       const duration = Date.now() - startTime;
       logApi.response(req.method, req.url, 200, duration);
-      
+
       res.json({
         success: true,
         data: updatedEnquiry,
         message: 'Pickup status updated successfully'
       });
-      
+
     } catch (error) {
       const duration = Date.now() - startTime;
       logApi.error(req.method, req.url, error);
-      
+
       res.status(500).json({
         success: false,
         error: 'Failed to update pickup status',

@@ -1,6 +1,6 @@
-import { 
-  InventoryItem, 
-  InventoryStats, 
+import {
+  InventoryItem,
+  InventoryStats,
   UpdateHistory,
   ApiResponse
 } from '@/types';
@@ -8,7 +8,7 @@ import { useState, useEffect, useCallback } from 'react';
 
 // API Configuration - SAME AS OTHER SERVICES
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (
-  typeof window !== 'undefined' && window.location.origin !== 'http://localhost:5173' 
+  typeof window !== 'undefined' && window.location.origin !== 'http://localhost:5173'
     ? `${window.location.origin}/api`
     : 'http://localhost:3001/api'
 );
@@ -32,7 +32,7 @@ class ApiClient {
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
-    
+
     const config: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
@@ -44,7 +44,7 @@ class ApiClient {
 
     try {
       const response = await fetch(url, config);
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
@@ -92,11 +92,11 @@ export class InventoryApiService {
     try {
       console.log('🔄 [InventoryApiService] Fetching all inventory items...');
       const response = await apiClient.get<ApiResponse<InventoryItem[]>>('/inventory/items');
-      
+
       if (!response.success) {
         throw new Error(response.error || 'Failed to fetch inventory items');
       }
-      
+
       console.log('✅ [InventoryApiService] Successfully fetched inventory items:', response.data?.length, 'items');
       return response.data!;
     } catch (error) {
@@ -110,11 +110,11 @@ export class InventoryApiService {
     try {
       console.log('🔄 [InventoryApiService] Fetching inventory item by ID:', id);
       const response = await apiClient.get<ApiResponse<InventoryItem>>(`/inventory/items/${id}`);
-      
+
       if (!response.success) {
         throw new Error(response.error || 'Failed to fetch inventory item');
       }
-      
+
       console.log('✅ [InventoryApiService] Successfully fetched inventory item:', id);
       return response.data!;
     } catch (error) {
@@ -135,13 +135,13 @@ export class InventoryApiService {
     try {
       console.log('🔄 [InventoryApiService] Creating new inventory item...');
       console.log('🔄 [InventoryApiService] Item data:', itemData);
-      
+
       const response = await apiClient.post<ApiResponse<InventoryItem>>('/inventory/items', itemData);
-      
+
       if (!response.success) {
         throw new Error(response.error || 'Failed to create inventory item');
       }
-      
+
       console.log('✅ [InventoryApiService] Successfully created inventory item:', response.data?.id);
       return response.data!;
     } catch (error) {
@@ -158,11 +158,11 @@ export class InventoryApiService {
         quantity,
         updatedBy
       });
-      
+
       if (!response.success) {
         throw new Error(response.error || 'Failed to update inventory item');
       }
-      
+
       console.log('✅ [InventoryApiService] Successfully updated inventory item quantity:', id);
       return response.data!;
     } catch (error) {
@@ -176,11 +176,11 @@ export class InventoryApiService {
     try {
       console.log('🔄 [InventoryApiService] Deleting inventory item:', id);
       const response = await apiClient.delete<ApiResponse<null>>(`/inventory/items/${id}`);
-      
+
       if (!response.success) {
         throw new Error(response.error || 'Failed to delete inventory item');
       }
-      
+
       console.log('✅ [InventoryApiService] Successfully deleted inventory item:', id);
     } catch (error) {
       console.error('❌ [InventoryApiService] Failed to delete inventory item:', error);
@@ -193,11 +193,11 @@ export class InventoryApiService {
     try {
       console.log('🔄 [InventoryApiService] Fetching inventory statistics...');
       const response = await apiClient.get<ApiResponse<InventoryStats>>('/inventory/stats');
-      
+
       if (!response.success) {
         throw new Error(response.error || 'Failed to fetch inventory statistics');
       }
-      
+
       console.log('✅ [InventoryApiService] Successfully fetched inventory statistics:', response.data);
       return response.data!;
     } catch (error) {
@@ -211,11 +211,11 @@ export class InventoryApiService {
     try {
       console.log('🔄 [InventoryApiService] Searching inventory items:', searchTerm);
       const response = await apiClient.get<ApiResponse<InventoryItem[]>>('/inventory/search', { q: searchTerm });
-      
+
       if (!response.success) {
         throw new Error(response.error || 'Failed to search inventory items');
       }
-      
+
       console.log('✅ [InventoryApiService] Successfully searched inventory items:', response.data?.length, 'results');
       return response.data!;
     } catch (error) {
@@ -244,7 +244,7 @@ export function useInventoryItems(pollInterval: number = 500000) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch inventory items';
       setError(errorMessage);
       console.error('❌ [useInventoryItems] Error fetching inventory items:', err);
-      
+
       // Set empty array on error to prevent UI issues
       setItems([]);
     } finally {
@@ -279,7 +279,7 @@ export function useInventoryItems(pollInterval: number = 500000) {
   }) => {
     try {
       console.log('🔄 [useInventoryItems] Creating item optimistically...');
-      
+
       // Create optimistic item with temporary ID
       const optimisticItem: InventoryItem = {
         id: Date.now(), // Temporary ID
@@ -300,18 +300,18 @@ export function useInventoryItems(pollInterval: number = 500000) {
           newQuantity: itemData.quantity
         }]
       };
-      
+
       // Add to state immediately for instant feedback
       setItems(prev => [optimisticItem, ...prev]);
-      
+
       // Make actual API call
       const createdItem = await InventoryApiService.createItem(itemData);
-      
+
       // Replace optimistic item with real one
-      setItems(prev => 
+      setItems(prev =>
         prev.map(item => item.id === optimisticItem.id ? createdItem : item)
       );
-      
+
       console.log('✅ [useInventoryItems] Successfully created item:', createdItem.id);
       return createdItem;
     } catch (error) {
@@ -325,9 +325,9 @@ export function useInventoryItems(pollInterval: number = 500000) {
   const updateItemOptimistic = useCallback(async (id: number, quantity: number, updatedBy: string) => {
     try {
       console.log('🔄 [useInventoryItems] Updating item optimistically:', id);
-      
+
       // Update optimistically
-      setItems(prev => 
+      setItems(prev =>
         prev.map(item => {
           if (item.id === id) {
             const oldQuantity = item.quantity;
@@ -352,15 +352,15 @@ export function useInventoryItems(pollInterval: number = 500000) {
           return item;
         })
       );
-      
+
       // Make actual API call
       const updatedItem = await InventoryApiService.updateItemQuantity(id, quantity, updatedBy);
-      
+
       // Replace with real updated item
-      setItems(prev => 
+      setItems(prev =>
         prev.map(item => item.id === id ? updatedItem : item)
       );
-      
+
       console.log('✅ [useInventoryItems] Successfully updated item:', id);
       return updatedItem;
     } catch (error) {
@@ -374,13 +374,13 @@ export function useInventoryItems(pollInterval: number = 500000) {
   const deleteItemOptimistic = useCallback(async (id: number) => {
     try {
       console.log('🔄 [useInventoryItems] Deleting item optimistically:', id);
-      
+
       // Remove optimistically
       setItems(prev => prev.filter(item => item.id !== id));
-      
+
       // Make actual API call
       await InventoryApiService.deleteItem(id);
-      
+
       console.log('✅ [useInventoryItems] Successfully deleted item:', id);
     } catch (error) {
       console.error('❌ [useInventoryItems] Failed to delete item, restoring item:', error);
@@ -403,7 +403,7 @@ export function useInventoryItems(pollInterval: number = 500000) {
 }
 
 // Hook for inventory statistics - SAME PATTERN AS OTHER SERVICES
-export function useInventoryStats(pollInterval: number = 10000) {
+export function useInventoryStats(pollInterval: number = 100000) {
   const [stats, setStats] = useState<InventoryStats>({
     totalItems: 0,
     totalQuantity: 0,
@@ -418,7 +418,7 @@ export function useInventoryStats(pollInterval: number = 10000) {
       console.log('🔄 [useInventoryStats] Fetching inventory statistics (polling)...');
       setError(null);
       const result = await InventoryApiService.getStats();
-      
+
       // Ensure all values are numbers with fallbacks
       const safeStats: InventoryStats = {
         totalItems: Number(result.totalItems) || 0,
@@ -426,14 +426,14 @@ export function useInventoryStats(pollInterval: number = 10000) {
         lowStockItems: Number(result.lowStockItems) || 0,
         wellStockedItems: Number(result.wellStockedItems) || 0
       };
-      
+
       setStats(safeStats);
       console.log('✅ [useInventoryStats] Successfully updated inventory statistics:', safeStats);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch inventory statistics';
       setError(errorMessage);
       console.error('❌ [useInventoryStats] Error fetching inventory statistics:', err);
-      
+
       // Set safe defaults on error
       setStats({
         totalItems: 0,
@@ -449,7 +449,7 @@ export function useInventoryStats(pollInterval: number = 10000) {
   useEffect(() => {
     console.log('🚀 [useInventoryStats] Initial inventory statistics fetch...');
     fetchStats();
-    
+
     // Refresh stats every 10 seconds
     console.log('⏰ [useInventoryStats] Setting up inventory statistics polling with interval:', pollInterval, 'ms');
     const interval = setInterval(fetchStats, pollInterval);

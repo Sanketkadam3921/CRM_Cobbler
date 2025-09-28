@@ -8,9 +8,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Camera, CheckCircle, Clock, DollarSign, FileText, Image, Search, Upload, Send, ArrowRight, CheckSquare, Wrench, Eye, Loader2 } from "lucide-react";
+import { Camera, CheckCircle, Clock, DollarSign, FileText, Image, Search, Upload, Send, ArrowRight, CheckSquare, Wrench, Eye, Loader2, Phone, Plus, Settings } from "lucide-react";
 import { ServiceDetails, ServiceStatus, ServiceType, ServiceTypeStatus } from "@/types";
-// import { imageUploadHelper } from "@/utils/localStorage"; // We will not use this for the preview
+import { imageUploadHelper } from "@/utils/localStorage";
 import { ServiceTypeDetail } from "./ServiceTypeDetail";
 import { useServiceEnquiries, useServiceStats, serviceApiService } from "@/services/serviceApiService";
 import { useToast } from "@/hooks/use-toast";
@@ -19,7 +19,7 @@ export function ServiceModule() {
   const { toast } = useToast();
 
   // API hooks with 2-second polling for real-time updates
-  const { enquiries, loading: enquiriesLoading, error: enquiriesError, refetch } = useServiceEnquiries(200000);
+  const { enquiries, loading: enquiriesLoading, error: enquiriesError, refetch } = useServiceEnquiries(5000);
   const { stats, loading: statsLoading, error: statsError } = useServiceStats();
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -27,36 +27,17 @@ export function ServiceModule() {
   const [workNotes, setWorkNotes] = useState("");
   const [actualCost, setActualCost] = useState<number>(0);
   const [selectedServiceTypes, setSelectedServiceTypes] = useState<ServiceType[]>([]);
-  const [showServiceAssignment, setShowServiceAssignment] = useState<number | null>(null);
+  const [showServiceAssignment, setShowServiceAssignment] = useState<{ enquiryId: number; itemKey: string } | null>(null);
   const [selectedServiceDetail, setSelectedServiceDetail] = useState<{ enquiryId: number; serviceType: ServiceType } | null>(null);
+  // Per-enquiry selected item key: `${product}-${index}`
+  const [selectedItemByEnquiry, setSelectedItemByEnquiry] = useState<Record<number, string | null>>({});
 
   // Overall photo management
-  const [overallBeforePhoto, setOverallBeforePhoto] = useState<string | null>(null);
   const [overallAfterPhoto, setOverallAfterPhoto] = useState<string | null>(null);
-  const [showOverallPhotoDialog, setShowOverallPhotoDialog] = useState<number | null>(null);
   const [showFinalPhotoDialog, setShowFinalPhotoDialog] = useState<number | null>(null);
-  const [overallPhotoNotes, setOverallPhotoNotes] = useState("");
   const [finalPhotoNotes, setFinalPhotoNotes] = useState("");
   const [isProcessingPhoto, setIsProcessingPhoto] = useState(false);
 
-  // Helper function to convert file to base64 data URL
-  const fileToDataURL = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        if (e.target?.result) {
-          resolve(e.target.result as string);
-        } else {
-          reject(new Error('Failed to read file'));
-        }
-      };
-      reader.onerror = () => reject(new Error('Failed to read file'));
-      reader.readAsDataURL(file);
-    });
-  };
-
-  // API hooks handle data loading and stats automatically
-  // No need for manual useEffect or stats calculation
   console.log('🔍 ServiceModule - beforeenquiries:', enquiries);
   const filteredEnquiries = enquiries.filter(
     (enquiry) =>
@@ -67,23 +48,6 @@ export function ServiceModule() {
       )
   );
 
-  // Utility function to capitalize words for display
-  const capitalizeWords = (text: string) => {
-    if (!text) return "";
-    return text
-      .split(/[\s-_]+/)
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(" ");
-  };
-
-  const capitalizeStatus = (status: string) => {
-    if (!status) return "";
-    return status
-      .split("-")
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
-  };
-
   // Debug logging
   console.log('🔍 ServiceModule - enquiries:', enquiries);
   console.log('🔍 ServiceModule - enquiriesLoading:', enquiriesLoading);
@@ -92,6 +56,11 @@ export function ServiceModule() {
 
   // Add loading state for search results
   const searchLoading = enquiriesLoading && searchTerm.length > 0;
+
+  // Helper function to capitalize first letter
+  const capitalizeFirst = (str: string) => {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  };
 
   const getStatusColor = (status: ServiceStatus) => {
     switch (status) {
@@ -110,32 +79,11 @@ export function ServiceModule() {
     const file = event.target.files?.[0];
     if (file) {
       try {
-        const dataURL = await fileToDataURL(file);
-        setSelectedImage(dataURL);
+        const thumbnailData = await imageUploadHelper.handleImageUpload(file);
+        setSelectedImage(thumbnailData);
       } catch (error) {
-        console.error('Failed to convert image to data URL:', error);
-        toast({
-          title: "Error",
-          description: "Failed to process image. Please try again.",
-          variant: "destructive",
-        });
-      }
-    }
-  };
-
-  const handleOverallPhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      try {
-        const dataURL = await fileToDataURL(file);
-        setOverallBeforePhoto(dataURL);
-      } catch (error) {
-        console.error('Failed to convert overall photo to data URL:', error);
-        toast({
-          title: "Error",
-          description: "Failed to process image. Please try again.",
-          variant: "destructive",
-        });
+        console.error('Failed to process image:', error);
+        alert('Failed to process image. Please try again.');
       }
     }
   };
@@ -144,15 +92,11 @@ export function ServiceModule() {
     const file = event.target.files?.[0];
     if (file) {
       try {
-        const dataURL = await fileToDataURL(file);
-        setOverallAfterPhoto(dataURL);
+        const thumbnailData = await imageUploadHelper.handleImageUpload(file);
+        setOverallAfterPhoto(thumbnailData);
       } catch (error) {
-        console.error('Failed to convert final photo to data URL:', error);
-        toast({
-          title: "Error",
-          description: "Failed to process image. Please try again.",
-          variant: "destructive",
-        });
+        console.error('Failed to process image:', error);
+        alert('Failed to process image. Please try again.');
       }
     }
   };
@@ -171,11 +115,12 @@ export function ServiceModule() {
           title: "Error",
           description: "Service type not found. Please try again.",
           variant: "destructive",
+          duration: 3000,
         });
         return;
       }
 
-      await serviceApiService.startService(serviceTypeData.id, selectedImage || '', workNotes);
+      await serviceApiService.startService(enquiryId, serviceTypeData.id, selectedImage || '', workNotes);
       console.log('✅ Service started successfully');
 
       // Reset form
@@ -185,16 +130,18 @@ export function ServiceModule() {
       // Show success notification
       toast({
         title: "Service Started!",
-        description: `${capitalizeWords(serviceType)} has been started for enquiry #${enquiryId}`,
+        description: `${serviceType} has been started for enquiry #${enquiryId}`,
         className: "bg-blue-50 border-blue-200 text-blue-800",
+        duration: 3000,
       });
 
       // Send WhatsApp notification (simulated)
       if (enquiry) {
         toast({
           title: "WhatsApp Notification",
-          description: `WhatsApp sent to ${enquiry.customerName}: "Your ${enquiry.product} has been sent to ${department} for ${capitalizeWords(serviceType)} work."`,
+          description: `WhatsApp message sent to ${enquiry.customerName}: "Your ${enquiry.product} has been sent to ${department} for ${serviceType} work."`,
           className: "bg-blue-50 border-blue-200 text-blue-800",
+          duration: 3000,
         });
       }
     } catch (error) {
@@ -203,6 +150,7 @@ export function ServiceModule() {
         title: "Error",
         description: "Failed to start service. Please try again.",
         variant: "destructive",
+        duration: 3000,
       });
     }
   };
@@ -221,11 +169,12 @@ export function ServiceModule() {
           title: "Error",
           description: "Service type not found. Please try again.",
           variant: "destructive",
+          duration: 3000,
         });
         return;
       }
 
-      await serviceApiService.completeService(serviceTypeData.id, selectedImage || '', workNotes);
+      await serviceApiService.completeService(enquiryId, serviceTypeData.id, selectedImage || '', workNotes);
       console.log('✅ Service marked as done successfully');
 
       // Reset form
@@ -234,16 +183,18 @@ export function ServiceModule() {
       // Show success notification
       toast({
         title: "Service Completed!",
-        description: `${capitalizeWords(serviceType)} has been completed for enquiry #${enquiryId}`,
+        description: `${serviceType} has been completed for enquiry #${enquiryId}`,
         className: "bg-green-50 border-green-200 text-green-800",
+        duration: 3000,
       });
 
       // Send WhatsApp notification (simulated)
       if (enquiry) {
         toast({
           title: "WhatsApp Notification",
-          description: `WhatsApp sent to ${enquiry.customerName}: "Your ${capitalizeWords(serviceType)} work on ${enquiry.product} has been completed."`,
+          description: `WhatsApp message sent to ${enquiry.customerName}: "Your ${serviceType} work on ${enquiry.product} has been completed."`,
           className: "bg-blue-50 border-blue-200 text-blue-800",
+          duration: 3000,
         });
       }
     } catch (error) {
@@ -252,6 +203,7 @@ export function ServiceModule() {
         title: "Error",
         description: "Failed to complete service. Please try again.",
         variant: "destructive",
+        duration: 3000,
       });
     }
   };
@@ -269,6 +221,7 @@ export function ServiceModule() {
           title: "Error",
           description: "No service details found for this enquiry",
           variant: "destructive",
+          duration: 3000,
         });
         return;
       }
@@ -281,6 +234,7 @@ export function ServiceModule() {
           title: "Cannot Complete",
           description: "All services must be completed before moving to billing stage",
           variant: "destructive",
+          duration: 3000,
         });
         return;
       }
@@ -316,6 +270,7 @@ export function ServiceModule() {
         title: "Workflow Complete!",
         description: "All services completed and moved to billing stage",
         className: "bg-green-50 border-green-200 text-green-800",
+        duration: 3000,
       });
 
       // Send WhatsApp notification (simulated)
@@ -323,8 +278,9 @@ export function ServiceModule() {
       if (enquiry) {
         toast({
           title: "WhatsApp Notification",
-          description: `WhatsApp sent to ${enquiry.customerName}: "All services completed and ready for billing!"`,
+          description: `WhatsApp message sent to ${enquiry.customerName}: "All services completed and ready for billing!"`,
           className: "bg-blue-50 border-blue-200 text-blue-800",
+          duration: 3000,
         });
       }
     } catch (error) {
@@ -333,6 +289,7 @@ export function ServiceModule() {
         title: "Error",
         description: "Failed to complete workflow. Please try again.",
         variant: "destructive",
+        duration: 3000,
       });
     }
   };
@@ -345,24 +302,45 @@ export function ServiceModule() {
       title: "Invoice Sent!",
       description: `Invoice sent to ${enquiry.customerName}`,
       className: "bg-green-50 border-green-200 text-green-800",
+      duration: 3000,
     });
   };
 
-  const assignServices = async (enquiryId: number) => {
+  const assignServices = async (enquiryId: number, itemKey: string) => {
     try {
-      if (selectedServiceTypes.length === 0) {
+      // Get existing services for this item
+      const enquiry = enquiries.find(e => e.enquiryId === enquiryId);
+      const existingServices = getServicesForItem(enquiry!, itemKey).map(s => s.type);
+
+      // Filter out services that are already assigned
+      const newServicesToAssign = selectedServiceTypes.filter(
+        serviceType => !existingServices.includes(serviceType)
+      );
+
+      if (newServicesToAssign.length === 0) {
         toast({
-          title: "No Services Selected",
-          description: "Please select at least one service type",
+          title: "No New Services",
+          description: "All selected services are already assigned to this item",
           variant: "destructive",
+          duration: 3000,
         });
         return;
       }
 
-      console.log('🔄 Assigning services:', { enquiryId, serviceTypes: selectedServiceTypes });
+      // Parse product and itemIndex from itemKey
+      const [product, itemIndexStr] = itemKey.split('-');
+      const itemIndex = parseInt(itemIndexStr, 10);
 
-      await serviceApiService.assignServices(enquiryId, selectedServiceTypes);
-      console.log('✅ Services assigned successfully');
+      console.log('🔄 Assigning new services to specific item:', {
+        enquiryId,
+        newServicesToAssign,
+        existingServices,
+        product,
+        itemIndex
+      });
+
+      await serviceApiService.assignServices(enquiryId, newServicesToAssign, { product, itemIndex });
+      console.log('✅ New services assigned successfully to item');
 
       // Reset form
       setSelectedServiceTypes([]);
@@ -376,17 +354,18 @@ export function ServiceModule() {
       // Show success notification
       toast({
         title: "Services Assigned!",
-        description: `Services have been assigned for enquiry #${enquiryId}`,
+        description: `${newServicesToAssign.length} new service${newServicesToAssign.length > 1 ? 's' : ''} assigned to ${product} #${itemIndex + 1}`,
         className: "bg-green-50 border-green-200 text-green-800",
+        duration: 3000,
       });
 
       // Send WhatsApp notification (simulated)
-      const enquiry = enquiries.find((e) => e.enquiryId === enquiryId);
       if (enquiry) {
         toast({
           title: "WhatsApp Notification",
-          description: `WhatsApp sent to ${enquiry.customerName}: "Services have been assigned for your ${enquiry.product}."`,
+          description: `WhatsApp message sent to ${enquiry.customerName}: "New services have been assigned for your ${product} item #${itemIndex + 1}."`,
           className: "bg-blue-50 border-blue-200 text-blue-800",
+          duration: 3000,
         });
       }
     } catch (error) {
@@ -395,41 +374,7 @@ export function ServiceModule() {
         title: "Error",
         description: "Failed to assign services. Please try again.",
         variant: "destructive",
-      });
-    }
-  };
-
-  const updateOverallBeforePhoto = async (enquiryId: number) => {
-    try {
-      if (!overallBeforePhoto) {
-        console.log('⚠️ No photo selected for overall before photo');
-        return;
-      }
-
-      console.log('📸 Saving overall before photo for enquiry:', enquiryId);
-      console.log('Photo data length:', overallBeforePhoto.length);
-
-      // Note: Overall before photo comes from pickup, so this might not be needed
-      // But keeping for consistency with current UX
-
-      // Reset form immediately for better UX
-      setOverallBeforePhoto(null);
-      setOverallPhotoNotes("");
-      setShowOverallPhotoDialog(null);
-
-      console.log('✅ Overall before photo saved successfully');
-
-      toast({
-        title: "Photo Saved!",
-        description: "Overall before photo has been saved",
-        className: "bg-green-50 border-green-200 text-green-800",
-      });
-    } catch (error) {
-      console.error('❌ Failed to save overall before photo:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save photo. Please try again.",
-        variant: "destructive",
+        duration: 3000,
       });
     }
   };
@@ -460,6 +405,7 @@ export function ServiceModule() {
         title: "Final Photo Saved!",
         description: "Final photo has been saved. You can now complete the service.",
         className: "bg-green-50 border-green-200 text-green-800",
+        duration: 3000,
       });
 
     } catch (error) {
@@ -468,6 +414,7 @@ export function ServiceModule() {
         title: "Error",
         description: "Failed to save final photo. Please try again.",
         variant: "destructive",
+        duration: 3000,
       });
     } finally {
       setIsProcessingPhoto(false);
@@ -502,21 +449,44 @@ export function ServiceModule() {
   };
 
   const getProgressText = (serviceTypes: ServiceTypeStatus[]) => {
-    if (!serviceTypes || serviceTypes.length === 0) return "No Services Assigned";
-    const doneCount = serviceTypes.filter(s => s.status === "done").length;
-    return `${doneCount}/${serviceTypes.length} Services Completed`;
+    if (!serviceTypes || serviceTypes.length === 0) {
+      return "No services assigned";
+    }
+    const doneCount = serviceTypes.filter(service => service.status === "done").length;
+    const totalCount = serviceTypes.length;
+    return `${doneCount}/${totalCount} services completed`;
   };
 
   const getOverallStatus = (serviceTypes: ServiceTypeStatus[]) => {
     if (!serviceTypes || serviceTypes.length === 0) {
-      return "Pending";
+      return "Unassigned";
     } else if (serviceTypes.every(service => service.status === "done")) {
-      return "Done";
+      return "All Done";
     } else if (serviceTypes.some(service => service.status === "in-progress")) {
       return "In Progress";
     } else {
       return "Pending";
     }
+  };
+
+  // Helper function to get services for a specific item
+  const getServicesForItem = (enquiry: ServiceDetails, itemKey: string) => {
+    if (!enquiry.serviceTypes) return [];
+    return enquiry.serviceTypes.filter(service =>
+      `${(service as any).product}-${(service as any).itemIndex}` === itemKey
+    );
+  };
+
+  // Helper function to check if an item has any services assigned
+  const hasServicesAssigned = (enquiry: ServiceDetails, itemKey: string) => {
+    return getServicesForItem(enquiry, itemKey).length > 0;
+  };
+
+  // Helper function to get available services for an item (not already assigned)
+  const getAvailableServicesForItem = (enquiry: ServiceDetails, itemKey: string): ServiceType[] => {
+    const allServices: ServiceType[] = ["Repairing", "Cleaning", "Dyeing"];
+    const existingServices = getServicesForItem(enquiry, itemKey).map(s => s.type);
+    return allServices.filter(service => !existingServices.includes(service));
   };
 
   // Show service type detail view if selected
@@ -525,56 +495,52 @@ export function ServiceModule() {
       <ServiceTypeDetail
         enquiryId={selectedServiceDetail.enquiryId}
         serviceType={selectedServiceDetail.serviceType}
+        productItemKey={(window as any).__serviceDetailItemKey as string | undefined}
         onBack={() => setSelectedServiceDetail(null)}
         onServiceUpdated={() => refetch()}
       />
     );
   }
 
-
   return (
     <div className="space-y-4 sm:space-y-6 animate-fade-in p-2 sm:p-0">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Service Workflow</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">Manage Multi-Service Work From Received Items</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+            Service Workflow
+          </h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
+            Manage multi-service work from received items
+          </p>
         </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-lg sm:text-2xl font-bold text-foreground">
                 {statsLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : stats.pendingCount}
               </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">Pending Services</div>
-            </div>
-            <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-warning" />
-          </div>
-        </Card>
-        <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-lg sm:text-2xl font-bold text-foreground">
-                {statsLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : stats.inProgressCount}
+              <div className="text-xs sm:text-sm text-muted-foreground">
+                Pending Services
               </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">In Progress</div>
             </div>
-            <Wrench className="h-6 w-6 sm:h-8 sm:w-8 text-blue-500" />
           </div>
         </Card>
+
         <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-lg sm:text-2xl font-bold text-foreground">
                 {statsLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : stats.doneCount}
               </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">Completed Services</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">
+                Completed Services
+              </div>
             </div>
-            <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-success" />
           </div>
         </Card>
         <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
@@ -583,20 +549,20 @@ export function ServiceModule() {
               <div className="text-lg sm:text-2xl font-bold text-foreground">
                 {statsLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : stats.totalServices}
               </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">Total Services</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">
+                Total Services
+              </div>
             </div>
-            <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-purple-500" />
           </div>
         </Card>
       </div>
-
 
       {/* Search */}
       <Card className="p-3 sm:p-4 bg-gradient-card border-0 shadow-soft">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
-            placeholder="Search Services"
+            placeholder="Search services"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -605,381 +571,533 @@ export function ServiceModule() {
       </Card>
 
       {/* Service Items */}
-      <div className="space-y-6">
-
+      <div className="space-y-4">
         <h2 className="text-xl sm:text-2xl font-bold text-foreground">
           Service Queue
         </h2>
-
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
-          {filteredEnquiries.map((enquiry) => (
-            <Card key={enquiry.enquiryId} className="p-4 sm:p-6 bg-gradient-card border-0 shadow-soft hover:shadow-medium transition-all duration-300">
-              <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-4 gap-3">
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-foreground text-base sm:text-lg truncate">{capitalizeWords(enquiry.customerName)}</h3>
-                  <div className="flex items-center">
-                    📞 {enquiry.phone.startsWith('+91') ? enquiry.phone : `+91 ${enquiry.phone}`}
-                  </div>                </div>
-                <div className="flex flex-col items-start sm:items-end gap-2">
-                  <Badge className={`${getStatusColor(getOverallStatus(enquiry.serviceTypes || []) as ServiceStatus)} text-xs px-2 py-1 rounded-full font-medium`}>
-                    {capitalizeStatus(getOverallStatus(enquiry.serviceTypes || []))}
+          {filteredEnquiries.map((enquiry) => {
+            const items = enquiry.itemPhotos || [];
+            const selectedItem = selectedItemByEnquiry[enquiry.enquiryId] || (items[0] ? `${items[0].product}-${items[0].itemIndex}` : null);
+            const servicesForSelectedItem = selectedItem ? getServicesForItem(enquiry, selectedItem) : [];
+
+            return (
+              <Card
+                key={enquiry.enquiryId}
+                className="p-4 sm:p-6 bg-gradient-card border-0 shadow-soft hover:shadow-medium transition-all duration-300 relative"
+              >
+                {/* Badge group - always top-right */}
+                <div className="absolute top-3 right-3 flex flex-col sm:flex-col items-end gap-2">
+                  <Badge
+                    className={`${getStatusColor(
+                      getOverallStatus(enquiry.serviceTypes || []) as ServiceStatus
+                    )} text-xs px-2 py-1 rounded-full font-medium`}
+                  >
+                    {getOverallStatus(enquiry.serviceTypes || [])}
                   </Badge>
                   <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-xs px-2 py-1 rounded-full font-medium">
                     {getProgressText(enquiry.serviceTypes || [])}
                   </Badge>
                 </div>
-              </div>
 
-              {/* Product & Estimated Cost */}
-              <div className="space-y-3">
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm text-foreground">
-                    {capitalizeWords(enquiry.product)} ({enquiry.quantity} Items)
-                  </span>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm font-semibold text-foreground">
-                    Estimated: ₹{enquiry.estimatedCost || 0}
-                  </span>
-                </div>
-
-                {/* Service Types */}
-                <div className="space-y-2">
-                  <h4 className="text-sm font-medium text-foreground">Services:</h4>
-                  {enquiry.serviceTypes && enquiry.serviceTypes.length > 0 ? (
-                    enquiry.serviceTypes.map((service, index) => (
-                      <div
-                        key={index}
-                        className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-2 bg-muted/50 rounded"
-                      >
-                        <div className="flex items-center space-x-2">
-                          <span className="text-sm text-foreground">{capitalizeWords(service.type)}</span>
-                          <Badge className={`${getStatusColor(service.status)} text-xs`}>
-                            {capitalizeWords(service.status)}
-                          </Badge>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-xs mt-2 sm:mt-0"
-                          onClick={() =>
-                            setSelectedServiceDetail({
-                              enquiryId: enquiry.enquiryId,
-                              serviceType: service.type,
-                            })
-                          }
-                        >
-                          <Eye className="h-3 w-3 mr-1" />
-                          View
-                        </Button>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-sm text-muted-foreground">No Services Assigned Yet</div>
-                  )}
-                </div>
-
-                {/* Overall Photos */}
-                <div className="space-y-2">
-                  <h4 className="text-sm font-medium text-foreground">Overall Photos:</h4>
-                  <div className="grid grid-cols-2 gap-2">
-                    {/* Before Photo */}
-                    <div className="text-center">
-                      <p className="text-sm font-semibold text-muted-foreground mb-1">Before</p>
-                      {enquiry.overallPhotos?.beforePhoto ? (
-                        <img
-                          src={enquiry.overallPhotos.beforePhoto}
-                          alt="Before service"
-                          className="w-full h-32 sm:h-40 object-cover rounded border"
-                        />
-                      ) : (
-                        <div className="h-32 sm:h-40 bg-muted rounded flex items-center justify-center border">
-                          <span className="text-sm font-semibold text-muted-foreground">No Before Photo</span>
-                        </div>
-                      )}
+                {/* Header (customer info) */}
+                <div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-start justify-between mb-4 pr-28">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-foreground text-base sm:text-lg">
+                      {enquiry.customerName}
+                    </h3>
+                    <div className="flex items-center space-x-1 text-gray-600 mt-1">
+                      <Phone className="h-4 w-4 flex-shrink-0" />
+                      <span className="text-sm">
+                        {enquiry.phone.startsWith("+91")
+                          ? enquiry.phone
+                          : `+91 ${enquiry.phone}`}
+                      </span>
                     </div>
+                  </div>
 
-                    {/* After Photo */}
-                    <div className="text-center">
-                      <p className="text-sm font-semibold text-muted-foreground mb-1">After</p>
-                      {enquiry.overallPhotos?.afterPhoto ? (
-                        <img
-                          src={enquiry.overallPhotos.afterPhoto}
-                          alt="After service"
-                          className="w-full h-32 sm:h-40 object-cover rounded border"
-                        />
+                </div>
+
+                <div className="space-y-3">
+                  {/* Product info */}
+                  <div className="flex flex-col space-y-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {enquiry.products && enquiry.products.length > 0 ? (
+                        enquiry.products.map((product, index) => (
+                          <div key={index} className="flex items-center space-x-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                            <span>{product.product}</span>
+                            <span>({product.quantity})</span>
+                          </div>
+                        ))
                       ) : (
-                        <div className="h-32 sm:h-40 bg-muted rounded flex items-center justify-center border">
-                          <span className="text-sm font-semibold text-muted-foreground">No After Photo</span>
+                        <div className="flex items-center space-x-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                          <span>{enquiry.product}</span>
+                          <span>({enquiry.quantity})</span>
                         </div>
                       )}
                     </div>
                   </div>
-                </div>
 
-              </div>
-
-              {/* Action Buttons */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="text-xs sm:text-sm"
-                  onClick={() => sendInvoice(enquiry)}
-                >
-                  <Send className="h-3 w-3 mr-1" />
-                  Send Invoice
-                </Button>
-
-                {(!enquiry.serviceTypes || enquiry.serviceTypes.length === 0) && (
-                  <Button
-                    size="sm"
-                    className="bg-blue-600 hover:bg-blue-700 text-xs sm:text-sm"
-                    onClick={() => setShowServiceAssignment(enquiry.enquiryId)}
-                  >
-                    <Wrench className="h-3 w-3 mr-1" />
-                    Assign Services
-                  </Button>
-                )}
-
-                {enquiry.serviceTypes &&
-                  enquiry.serviceTypes.length > 0 &&
-                  !enquiry.overallPhotos?.beforePhoto && (
-                    <Button
-                      size="sm"
-                      className="bg-orange-600 hover:bg-orange-700 text-xs sm:text-sm"
-                      onClick={() => setShowOverallPhotoDialog(enquiry.enquiryId)}
-                    >
-                      <Camera className="h-3 w-3 mr-1" />
-                      Take Overall Before Photo
-                    </Button>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm font-semibold text-foreground">
+                      Estimated: ₹{enquiry.estimatedCost || 0}
+                    </span>
+                  </div>
+                  {/* Item dropdown at top-right to scope the entire card */}
+                  {items.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm font-semibold text-foreground">Select Item</Label>
+                      <Select
+                        value={selectedItem || undefined}
+                        onValueChange={(v) => setSelectedItemByEnquiry(prev => ({ ...prev, [enquiry.enquiryId]: v }))}
+                      >
+                        <SelectTrigger className="h-8 w-56">
+                          <SelectValue placeholder="Choose item" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {items.map((it) => {
+                            const key = `${it.product}-${it.itemIndex}`;
+                            const itemServices = getServicesForItem(enquiry, key);
+                            return (
+                              <SelectItem key={key} value={key}>
+                                <div className="flex items-center justify-between w-full">
+                                  <span>{it.product} — {it.itemIndex}</span>
+                                  {itemServices.length > 0 && (
+                                    <Badge className="ml-2 bg-green-100 text-green-800 text-xs">
+                                      {itemServices.length} service{itemServices.length > 1 ? 's' : ''}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   )}
-
-                {enquiry.serviceTypes &&
-                  enquiry.serviceTypes.length > 0 &&
-                  enquiry.serviceTypes.every((service) => service.status === "done") &&
-                  enquiry.overallPhotos?.beforePhoto &&
-                  !enquiry.overallPhotos?.afterPhoto && (
-                    <Button
-                      size="sm"
-                      className="bg-purple-600 hover:bg-purple-700 text-xs sm:text-sm"
-                      onClick={() => handleFinalPhotoDialogOpen(enquiry.enquiryId)}
-                    >
-                      <Camera className="h-3 w-3 mr-1" />
-                      Take Final Photo
-                    </Button>
-                  )}
-
-                {enquiry.serviceTypes &&
-                  enquiry.serviceTypes.length > 0 &&
-                  enquiry.serviceTypes.every((service) => service.status === "done") &&
-                  enquiry.overallPhotos?.beforePhoto &&
-                  enquiry.overallPhotos?.afterPhoto && (
-                    <Button
-                      size="sm"
-                      className="bg-green-600 hover:bg-green-700 text-xs sm:text-sm"
-                      onClick={() => serviceComplete(enquiry.enquiryId)}
-                    >
-                      <ArrowRight className="h-3 w-3 mr-1" />
-                      All Services Complete - Send To Billing
-                    </Button>
-                  )}
-              </div>
-
-              {/* Service Assignment Dialog */}
-              {showServiceAssignment === enquiry.enquiryId && (
-                <Dialog open={showServiceAssignment === enquiry.enquiryId} onOpenChange={() => setShowServiceAssignment(null)}>
-                  <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>Assign Services</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label>Select Service Types (Multi-Select)</Label>
-                        <div className="space-y-2">
-                          {["Sole Replacement", "Zipper Repair", "Cleaning & Polish", "Stitching", "Leather Treatment", "Hardware Repair"].map((serviceType) => (
-                            <div key={serviceType} className="flex items-center space-x-2">
-                              <Checkbox
-                                id={`service-${serviceType}`}
-                                checked={selectedServiceTypes.includes(serviceType as ServiceType)}
-                                onCheckedChange={() => handleServiceTypeToggle(serviceType as ServiceType)}
-                              />
-                              <Label htmlFor={`service-${serviceType}`} className="text-sm">
-                                {capitalizeWords(serviceType)}
-                              </Label>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="flex space-x-2">
+                  {/* Services for Selected Item */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-semibold text-foreground">Services for Selected Item:</h4>
+                      {selectedItem && !hasServicesAssigned(enquiry, selectedItem) && (
                         <Button
-                          onClick={() => assignServices(enquiry.enquiryId)}
-                          className="flex-1 bg-blue-600 hover:bg-blue-700"
-                          disabled={selectedServiceTypes.length === 0}
+                          size="sm"
+                          variant="outline"
+                          className="text-xs h-7 px-2"
+                          onClick={() => {
+                            setSelectedServiceTypes([]);
+                            setShowServiceAssignment({ enquiryId: enquiry.enquiryId, itemKey: selectedItem });
+                          }}
                         >
+                          <Plus className="h-3 w-3 mr-1" />
                           Assign Services
                         </Button>
-                        <Button
-                          variant="outline"
-                          onClick={() => setShowServiceAssignment(null)}
-                        >
-                          Cancel
-                        </Button>
-                      </div>
+                      )}
                     </div>
-                  </DialogContent>
-                </Dialog>
-              )}
-
-              {/* Overall Before Photo Dialog */}
-              {showOverallPhotoDialog === enquiry.enquiryId && (
-                <Dialog open={showOverallPhotoDialog === enquiry.enquiryId} onOpenChange={() => setShowOverallPhotoDialog(null)}>
-                  <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>Take Overall Before Photo</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
+                    {servicesForSelectedItem.length > 0 ? (
                       <div className="space-y-2">
-                        <Label>Overall Before Photo</Label>
-                        <div className="flex flex-col sm:flex-row gap-2">
-                          <Input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleOverallPhotoUpload}
-                            className="hidden"
-                            id={`overall-before-photo-${enquiry.enquiryId}`}
-                          />
-                          <Label
-                            htmlFor={`overall-before-photo-${enquiry.enquiryId}`}
-                            className="cursor-pointer flex items-center justify-center space-x-2 border border-input bg-background px-3 py-2 text-sm ring-offset-background hover:bg-accent hover:text-accent-foreground rounded-md flex-1"
+                        {servicesForSelectedItem.map((service, index) => (
+                          <div
+                            key={index}
+                            className="flex flex-col sm:flex-row sm:items-center justify-between p-2 bg-muted/50 rounded space-y-2 sm:space-y-0"
                           >
-                            <Camera className="h-4 w-4" />
-                            <span>Take Photo</span>
-                          </Label>
-                        </div>
-                        {overallBeforePhoto && (
-                          <div className="mt-2">
-                            <img
-                              src={overallBeforePhoto}
-                              alt="Overall before photo"
-                              className="w-full h-32 object-cover rounded-md border"
-                              style={{ imageRendering: 'auto' }}
-                            />
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm text-foreground">{service.type}</span>
+                              <Badge
+                                className={`${getStatusColor(service.status)} text-xs`}
+                              >
+                                {capitalizeFirst(service.status)}
+                              </Badge>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-xs w-full sm:w-auto"
+                              onClick={() => {
+                                // Pass selected item to detail via global state + key param in route-less usage
+                                (window as any).__serviceDetailItemKey = selectedItem;
+                                setSelectedServiceDetail({
+                                  enquiryId: enquiry.enquiryId,
+                                  serviceType: service.type,
+                                });
+                              }}
+                            >
+                              <Eye className="h-3 w-3 mr-1" />
+                              View
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : selectedItem ? (
+                      <div className="text-sm text-muted-foreground bg-amber-50 p-2 rounded border border-amber-200">
+                        No services assigned to this item yet. Click "Assign Services" to add services.
+                      </div>
+                    ) : (
+                      <div className="text-sm text-muted-foreground">
+                        Select an item to view its services
+                      </div>
+                    )}
+
+                    {/* Add Services Button for existing items with services */}
+                    {selectedItem && hasServicesAssigned(enquiry, selectedItem) && (
+                      <div>
+                        {getAvailableServicesForItem(enquiry, selectedItem).length > 0 ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="border-blue-500 text-blue-600 hover:bg-blue-50 text-sm font-medium mt-2"
+                            onClick={() => {
+                              // Reset selected services when opening dialog for adding more
+                              setSelectedServiceTypes([]);
+                              setShowServiceAssignment({ enquiryId: enquiry.enquiryId, itemKey: selectedItem });
+                            }}
+                          >
+                            <Settings className="h-4 w-4 mr-1 text-blue-600" />
+                            Add More Services ({getAvailableServicesForItem(enquiry, selectedItem).length} available)
+                          </Button>
+                        ) : (
+                          <div className="text-xs text-muted-foreground bg-green-50 p-2 rounded border border-green-200 mt-2">
+                            All 3 services have been assigned to this item.
                           </div>
                         )}
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="overall-notes">Notes (Optional)</Label>
-                        <Textarea
-                          id="overall-notes"
-                          placeholder="Add Notes About The Overall Condition..."
-                          value={overallPhotoNotes}
-                          onChange={(e) => setOverallPhotoNotes(e.target.value)}
-                          rows={3}
-                        />
-                      </div>
-                      <div className="flex space-x-2">
-                        <Button
-                          onClick={() => updateOverallBeforePhoto(enquiry.enquiryId)}
-                          className="flex-1 bg-blue-600 hover:bg-blue-700"
-                          disabled={!overallBeforePhoto}
-                        >
-                          <Camera className="h-4 w-4 mr-2" />
-                          Save Photo
-                        </Button>
-                        <Button
-                          variant="outline"
-                          onClick={() => setShowOverallPhotoDialog(null)}
-                        >
-                          Cancel
-                        </Button>
+                    )}
+                  </div>
+
+                  {/* All Items Summary */}
+                  {items.length > 1 && (
+                    <div className="space-y-2 mt-4 pt-3 border-t border-muted">
+                      <h4 className="text-sm font-medium text-foreground">All Items Summary:</h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {items.map((item) => {
+                          const itemKey = `${item.product}-${item.itemIndex}`;
+                          const itemServices = getServicesForItem(enquiry, itemKey);
+                          return (
+                            <div key={itemKey} className="flex items-center justify-between p-2 bg-muted/30 rounded text-xs">
+                              <span className="font-medium">
+                                {item.product} - {item.itemIndex}
+                              </span>
+                              <Badge
+                                className={`text-xs ${itemServices.length > 0
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-gray-100 text-gray-600'}`}
+                              >
+                                {itemServices.length} service{itemServices.length !== 1 ? 's' : ''}
+                              </Badge>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
-                  </DialogContent>
-                </Dialog>
-              )}
+                  )}
 
-              {/* Final Photo Dialog */}
-              {showFinalPhotoDialog === enquiry.enquiryId && (
-                <Dialog open={showFinalPhotoDialog === enquiry.enquiryId} onOpenChange={handleFinalPhotoDialogClose}>
-                  <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>Take Final Photo</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label>Final After Photo (Required)</Label>
-                        <div className="flex flex-col sm:flex-row gap-2">
-                          <Input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleFinalPhotoUpload}
-                            className="hidden"
-                            id={`final-photo-${enquiry.enquiryId}`}
-                          />
-                          <Label
-                            htmlFor={`final-photo-${enquiry.enquiryId}`}
-                            className="cursor-pointer flex items-center justify-center space-x-2 border border-input bg-background px-3 py-2 text-sm ring-offset-background hover:bg-accent hover:text-accent-foreground rounded-md flex-1"
-                          >
-                            <Camera className="h-4 w-4" />
-                            <span>Take Final Photo</span>
-                          </Label>
-                        </div>
-                        {overallAfterPhoto && (
-                          <div className="mt-2">
+                  {/* Overall Photos (use selected item) */}
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium text-foreground">Overall Photos:</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      {/* Before Photo */}
+                      <div className="text-center">
+                        <p className="text-sm font-semibold text-foreground">
+                          Before
+                        </p>
+                        {(() => {
+                          const beforeSrc: string | undefined = (() => {
+                            if (enquiry.overallPhotos?.beforePhoto) return enquiry.overallPhotos.beforePhoto;
+                            if (!items || items.length === 0) return undefined;
+                            const item = selectedItem ? items.find(it => `${it.product}-${it.itemIndex}` === selectedItem) : items[0];
+                            if (!item) return undefined;
+                            const legacy = Array.isArray((item as any).photos) ? (item as any).photos as string[] : undefined;
+                            const grouped = !legacy ? ((item as any).photos || {}) as { before?: string[] } : undefined;
+                            return legacy ? legacy[0] : (grouped?.before || [])[0];
+                          })();
+                          return beforeSrc ? (
                             <img
-                              src={overallAfterPhoto}
-                              alt="Final after photo"
-                              className="w-full h-32 object-cover rounded-md border"
-                              style={{ imageRendering: 'auto' }}
+                              src={beforeSrc}
+                              alt="Before service"
+                              className="h-20 w-full object-contain rounded border bg-gray-50"
                             />
+                          ) : (
+                            <div className="h-20 bg-muted rounded flex items-center justify-center border">
+                              <span className="text-xs text-muted-foreground text-center px-1">
+                                No before photo
+                              </span>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                      {/* After Photo */}
+                      <div className="text-center">
+                        <p className="text-sm font-semibold text-foreground">
+                          After
+                        </p>
+                        {enquiry.overallPhotos?.afterPhoto ? (
+                          <img
+                            src={enquiry.overallPhotos.afterPhoto}
+                            alt="After service"
+                            className="h-20 w-full object-contain rounded border bg-gray-50"
+                          />
+                        ) : (
+                          <div className="h-20 bg-muted rounded flex items-center justify-center border">
+                            <span className="text-xs text-muted-foreground text-center px-1">
+                              No after photo
+                            </span>
                           </div>
                         )}
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="final-notes">Final Notes (Optional)</Label>
-                        <Textarea
-                          id="final-notes"
-                          placeholder="Add Final Notes About The Completed Work..."
-                          value={finalPhotoNotes}
-                          onChange={(e) => setFinalPhotoNotes(e.target.value)}
-                          rows={3}
-                        />
-                      </div>
-                      <div className="flex space-x-2">
-                        <Button
-                          onClick={() => updateFinalPhoto(enquiry.enquiryId)}
-                          className="flex-1 bg-green-600 hover:bg-green-700"
-                          disabled={!overallAfterPhoto || isProcessingPhoto}
-                        >
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          {isProcessingPhoto ? 'Processing...' : 'Save Final Photo'}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          onClick={handleFinalPhotoDialogClose}
-                        >
-                          Cancel
-                        </Button>
-                      </div>
                     </div>
-                  </DialogContent>
-                </Dialog>
-              )}
-            </Card>
-          ))}
+                  </div>
+                </div>
+
+                {/* Action buttons - mobile optimized */}
+                <div className="grid grid-cols-1 gap-2 mt-4">
+                  {enquiry.serviceTypes && enquiry.serviceTypes.length > 0 &&
+                    enquiry.serviceTypes.every(service => service.status === "done") &&
+                    !enquiry.overallPhotos?.afterPhoto && (
+                      <Button
+                        size="sm"
+                        className="bg-purple-600 hover:bg-purple-700 text-xs sm:text-sm"
+                        onClick={() => handleFinalPhotoDialogOpen(enquiry.enquiryId)}
+                      >
+                        <Camera className="h-3 w-3 mr-1" />
+                        Take Final Photo
+                      </Button>
+                    )}
+
+                  {enquiry.serviceTypes && enquiry.serviceTypes.length > 0 &&
+                    enquiry.serviceTypes.every(service => service.status === "done") &&
+                    enquiry.overallPhotos?.afterPhoto && (
+                      <Button
+                        size="sm"
+                        className="bg-green-600 hover:bg-green-700 text-xs sm:text-sm"
+                        onClick={() => serviceComplete(enquiry.enquiryId)}
+                      >
+                        <ArrowRight className="h-3 w-3 mr-1" />
+                        Send to Billing
+                      </Button>
+                    )}
+                </div>
+
+                {/* Service Assignment Dialog */}
+                {showServiceAssignment && showServiceAssignment.enquiryId === enquiry.enquiryId && (
+                  <Dialog
+                    open={showServiceAssignment.enquiryId === enquiry.enquiryId}
+                    onOpenChange={() => {
+                      setShowServiceAssignment(null);
+                      setSelectedServiceTypes([]);
+                    }}
+                  >
+                    <DialogContent className="sm:max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>
+                          Assign Services to Item
+                        </DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        {(() => {
+                          const [product, itemIndexStr] = showServiceAssignment.itemKey.split('-');
+                          const itemIndex = parseInt(itemIndexStr, 10);
+                          const existingServices = getServicesForItem(enquiry, showServiceAssignment.itemKey).map(s => s.type);
+                          const availableServices = getAvailableServicesForItem(enquiry, showServiceAssignment.itemKey);
+                          const isAddingMore = existingServices.length > 0;
+
+                          return (
+                            <div className="space-y-4">
+                              {/* Item Info */}
+                              <div className="bg-blue-50 p-3 rounded border border-blue-200">
+                                <div className="text-sm font-medium text-blue-900 flex items-center gap-2">
+                                  {isAddingMore ? 'Adding services to:' : 'Assigning services to:'}
+                                  <span className="flex items-center gap-2">
+                                    <span>{product} — {itemIndex}</span>
+                                    {existingServices.length > 0 && (
+                                      <Badge className="ml-2 bg-green-100 text-green-800 text-xs">
+                                        {existingServices.length} service{existingServices.length > 1 ? 's' : ''}
+                                      </Badge>
+                                    )}
+                                  </span>
+                                </div>
+
+                                {isAddingMore && (
+                                  <div className="text-xs text-blue-700 mt-1">
+                                    Current services: {existingServices.join(', ')} ({existingServices.length}/3)
+                                  </div>
+                                )}
+
+                                {availableServices.length === 0 && (
+                                  <div className="text-xs text-green-700 bg-green-50 border border-green-200 p-2 rounded mt-2">
+                                    All services (3/3) have been assigned to this item.
+                                  </div>
+                                )}
+                              </div>
+
+
+                              {availableServices.length > 0 && (
+                                <div className="space-y-2">
+                                  <Label>Select Service Types</Label>
+                                  <div className="text-xs text-gray-600 mb-2">
+                                    Available services ({availableServices.length} remaining):
+                                  </div>
+                                  <div className="space-y-2 pt-2">
+                                    {["Repairing", "Cleaning", "Dyeing"].map((serviceType) => {
+                                      const isAlreadyAssigned = existingServices.includes(serviceType as ServiceType);
+                                      const isAvailable = availableServices.includes(serviceType as ServiceType);
+
+                                      return (
+                                        <div key={serviceType} className="flex items-center space-x-2">
+                                          <Checkbox
+                                            id={`service-${enquiry.enquiryId}-${serviceType}`}
+                                            checked={isAlreadyAssigned || selectedServiceTypes.includes(serviceType as ServiceType)}
+                                            disabled={isAlreadyAssigned || !isAvailable}
+                                            onCheckedChange={() => {
+                                              if (isAvailable) {
+                                                handleServiceTypeToggle(serviceType as ServiceType);
+                                              }
+                                            }}
+                                          />
+                                          <Label
+                                            htmlFor={`service-${enquiry.enquiryId}-${serviceType}`}
+                                            className={`text-sm ${isAlreadyAssigned
+                                              ? 'text-muted-foreground cursor-not-allowed'
+                                              : isAvailable
+                                                ? 'cursor-pointer'
+                                                : 'text-muted-foreground cursor-not-allowed'
+                                              }`}
+                                          >
+                                            {serviceType}
+                                            {isAlreadyAssigned && (
+                                              <span className="ml-2 text-xs bg-green-100 text-green-800 px-1 rounded">
+                                                Already Assigned
+                                              </span>
+                                            )}
+                                          </Label>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+
+                              <div className="flex space-x-2">
+                                {availableServices.length > 0 ? (
+                                  <Button
+                                    onClick={() => assignServices(enquiry.enquiryId, showServiceAssignment.itemKey)}
+                                    className="flex-1 bg-blue-600 hover:bg-blue-700"
+                                    disabled={selectedServiceTypes.length === 0}
+                                  >
+                                    {isAddingMore ? 'Add Selected Services' : 'Assign Selected Services'}
+                                  </Button>
+                                ) : (
+                                  <div className="flex-1 text-center text-sm text-muted-foreground py-2">
+                                    No more services can be added to this item.
+                                  </div>
+                                )}
+                                <Button
+                                  onClick={() => {
+                                    setShowServiceAssignment(null);
+                                    setSelectedServiceTypes([]);
+                                  }}
+                                  className="w-24 h-10 bg-red-500 text-white hover:bg-red-600 hover:text-white font-medium"
+                                >
+                                  Cancel
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                )}
+
+                {/* Final Photo Dialog */}
+                {showFinalPhotoDialog === enquiry.enquiryId && (
+                  <Dialog open={showFinalPhotoDialog === enquiry.enquiryId} onOpenChange={handleFinalPhotoDialogClose}>
+                    <DialogContent className="sm:max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>Take Final Photo</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label>Final After Photo (Required)</Label>
+                          <div className="flex flex-col sm:flex-row gap-2">
+                            <Input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleFinalPhotoUpload}
+                              className="hidden"
+                              id={`final-photo-${enquiry.enquiryId}`}
+                            />
+                            <Label
+                              htmlFor={`final-photo-${enquiry.enquiryId}`}
+                              className="cursor-pointer flex items-center justify-center space-x-2 border border-input bg-background px-3 py-2 text-sm ring-offset-background hover:bg-accent hover:text-accent-foreground rounded-md flex-1"
+                            >
+                              <Camera className="h-4 w-4" />
+                              <span>Take Final Photo</span>
+                            </Label>
+                          </div>
+                          {overallAfterPhoto && (
+                            <div className="mt-2">
+                              <img
+                                src={overallAfterPhoto}
+                                alt="Final after photo"
+                                className="w-full max-h-48 object-contain rounded-md border bg-gray-50"
+                                loading="eager"
+                                decoding="sync"
+                                style={{
+                                  imageRendering: 'crisp-edges',
+                                  transform: 'translateZ(0)',
+                                  backfaceVisibility: 'hidden',
+                                  WebkitBackfaceVisibility: 'hidden'
+                                } as React.CSSProperties}
+                              />
+                            </div>
+                          )}
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="final-notes">Final Notes (Optional)</Label>
+                          <Textarea
+                            id="final-notes"
+                            placeholder="Add final notes about the completed work"
+                            value={finalPhotoNotes}
+                            onChange={(e) => setFinalPhotoNotes(e.target.value)}
+                            rows={3}
+                          />
+                        </div>
+                        <div className="flex space-x-2">
+                          <Button
+                            onClick={() => updateFinalPhoto(enquiry.enquiryId)}
+                            className="flex-1 bg-green-600 hover:bg-green-700"
+                            disabled={!overallAfterPhoto || isProcessingPhoto}
+                          >
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            {isProcessingPhoto ? 'Processing' : 'Save Final Photo'}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={handleFinalPhotoDialogClose}
+                            className="w-24 h-10 bg-red-500 text-white hover:bg-red-600 hover:text-white font-medium"
+
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                )}
+              </Card>
+            );
+          })}
         </div>
 
         {enquiriesLoading ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-            <span className="ml-2 text-gray-600">Loading Service Enquiries...</span>
+            <span className="ml-2 text-gray-600">Loading service enquiries...</span>
           </div>
         ) : enquiriesError ? (
           <div className="flex items-center justify-center py-8">
             <div className="text-center">
-              <p className="text-red-600 mb-2">Error Loading Service Enquiries</p>
+              <p className="text-red-600 mb-2">Error loading service enquiries</p>
               <p className="text-sm text-gray-500">{enquiriesError}</p>
             </div>
           </div>
@@ -990,7 +1108,7 @@ export function ServiceModule() {
               No Service Items
             </h3>
             <p className="text-muted-foreground">
-              Service Items Will Appear Here Once Items Are Received From Pickup.
+              Service items will appear here once items are received from pickup.
             </p>
           </Card>
         ) : null}
